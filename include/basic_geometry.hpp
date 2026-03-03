@@ -19,7 +19,7 @@
 // using T3Tdd = std::tuple<Tdd, Tdd, Tdd>;
 
 /* -------------------------------------------------------------------------- */
-double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Tddd C) {
+inline double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Tddd C) {
   // A -= p;
   // B -= p;
   // C -= p;
@@ -54,8 +54,8 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, Tddd A, Tddd B, Td
   return 2. * std::atan2(-(a2 * b1 * c0) + a1 * b2 * c0 + a2 * b0 * c1 - a0 * b2 * c1 - a1 * b0 * c2 + a0 * b1 * c2, b0 * c0 * nA + b1 * c1 * nA + b2 * c2 * nA + a0 * c0 * nB + a1 * c1 * nB + a2 * c2 * nB + (a0 * b0 + a1 * b1 + a2 * b2 + nA * nB) * Norm(C));
 };
 
-double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const T3Tddd &ABC) { return SolidAngle_VanOosteromAandStrackeeJ1983(p, std::get<0>(ABC), std::get<1>(ABC), std::get<2>(ABC)); };
-double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const Tddd &A) { return 0.; };
+inline double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const T3Tddd &ABC) { return SolidAngle_VanOosteromAandStrackeeJ1983(p, std::get<0>(ABC), std::get<1>(ABC), std::get<2>(ABC)); };
+inline double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const Tddd &A) { return 0.; };
 //
 // double SolidAngle(const Tddd &o, const Tddd &A, const Tddd &B, const Tddd &C) {
 //    double c = VectorAngle(A - o, B - o), a = VectorAngle(B - o, C - o), b = VectorAngle(C - o, A - o);
@@ -67,7 +67,7 @@ double SolidAngle_VanOosteromAandStrackeeJ1983(const Tddd &p, const Tddd &A) { r
 //    // return SolidAngle_VanOosteromAandStrackeeJ1983(o, A, B, C);
 // };
 
-double SolidAngle_UsingVectorAngle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
+inline double SolidAngle_UsingVectorAngle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
   double c = VectorAngle(p1 - p0, p2 - p0), a = VectorAngle(p2 - p0, p3 - p0), b = VectorAngle(p3 - p0, p1 - p0);
   double s = (a + b + c) * 0.5;
   if (Between(s, {M_PI - 1E-10, M_PI + 1E-10}))
@@ -76,7 +76,7 @@ double SolidAngle_UsingVectorAngle(const Tddd &p0, const Tddd &p1, const Tddd &p
     return 4. * std::atan(std::sqrt(tan(s * 0.5) * std::tan((s - a) * 0.5) * std::tan((s - b) * 0.5) * std::tan((s - c) * 0.5)));
 };
 
-double SolidAngle_(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
+inline double SolidAngle_(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
 
   //     1,2,3 (outward rotation)
   //          3
@@ -98,7 +98,7 @@ double SolidAngle_(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p
   return 2. * std::atan2(Det(T3Tddd{A, B, C}) /*Dot(A, Cross(B, C))*/, Norm(A) * Norm(B) * Norm(C) + Dot(A, B) * Norm(C) + Dot(A, C) * Norm(B) + Dot(B, C) * Norm(A));
 };
 
-double SolidAngle(const Tddd &o, const Tddd &A, const Tddd &B, const Tddd &C) {
+inline double SolidAngle(const Tddd &o, const Tddd &A, const Tddd &B, const Tddd &C) {
   // return SolidAngle_(o, a, b, c);
   //
   // return std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c));
@@ -121,13 +121,13 @@ double SolidAngle(const Tddd &o, const Tddd &A, const Tddd &B, const Tddd &C) {
   // return SolidAngle_VanOosteromAandStrackeeJ1983(o, A, B, C);
 };
 
-double SolidAngle(const Tddd &p, const T3Tddd &ABC) {
+inline double SolidAngle(const Tddd &p, const T3Tddd &ABC) {
   return SolidAngle(p, std::get<0>(ABC), std::get<1>(ABC), std::get<2>(ABC));
   // return SolidAngle_VanOosteromAandStrackeeJ1983(p, std::get<0>(ABC),
   // std::get<1>(ABC), std::get<2>(ABC));
 };
 
-T4d SolidAngles(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
+inline T4d SolidAngles(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
   return {(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c)), (SolidAngle_VanOosteromAandStrackeeJ1983(a, b, c, o)), (SolidAngle_VanOosteromAandStrackeeJ1983(b, c, o, a)), (SolidAngle_VanOosteromAandStrackeeJ1983(c, o, a, b))};
   //
   // return {std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(o, a, b, c)),
@@ -136,12 +136,12 @@ T4d SolidAngles(const Tddd &o, const Tddd &a, const Tddd &b, const Tddd &c) {
   //         std::abs(SolidAngle_VanOosteromAandStrackeeJ1983(c, o, a, b))};
 };
 
-T4d SolidAngles(const T4Tddd &oabc) {
+inline T4d SolidAngles(const T4Tddd &oabc) {
   auto [o, a, b, c] = oabc;
   return SolidAngles(o, a, b, c);
 };
 
-double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
+inline double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
   double total = 0., tmp, angle;
   int sz = xyz.size();
   double local_mean_length = 0;
@@ -177,25 +177,25 @@ double SolidAngle(const Tddd &o, const std::vector<Tddd> &xyz) {
   return total;
 };
 
-T4d TetrahedronSolidAngle_UsingVectorAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
+inline T4d TetrahedronSolidAngle_UsingVectorAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3. - X0) < 0)
     X2.swap(X3);
   return {(SolidAngle_UsingVectorAngle(X0, X1, X2, X3)), (SolidAngle_UsingVectorAngle(X1, X0, X3, X2)), (SolidAngle_UsingVectorAngle(X2, X0, X1, X3)), (SolidAngle_UsingVectorAngle(X3, X0, X2, X1))};
 };
 
-T4d TetrahedronSolidAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
+inline T4d TetrahedronSolidAngle(const Tddd &X0, const Tddd &X1, Tddd X2, Tddd X3) {
   if (Dot(TriangleNormal(X1, X2, X3), (X1 + X2 + X3) / 3. - X0) < 0)
     X2.swap(X3);
   return {(SolidAngle_VanOosteromAandStrackeeJ1983(X0, X1, X2, X3)), (SolidAngle_VanOosteromAandStrackeeJ1983(X1, X0, X3, X2)), (SolidAngle_VanOosteromAandStrackeeJ1983(X2, X0, X1, X3)), (SolidAngle_VanOosteromAandStrackeeJ1983(X3, X0, X2, X1))};
 };
 
-T4d TetrahedronSolidAngle(const T4Tddd &abcd) { return TetrahedronSolidAngle(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
+inline T4d TetrahedronSolidAngle(const T4Tddd &abcd) { return TetrahedronSolidAngle(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 
-T4d TetrahedronSolidAngle_UsingVectorAngle(const T4Tddd &abcd) { return TetrahedronSolidAngle_UsingVectorAngle(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
+inline T4d TetrahedronSolidAngle_UsingVectorAngle(const T4Tddd &abcd) { return TetrahedronSolidAngle_UsingVectorAngle(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 // % -------------------------------------------------------------------------- */
 // %                                  外接球                                     */
 // % -------------------------------------------------------------------------- */
-Tddd Circumcenter(const Tddd &a, const Tddd &b_, const Tddd &c_) {
+inline Tddd Circumcenter(const Tddd &a, const Tddd &b_, const Tddd &c_) {
   Tddd b = b_ - a;
   Tddd c = c_ - a;
   const auto x = Normalize(b);
@@ -213,8 +213,8 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b_, const Tddd &c_) {
   auto [Cx, Cy] = CxCy;
   return a + Cx * x + Cy * y;
 };
-Tddd Circumcenter(const T3Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
-Tddd Circumcenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
+inline Tddd Circumcenter(const T3Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
+inline Tddd Circumcenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
   // http://rodolphe-vaillant.fr/entry/127/find-a-tetrahedron-circumcenter#:~:text=For%20all%20tetrahedra%2C%20there%20exists,circumsphere%20is%20called%20the%20circumcentre.
   // double a2 = Dot(a, a);
   // return 0.5 * Dot(Inverse(T3Tddd{b - a, c - a, d - a}), Tddd{Dot(b, b) - a2, Dot(c, c) - a2, Dot(d, d) - a2});
@@ -226,9 +226,9 @@ Tddd Circumcenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
   // lapack_svd_solve(T3Tddd{b_, c_, d_}, CxCyCz, Tddd{Dot(b_, b_), Dot(c_, c_), Dot(d_, d_)});
   return a + 0.5 * CxCyCz;
 };
-Tddd Circumcenter(const T4Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
+inline Tddd Circumcenter(const T4Tddd &abcd) { return Circumcenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 /* -------------------------------------------------------------------------- */
-double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c) {
+inline double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c) {
   // auto X = Circumcenter(a, b, c);
   // return (Norm(a - X) + Norm(b - X) + Norm(c - X)) / 3.;
   const double ab = Norm(a - b);
@@ -237,26 +237,26 @@ double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c) {
   const double s = (ab + bc + ca) * 0.5;
   return ab * bc * ca / (4. * std::sqrt(s * (s - ab) * (s - bc) * (s - ca)));
 };
-double Circumradius(const T3Tddd &abcd) { return Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
-double CircumArea(const T3Tddd &abcd) { return std::pow(Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)), 2) * M_PI; };
-double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
+inline double Circumradius(const T3Tddd &abcd) { return Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
+inline double CircumArea(const T3Tddd &abcd) { return std::pow(Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)), 2) * M_PI; };
+inline double Circumradius(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
   auto X = Circumcenter(a, b, c, d);
   return (Norm(a - X) + Norm(b - X) + Norm(c - X) + Norm(d - X)) / 4.;
 };
-double Circumradius(const T4Tddd &abcd) { return Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
+inline double Circumradius(const T4Tddd &abcd) { return Circumradius(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 // % -------------------------------------------------------------------------- */
 // %                                  内接球                                     */
 // % -------------------------------------------------------------------------- */
-double Inradius(Tddd p0, Tddd p1, Tddd p2) {
+inline double Inradius(Tddd p0, Tddd p1, Tddd p2) {
   p2 -= p0;
   p1 -= p0;
   p0.fill(0.);
   auto l2 = Norm(p2 - (-p1 * (Dot(p1 - p2, p1) / Dot(p1, p1)) + p1));
   return (Norm(p1) * l2) / (Norm(p1) + Norm(p2) + Norm(p1 - p2));
 };
-double Inradius(const T3Tddd &p0123) { return Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)); };
-double InArea(const T3Tddd &p0123) { return std::pow(Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)), 2) * M_PI; };
-double Inradius(Tddd p0, Tddd p1, Tddd p2, Tddd p3) {
+inline double Inradius(const T3Tddd &p0123) { return Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)); };
+inline double InArea(const T3Tddd &p0123) { return std::pow(Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)), 2) * M_PI; };
+inline double Inradius(Tddd p0, Tddd p1, Tddd p2, Tddd p3) {
   // see /Users/tomoaki/Dropbox/markdown/mathematica/非構造格子/四面体の内接球外接球.nb
   p3 -= p0;
   p2 -= p0;
@@ -276,9 +276,9 @@ double Inradius(Tddd p0, Tddd p1, Tddd p2, Tddd p3) {
   // double A3 = TriangleArea(p0, p1, p2);
   // return (A3 * l3) / (A0 + A1 + A2 + A3);
 };
-double Inradius(const T4Tddd &p0123) { return Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123), std::get<3>(p0123)); };
+inline double Inradius(const T4Tddd &p0123) { return Inradius(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123), std::get<3>(p0123)); };
 /* -------------------------------------------------------------------------- */
-Tddd Incenter(const Tddd &p0, const Tddd &p1, const Tddd &p2) {
+inline Tddd Incenter(const Tddd &p0, const Tddd &p1, const Tddd &p2) {
   // see /Users/tomoaki/Dropbox/markdown/mathematica/非構造格子/四面体の内接球外接球.nb
   // https://en.wikipedia.org/wiki/Tetrahedron
   auto len = [](const Tddd &a, const Tddd &b, const Tddd &c) {
@@ -290,8 +290,8 @@ Tddd Incenter(const Tddd &p0, const Tddd &p1, const Tddd &p2) {
   auto l2 = len(p0, p1, p2);
   return (p0 / l0 + p1 / l1 + p2 / l2) * Inradius(p0, p1, p2);
 };
-Tddd Incenter(const T3Tddd &p0123) { return Incenter(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)); };
-Tddd Incenter(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
+inline Tddd Incenter(const T3Tddd &p0123) { return Incenter(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123)); };
+inline Tddd Incenter(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
   // see /Users/tomoaki/Dropbox/markdown/mathematica/非構造格子/四面体の内接球外接球.nb
   // https://en.wikipedia.org/wiki/Tetrahedron
   double l0 = Norm(Dot(p0 - p1, Normalize(Cross(p2 - p1, p3 - p1))));
@@ -300,14 +300,14 @@ Tddd Incenter(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) {
   double l3 = Norm(Dot(p3 - p0, Normalize(Cross(p1 - p0, p2 - p0))));
   return (p0 / l0 + p1 / l1 + p2 / l2 + p3 / l3) * Inradius(p0, p1, p2, p3);
 };
-Tddd Incenter(const T4Tddd &p0123) { return Incenter(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123), std::get<3>(p0123)); };
+inline Tddd Incenter(const T4Tddd &p0123) { return Incenter(std::get<0>(p0123), std::get<1>(p0123), std::get<2>(p0123), std::get<3>(p0123)); };
 // % -------------------------------------------------------------------------- */
-Tddd Centroid(const Tddd &a, const Tddd &b, const Tddd &c) { return (a + b + c) / 3.; };
-Tddd Centroid(const T3Tddd &abcd) { return Centroid(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
-Tddd Centroid(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) { return (a + b + c + d) / 4.; };
-Tddd Centroid(const T4Tddd &abcd) { return Centroid(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
+inline Tddd Centroid(const Tddd &a, const Tddd &b, const Tddd &c) { return (a + b + c) / 3.; };
+inline Tddd Centroid(const T3Tddd &abcd) { return Centroid(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd)); };
+inline Tddd Centroid(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) { return (a + b + c + d) / 4.; };
+inline Tddd Centroid(const T4Tddd &abcd) { return Centroid(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 // % -------------------------------------------------------------------------- */
-bool InsideQ(const T3Tdd &bounds, const T3Tdd &bounds_) {
+inline bool InsideQ(const T3Tdd &bounds, const T3Tdd &bounds_) {
   //! bounds < bounds_ ?
   //! Is bounds inside bounds_ ?
   auto [X0, X1] = std::get<0>(bounds);
@@ -319,13 +319,13 @@ bool InsideQ(const T3Tdd &bounds, const T3Tdd &bounds_) {
   return {X0_ < X0 && X1 < X1_ && Y0_ < Y0 && Y1 < Y1_ && Z0_ < Z0 && Z1 < Z1_};
 };
 
-bool InsideQ(const Tddd &X, const Tddd &Xcenter, const double &r) {
+inline bool InsideQ(const Tddd &X, const Tddd &Xcenter, const double &r) {
   //! point v.s. sphere
   //! point < sphere ?
   //! Is point X inside the sphere with center Xcenter and radius r ?
   return Norm(X - Xcenter) < r;
 };
-bool InsideQ(const T3Tdd &bounds, const Tddd &Xcenter, const double &r) {
+inline bool InsideQ(const T3Tdd &bounds, const Tddd &Xcenter, const double &r) {
   //! cube v.s. sphere
   //! cube < sphere ?
   //! Is cube bounds inside the sphere with center Xcenter and radius r ?
@@ -338,7 +338,7 @@ bool InsideQ(const T3Tdd &bounds, const Tddd &Xcenter, const double &r) {
   };
   return (isInside({X0, Y0, Z0}, Xcenter, r) && isInside({X1, Y0, Z0}, Xcenter, r) && isInside({X1, Y1, Z0}, Xcenter, r) && isInside({X0, Y1, Z0}, Xcenter, r) && isInside({X0, Y0, Z1}, Xcenter, r) && isInside({X1, Y0, Z1}, Xcenter, r) && isInside({X0, Y1, Z1}, Xcenter, r) && isInside({X1, Y1, Z1}, Xcenter, r));
 };
-bool InsideQ(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
+inline bool InsideQ(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
   auto [X0, X1] = std::get<0>(bounds);
   auto [Y0, Y1] = std::get<1>(bounds);
   auto [Z0, Z1] = std::get<2>(bounds);
@@ -351,7 +351,7 @@ bool InsideQ(const Tddd &Xcenter, const double &r, const T3Tdd &bounds) {
 
 /* -------------------------------------------------------------------------- */
 
-Tddd grad_CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
+inline Tddd grad_CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
   auto grad = [](const Tddd &a, const Tddd &b) { return (a - b) / Norm(a - b); };
   const double ab = Norm(a - b);
   const double bc = Norm(b - c);
@@ -371,7 +371,7 @@ Tddd grad_CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
   return 2. * (grad_numerator_a * denominator - numerator * grad_denominator_a) / std::pow(denominator, 2);
 };
 
-double differenceFromEquilateralTriangle(const Tddd &a, const Tddd &b, const Tddd &c) {
+inline double differenceFromEquilateralTriangle(const Tddd &a, const Tddd &b, const Tddd &c) {
   auto weight = [&](const Tddd &a, const Tddd &b, const Tddd &c) -> double {
     Tddd Xmid = (c + b) * 0.5;
     double height = Norm(c - b) * std::sqrt(3.) * 0.5;
@@ -382,7 +382,7 @@ double differenceFromEquilateralTriangle(const Tddd &a, const Tddd &b, const Tdd
 };
 
 // 四面体の R/r を計算
-double CircumradiusToInradius(const std::array<double, 3> &A, const std::array<double, 3> &B, const std::array<double, 3> &C, const std::array<double, 3> &D) {
+inline double CircumradiusToInradius(const std::array<double, 3> &A, const std::array<double, 3> &B, const std::array<double, 3> &C, const std::array<double, 3> &D) {
   // 体積と表面積
   double V = TetVolume(A, B, C, D);
   double S = TriangleArea(B, C, D) + TriangleArea(A, C, D) + TriangleArea(A, B, D) + TriangleArea(A, B, C);
@@ -409,7 +409,7 @@ double CircumradiusToInradius(const std::array<double, 3> &A, const std::array<d
 }
 
 // triangle distorsion measure
-double CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
+inline double CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
   const double ab = Norm(a - b);
   const double bc = Norm(b - c);
   const double ca = Norm(c - a);
@@ -434,12 +434,12 @@ double CircumradiusToInradius(const Tddd &a, const Tddd &b, const Tddd &c) {
   // return ((Norm(X0 - X) + Norm(X1 - X) + Norm(X2 - X))) * (Norm(X1) + Norm(X2) + Norm(X1 - X2)) / (3. * Norm(X1) * l2);
 };
 
-double CircumradiusToInradius(const T3Tddd &X012) {
+inline double CircumradiusToInradius(const T3Tddd &X012) {
   // return Circumradius(X012) / Inradius(X012);
   return CircumradiusToInradius(std::get<0>(X012), std::get<1>(X012), std::get<2>(X012));
 };
 
-double log10_CircumradiusToInradius(Tddd X0, Tddd X1, Tddd X2) { return std::log10(Circumradius(X0, X1, X2)) - std::log10(Inradius(X0, X1, X2)); };
+inline double log10_CircumradiusToInradius(Tddd X0, Tddd X1, Tddd X2) { return std::log10(Circumradius(X0, X1, X2)) - std::log10(Inradius(X0, X1, X2)); };
 
 /* -------------------------------------------------------------------------- */
 /*
@@ -448,7 +448,7 @@ Differential-Geometry Operators for Triangulated 2-Manifolds BT  - Visualization
 and Mathematics III,” Vis. Math. III, pp. 35–57, 2003.
 */
 
-Tddd ToSphericalCoodrinates(const Tddd &xyz) {
+inline Tddd ToSphericalCoodrinates(const Tddd &xyz) {
   double r = Norm(xyz);
   return {r, std::atan(std::get<2>(xyz) / r), std::atan2(std::get<1>(xyz), std::get<0>(xyz))};
 };
@@ -468,7 +468,7 @@ template <typename T> struct Edge {
 
 /* -------------------------------------------------------------------------- */
 
-T3Tdd Distance(const T3Tdd &b, const Tddd &a) {
+inline T3Tdd Distance(const T3Tdd &b, const Tddd &a) {
   auto [mmX, mmY, mmZ] = b;
   T3Tdd ret = b;
   //
@@ -847,7 +847,7 @@ struct CoordinateBounds {
     return {CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Y0, Yc}}, Tdd{{Z0, Zc}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Y0, Yc}}, Tdd{{Z0, Zc}}), CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Yc, Y1}}, Tdd{{Z0, Zc}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Yc, Y1}}, Tdd{{Z0, Zc}}),
             CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Y0, Yc}}, Tdd{{Zc, Z1}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Y0, Yc}}, Tdd{{Zc, Z1}}), CoordinateBounds(Tdd{{X0, Xc}}, Tdd{{Yc, Y1}}, Tdd{{Zc, Z1}}), CoordinateBounds(Tdd{{Xc, X1}}, Tdd{{Yc, Y1}}, Tdd{{Zc, Z1}})};
   };
-  bool InsideQ(const Tddd &X) const {
+  inline bool InsideQ(const Tddd &X) const {
     if ((std::get<0>(X) < std::get<0>(std::get<0>(this->bounds)) || std::get<1>(std::get<0>(this->bounds)) < std::get<0>(X)) || (std::get<1>(X) < std::get<0>(std::get<1>(this->bounds)) || std::get<1>(std::get<1>(this->bounds)) < std::get<1>(X)) || (std::get<2>(X) < std::get<0>(std::get<2>(this->bounds)) || std::get<1>(std::get<2>(this->bounds)) < std::get<2>(X)))
       return false;
     else
@@ -856,7 +856,7 @@ struct CoordinateBounds {
 };
 /* -------------------------------------------------------------------------- */
 
-bool InsideQ(const Tddd &X, const T3Tdd &bounds) {
+inline bool InsideQ(const Tddd &X, const T3Tdd &bounds) {
   // point v.s. cube
   CoordinateBounds b(bounds);
   return b.InsideQ(X);
@@ -867,9 +867,9 @@ struct Sphere : public CoordinateBounds {
   Sphere(const Tddd &XIN, const double radiusIN = 0.) : CoordinateBounds(T3Tdd{{{(std::get<0>(XIN) - radiusIN), (std::get<0>(XIN) + radiusIN)}, {(std::get<1>(XIN) - radiusIN), (std::get<1>(XIN) + radiusIN)}, {(std::get<2>(XIN) - radiusIN), (std::get<2>(XIN) + radiusIN)}}}), center(XIN), radius(radiusIN) {};
 };
 
-Sphere InSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) { return Sphere(Incenter(p0, p1, p2, p3), Inradius(p0, p1, p2, p3)); };
+inline Sphere InSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) { return Sphere(Incenter(p0, p1, p2, p3), Inradius(p0, p1, p2, p3)); };
 
-Sphere CircumSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) { return Sphere(Circumcenter(p0, p1, p2, p3), Circumradius(p0, p1, p2, p3)); };
+inline Sphere CircumSphere(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &p3) { return Sphere(Circumcenter(p0, p1, p2, p3), Circumradius(p0, p1, p2, p3)); };
 
 struct Triangle : public CoordinateBounds {
   std::array<std::array<double, 3>, 3> vertices;
@@ -946,7 +946,7 @@ struct Tetrahedron : public CoordinateBounds {
 
   Tetrahedron scaled(const auto &s = 0.9) { return Tetrahedron({(std::get<0>(this->vertices) - centroid) * s + centroid, (std::get<1>(this->vertices) - centroid) * s + centroid, (std::get<2>(this->vertices) - centroid) * s + centroid, (std::get<3>(this->vertices) - centroid) * s + centroid}); };
 
-  bool InsideQ(const std::array<double, 3> &X) const {
+  inline bool InsideQ(const std::array<double, 3> &X) const {
     if (CoordinateBounds::InsideQ(X)) {
       const auto [x, y, z] = X;
       const auto [X0, X1, X2, X3] = this->vertices;
@@ -1002,7 +1002,7 @@ struct Ellipsoid : public CoordinateBounds {
   Ellipsoid(const double aIN, const double bIN, const double cIN, const Tddd &centerIN = {0., 0., 0.}, const Quaternion &QIN = Quaternion()) { this->setProperties(aIN, bIN, cIN, centerIN, QIN); }
 
   // Method to check if a point is inside the ellipsoid
-  bool InsideQ(const Tddd &point) const {
+  inline bool InsideQ(const Tddd &point) const {
     const auto [x, y, z] = Dot(point - center, Q.Rv());
     return (std::pow(x / this->a, 2) + std::pow(y / this->b, 2) + std::pow(z / this->c, 2)) <= 1.0;
   }
@@ -1030,8 +1030,8 @@ struct Ellipsoid : public CoordinateBounds {
 };
 
 /* -------------------------------------------------------------------------- */
-std::ostream &operator<<(std::ostream &stream, const CoordinateBounds &bounds) { return (stream << bounds.bounds); };
-CoordinateBounds operator+(const CoordinateBounds &b0, const CoordinateBounds &b1) {
+inline std::ostream &operator<<(std::ostream &stream, const CoordinateBounds &bounds) { return (stream << bounds.bounds); };
+inline CoordinateBounds operator+(const CoordinateBounds &b0, const CoordinateBounds &b1) {
   auto [minX0, maxX0] = std::get<0>(b0.bounds);
   auto [minX1, maxX1] = std::get<0>(b1.bounds);
   auto [minY0, maxY0] = std::get<1>(b0.bounds);
@@ -1042,7 +1042,7 @@ CoordinateBounds operator+(const CoordinateBounds &b0, const CoordinateBounds &b
   return CoordinateBounds(std::min(minX0, minX1), std::max(maxX0, maxX1), std::min(minY0, minY1), std::max(maxY0, maxY1), std::min(minZ0, minZ1), std::max(maxZ0, maxZ1));
 };
 
-CoordinateBounds &operator+=(CoordinateBounds &b0, const CoordinateBounds &b1) {
+inline CoordinateBounds &operator+=(CoordinateBounds &b0, const CoordinateBounds &b1) {
   auto [minX0, maxX0] = std::get<0>(b0.bounds);
   auto [minX1, maxX1] = std::get<0>(b1.bounds);
   auto [minY0, maxY0] = std::get<1>(b0.bounds);
@@ -1455,29 +1455,86 @@ struct IntersectionSphereTriangleLimitedToNormalRegion {
   };
 };
 
-std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
-  /*
-  a * t + b * (1-t)
-  ---------------------------
-  ( a*t+b*(1-t) - X ).(a-b) = 0
-  ( (a-b)*t + (b - X) ).(a-b) = 0
-  t = (X-b).(a-b)/(a-b).(a-b)
-  */
-  // const auto a_b = std::get<0>(ab) - std::get<1>(ab);
-  // const auto t = std::clamp(Dot(X - std::get<1>(ab), a_b) / Dot(a_b, a_b), 0.0, 1.0);
-  // return {t, std::get<0>(ab) * t + std::get<1>(ab) * (1. - t)};
+// inline std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
+//   /*
+//   a * t + b * (1-t)
+//   ---------------------------
+//   ( a*t+b*(1-t) - X ).(a-b) = 0
+//   ( (a-b)*t + (b - X) ).(a-b) = 0
+//   t = (X-b).(a-b)/(a-b).(a-b)
+//   */
+//   // const auto a_b = std::get<0>(ab) - std::get<1>(ab);
+//   // const auto t = std::clamp(Dot(X - std::get<1>(ab), a_b) / Dot(a_b, a_b), 0.0, 1.0);
+//   // return {t, std::get<0>(ab) * t + std::get<1>(ab) * (1. - t)};
 
+//   const auto &a = std::get<0>(ab);
+//   const auto &b = std::get<1>(ab);
+//   const auto a_b = a - b;
+//   const auto dot_a_b = Dot(a_b, a_b);
+//   if (dot_a_b == 1e-30)
+//     return {0.5, 0.5 * (a + b)};
+//   const auto t = std::clamp(Dot(X - b, a_b) / dot_a_b, 0.0, 1.0);
+//   return {t, a * t + b * (1.0 - t)};
+// };
+
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <tuple>
+
+inline double AbsMax3(const Tddd &v) { return std::max({std::abs(v[0]), std::abs(v[1]), std::abs(v[2])}); }
+
+inline std::tuple<double, Tddd> Nearest_(const Tddd &X, const T2Tddd &ab) {
   const auto &a = std::get<0>(ab);
   const auto &b = std::get<1>(ab);
-  const auto a_b = a - b;
-  const auto dot_a_b = Dot(a_b, a_b);
-  if (dot_a_b == 1e-30)
-    return {0.5, 0.5 * (a + b)};
-  const auto t = std::clamp(Dot(X - b, a_b) / dot_a_b, 0.0, 1.0);
-  return {t, a * t + b * (1.0 - t)};
-};
 
-Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
+  const Tddd d = a - b; // b -> a
+  const Tddd xb = X - b;
+
+  // --- 入力が非有限なら壊れない返しにする（必要なら assert に変更） ---
+  const double sa = AbsMax3(a), sb = AbsMax3(b), sx = AbsMax3(X);
+  if (!std::isfinite(sa) || !std::isfinite(sb) || !std::isfinite(sx)) {
+    return {0.5, (a + b) * 0.5};
+  }
+
+  // --- スケールに応じた縮退判定（相対閾値） ---
+  // 代表スケール：座標の大きさ（最低 1.0）
+  const double S = std::max({sa, sb, 1.0});
+  // 線分長の閾値：係数は「安全側」(用途で調整)
+  const double tol = 64.0 * std::numeric_limits<double>::epsilon() * S;
+
+  const double sd = AbsMax3(d);
+  if (!(sd > tol)) { // sd==0 も tol 未満もまとめて縮退扱い
+    return {0.5, (a + b) * 0.5};
+  }
+
+  // --- スケーリングで overflow/underflow 回避 ---
+  // d = sd * dn,  |dn|_inf = 1
+  const double inv_sd = 1.0 / sd;
+  const Tddd dn = d * inv_sd;
+
+  const double den = Dot(dn, dn); // ~ O(1)（最大でも 3 程度）
+  const double num = Dot(xb, dn);
+
+  if (!(den > 0.0) || !std::isfinite(num) || !std::isfinite(den)) {
+    return {0.5, (a + b) * 0.5};
+  }
+
+  double t = num / (sd * den);
+  if (!std::isfinite(t)) {
+    return {0.5, (a + b) * 0.5};
+  }
+
+  // --- watertight のため端点は厳密に返す ---
+  if (t <= 0.0)
+    return {0.0, b};
+  if (t >= 1.0)
+    return {1.0, a};
+
+  return {t, b + d * t};
+}
+
+inline Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
   const auto [a, b] = ab;
   const auto [A, B] = AB;
   const auto a_b = a - b;
@@ -1517,8 +1574,8 @@ Tdd Nearest_(const T2Tddd &ab, const T2Tddd &AB) {
   else
     return {t3, 0.};
 };
-Tddd Nearest(const Tddd &X, const T2Tddd &ab) { return std::get<1>(Nearest_(X, ab)); };
-std::tuple<double, double, Tddd> NearestXOnPlane_(const Tddd &X, const T3Tddd &abc) {
+inline Tddd Nearest(const Tddd &X, const T2Tddd &ab) { return std::get<1>(Nearest_(X, ab)); };
+inline std::tuple<double, double, Tddd> NearestXOnPlane_(const Tddd &X, const T3Tddd &abc) {
   // アンダースコアがついているものはパラメタも返す
   const auto [a, b, c] = abc;
   // use SolveLinearSystem
@@ -1534,163 +1591,252 @@ std::tuple<double, double, Tddd> NearestXOnPlane_(const Tddd &X, const T3Tddd &a
   const auto [t0, t1, alpah] = ans;
   return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
 };
-Tddd NearestXOnPlane(const Tddd &X, const T3Tddd &abc) {
+inline Tddd NearestXOnPlane(const Tddd &X, const T3Tddd &abc) {
   // アンダースコアがついているものはパラメタも返す
   return std::get<2>(NearestXOnPlane_(X, abc));
 };
 
 // \label{Nearest_}
-std::tuple<double, double, Tddd /*to nearest*/, Tddd /*normal vec*/> Nearest_(const Tddd &X, const T3Tddd &abc) {
-  /* ----------------------------------- 修正前 ---------------------------------- */
-  // double T0, T1;
-  // const auto [t0, t1, XOnPlane] = NearestXOnPlane_(X, abc);
-  // //! a*t0 + b*t1 + c*(1-t0-t1)
-  // const auto is_inside_of_triangle_cylinder = Between(t0, array_0_1) && Between(t1, array_0_1) && Between(t0 + t1, array_0_1);
-  // const auto [a, b, c] = abc;
-  // auto [u, X0] = Nearest_(X, T2Tddd{a, b});
-  // //! a*u + b*(1-u)
-  // Tddd ret;
-  // if (is_inside_of_triangle_cylinder && (NormSquared(XOnPlane - X) < NormSquared(X0 - X))) {
-  //    ret = XOnPlane;
-  //    T0 = t0;
-  //    T1 = t1;
-  //    return {T0, T1, ret};
-  // } else {
-  //    ret = X0;
-  //    T0 = u;
-  //    T1 = 1 - u;  //! a*u + b*(1-u) + c * 0
-  // }
-  // auto [v, X1] = Nearest_(X, T2Tddd{b, c});
-  // //! b*v + c*(1-v)
-  // if (NormSquared(ret - X) > NormSquared(X1 - X)) {
-  //    ret = X1;
-  //    T0 = 0;
-  //    T1 = v;  //! a*0 + b*v + c * (1-v)
-  // }
-  // auto [w, X2] = Nearest_(X, T2Tddd{c, a});
-  // //! c*w + a*(1-w)
-  // if (NormSquared(ret - X) > NormSquared(X2 - X)) {
-  //    ret = X2;
-  //    T0 = 1 - w;
-  //    T1 = 0;  //! a*(1-w) + b*0 + c * w
-  // }
-  // return {T0, T1, ret};
+// inline std::tuple<double, double, Tddd /*to nearest*/, Tddd /*normal vec*/> Nearest_(const Tddd &X, const T3Tddd &abc) {
+//   /* ----------------------------------- 修正前 ---------------------------------- */
+//   // double T0, T1;
+//   // const auto [t0, t1, XOnPlane] = NearestXOnPlane_(X, abc);
+//   // //! a*t0 + b*t1 + c*(1-t0-t1)
+//   // const auto is_inside_of_triangle_cylinder = Between(t0, array_0_1) && Between(t1, array_0_1) && Between(t0 + t1, array_0_1);
+//   // const auto [a, b, c] = abc;
+//   // auto [u, X0] = Nearest_(X, T2Tddd{a, b});
+//   // //! a*u + b*(1-u)
+//   // Tddd ret;
+//   // if (is_inside_of_triangle_cylinder && (NormSquared(XOnPlane - X) < NormSquared(X0 - X))) {
+//   //    ret = XOnPlane;
+//   //    T0 = t0;
+//   //    T1 = t1;
+//   //    return {T0, T1, ret};
+//   // } else {
+//   //    ret = X0;
+//   //    T0 = u;
+//   //    T1 = 1 - u;  //! a*u + b*(1-u) + c * 0
+//   // }
+//   // auto [v, X1] = Nearest_(X, T2Tddd{b, c});
+//   // //! b*v + c*(1-v)
+//   // if (NormSquared(ret - X) > NormSquared(X1 - X)) {
+//   //    ret = X1;
+//   //    T0 = 0;
+//   //    T1 = v;  //! a*0 + b*v + c * (1-v)
+//   // }
+//   // auto [w, X2] = Nearest_(X, T2Tddd{c, a});
+//   // //! c*w + a*(1-w)
+//   // if (NormSquared(ret - X) > NormSquared(X2 - X)) {
+//   //    ret = X2;
+//   //    T0 = 1 - w;
+//   //    T1 = 0;  //! a*(1-w) + b*0 + c * w
+//   // }
+//   // return {T0, T1, ret};
 
-  /* ----------------------------------- 修正その２ ---------------------------------- */
-  /*
-  ２次元に置き換える方法
-  */
+//   /* ----------------------------------- 修正その２ ---------------------------------- */
+//   /*
+//   ２次元に置き換える方法
+//   */
 
+//   const auto [a, b, c] = abc;
+//   const auto X_a = X - a;
+//   const auto b_a = b - a;
+//   const auto c_a = c - a;
+//   const auto x = Normalize(b_a);
+//   const auto z = Normalize(Cross(b_a, c_a));
+//   const auto y = Cross(z, x);
+//   const double Xx = Dot(X_a, x);
+//   const double Xy = Dot(X_a, y);
+//   const double Bx = Dot(b_a, x);
+//   const double By = Dot(b_a, y);
+//   const double Cx = Dot(c_a, x);
+//   const double Cy = Dot(c_a, y);
+//   //   const double den = By * Cx - Bx * Cy;
+//   //   const double t0 = (By * Cx - Bx * Cy + (-By + Cy) * Xx + (Bx - Cx) * Xy) / den;
+//   //   const double t1 = -(Cy * Xx - Cx * Xy) / den;
+//   const double den = std::fma(By, Cx, -Bx * Cy);
+//   const double t0 = std::fma(By, Cx, std::fma(-Bx, Cy, std::fma(-By + Cy, Xx, (Bx - Cx) * Xy))) / den;
+//   const double t1 = -std::fma(Cy, Xx, -Cx * Xy) / den;
+
+//   if (0 >= t0 && 0 >= t1)
+//     return {0., 0., c, z};
+//   else if (0 >= t0 && 1 <= t1)
+//     return {0., 1., b, z};
+//   else if (1 <= t0 && 0 >= t1)
+//     return {1., 0., a, z};
+//   else if (0 <= t0 && t0 <= 1. && 0 <= t1 && t1 <= 1. - t0)
+//     return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1), z};
+//   else if (0 >= t0) {
+//     auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
+//     return {0., t1, closestX, z};
+//   } else if (0 >= t1) {
+//     auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
+//     return {t0, 0., closestX, z};
+//   } else {
+//     auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
+//     return {t, 1. - t, closestX, z};
+//   }
+
+//   /* ----------------------------------- 修正後 ---------------------------------- */
+
+//   /*
+//         t1
+//         A
+//         |      |        t1>= 1
+//      -- b -----+------  t1 = 1
+//         | \    |
+//         |   \  |
+//         |     \|
+//      -- c ---- a -----  t1 = 0
+//         |      |        t1<=0
+//   t0<=0 |      | 1<=t0
+//       t0=0    t0=1
+//   */
+
+//   //! パラメタをチェックして，三角柱にあるかどうかをチェックせずとも，最近点を求めることができる．
+//   // auto [a, b, c] = abc;
+//   // double t0, t1, alpah;
+//   // const double eps = 1E-5;
+//   // if (std::abs(a[2] - b[2]) < eps && std::abs(c[2] - b[2]) < eps) {
+//   //    // alpha = a[2];
+//   //    Tdd ans;
+//   //    lapack_svd_solve(ans, T2Tdd{Tdd{a[0] - c[0], a[1] - c[1]}, Tdd{b[0] - c[0], b[1] - c[1]}}, Tdd{X[0] - c[0], X[1] - c[1]});
+//   //    t0 = ans[0];
+//   //    t1 = ans[1];
+//   // } else {
+//   //    Tddd ans;
+//   //    // lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+//   //    lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+//   //    t0 = ans[0];
+//   //    t1 = ans[1];
+//   //    alpah = ans[2];
+//   // }
+//   // // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
+//   // if (0 >= t0 && 0 >= t1)
+//   //    return {0., 0., c};
+//   // else if (0 >= t0 && 1 <= t1)
+//   //    return {0., 1., b};
+//   // else if (1 <= t0 && 0 >= t1)
+//   //    return {1., 0., a};
+//   // else if (0 <= t0 && t0 <= 1. && 0 <= t1 && t1 <= 1. - t0)
+//   //    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
+//   // else if (0 >= t0) {
+//   //    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
+//   //    return {0., t1, closestX};
+//   // } else if (0 >= t1) {
+//   //    auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
+//   //    return {t0, 0., closestX};
+//   // } else {
+//   //    auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
+//   //    return {t, 1. - t, closestX};
+//   // }
+
+//   // if (0 >= t0) {
+//   //    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
+//   //    return {0., t1, closestX};
+//   // } else if (0 >= t1) {
+//   //    auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
+//   //    return {t0, 0., closestX};
+//   // } else if (t0 <= 1. && t1 <= 1. && t0 + t1 <= 1.) {
+//   //    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
+//   // } else {
+//   //    auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
+//   //    return {t, 1. - t, closestX};
+//   // }
+// };
+
+// ...existing code...
+// \label{Nearest_}
+inline std::tuple<double, double, Tddd /*to nearest*/, Tddd /*normal vec*/> Nearest_(const Tddd &X, const T3Tddd &abc) {
   const auto [a, b, c] = abc;
-  const auto X_a = X - a;
-  const auto b_a = b - a;
-  const auto c_a = c - a;
-  const auto x = Normalize(b_a);
-  const auto z = Normalize(Cross(b_a, c_a));
-  const auto y = Cross(z, x);
-  const double Xx = Dot(X_a, x);
-  const double Xy = Dot(X_a, y);
-  const double Bx = Dot(b_a, x);
-  const double By = Dot(b_a, y);
-  const double Cx = Dot(c_a, x);
-  const double Cy = Dot(c_a, y);
-  //   const double den = By * Cx - Bx * Cy;
-  //   const double t0 = (By * Cx - Bx * Cy + (-By + Cy) * Xx + (Bx - Cx) * Xy) / den;
-  //   const double t1 = -(Cy * Xx - Cx * Xy) / den;
-  const double den = std::fma(By, Cx, -Bx * Cy);
-  const double t0 = std::fma(By, Cx, std::fma(-Bx, Cy, std::fma(-By + Cy, Xx, (Bx - Cx) * Xy))) / den;
-  const double t1 = -std::fma(Cy, Xx, -Cx * Xy) / den;
 
-  if (0 >= t0 && 0 >= t1)
-    return {0., 0., c, z};
-  else if (0 >= t0 && 1 <= t1)
-    return {0., 1., b, z};
-  else if (1 <= t0 && 0 >= t1)
-    return {1., 0., a, z};
-  else if (0 <= t0 && t0 <= 1. && 0 <= t1 && t1 <= 1. - t0)
-    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1), z};
-  else if (0 >= t0) {
-    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
-    return {0., t1, closestX, z};
-  } else if (0 >= t1) {
-    auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
-    return {t0, 0., closestX, z};
-  } else {
-    auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
-    return {t, 1. - t, closestX, z};
+  // 1. エッジベクトルと法線の計算
+  const auto edge1 = b - a;
+  const auto edge2 = c - a;
+  const auto normal = Cross(edge1, edge2);
+  const double det = Dot(normal, normal); // det = |normal|^2
+
+  // 縮退三角形（面積がほぼ0）の対策
+  if (det < 1.0e-20) {
+    // 3辺（線分）との距離を比較して最も近いものを返す
+    auto [ta, Pa] = Nearest_(X, T2Tddd{a, b}); // ta is weight for a
+    auto [tb, Pb] = Nearest_(X, T2Tddd{b, c}); // tb is weight for b
+    auto [tc, Pc] = Nearest_(X, T2Tddd{c, a}); // tc is weight for c
+    double da = NormSquared(X - Pa);
+    double db = NormSquared(X - Pb);
+    double dc = NormSquared(X - Pc);
+
+    if (da <= db && da <= dc)
+      return {ta, 1.0 - ta, Pa, {0., 0., 0.}};
+    if (db <= dc)
+      return {0.0, tb, Pb, {0., 0., 0.}};
+    return {1.0 - tc, 0.0, Pc, {0., 0., 0.}};
   }
 
-  /* ----------------------------------- 修正後 ---------------------------------- */
+  const auto unitNormal = normal * (1.0 / std::sqrt(det));
 
-  /*
-        t1
-        A
-        |      |        t1>= 1
-     -- b -----+------  t1 = 1
-        | \    |
-        |   \  |
-        |     \|
-     -- c ---- a -----  t1 = 0
-        |      |        t1<=0
-  t0<=0 |      | 1<=t0
-      t0=0    t0=1
-  */
+  // 2. 点Xを三角形を含む平面に投影 (Xproj)
+  const auto diff = X - a;
+  const double distToPlane = Dot(diff, unitNormal);
+  const auto Xproj = X - distToPlane * unitNormal;
 
-  //! パラメタをチェックして，三角柱にあるかどうかをチェックせずとも，最近点を求めることができる．
-  // auto [a, b, c] = abc;
-  // double t0, t1, alpah;
-  // const double eps = 1E-5;
-  // if (std::abs(a[2] - b[2]) < eps && std::abs(c[2] - b[2]) < eps) {
-  //    // alpha = a[2];
-  //    Tdd ans;
-  //    lapack_svd_solve(ans, T2Tdd{Tdd{a[0] - c[0], a[1] - c[1]}, Tdd{b[0] - c[0], b[1] - c[1]}}, Tdd{X[0] - c[0], X[1] - c[1]});
-  //    t0 = ans[0];
-  //    t1 = ans[1];
-  // } else {
-  //    Tddd ans;
-  //    // lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
-  //    lapack_svd_solve(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
-  //    t0 = ans[0];
-  //    t1 = ans[1];
-  //    alpah = ans[2];
-  // }
-  // // lapack_lu(ans, T3Tddd{a - c, b - c, Cross(a - c, b - c)}, X - c);
-  // if (0 >= t0 && 0 >= t1)
-  //    return {0., 0., c};
-  // else if (0 >= t0 && 1 <= t1)
-  //    return {0., 1., b};
-  // else if (1 <= t0 && 0 >= t1)
-  //    return {1., 0., a};
-  // else if (0 <= t0 && t0 <= 1. && 0 <= t1 && t1 <= 1. - t0)
-  //    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
-  // else if (0 >= t0) {
-  //    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
-  //    return {0., t1, closestX};
-  // } else if (0 >= t1) {
-  //    auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
-  //    return {t0, 0., closestX};
-  // } else {
-  //    auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
-  //    return {t, 1. - t, closestX};
-  // }
+  // 3. 平面上の点 Xproj の重心座標 (u, v, w) を計算
+  // P = a + u * edge1 + v * edge2  =>  P = (1-u-v)*a + u*b + v*c
+  // 連立方程式:
+  //   (edge1.edge1) * u + (edge1.edge2) * v = (Xproj-a).edge1
+  //   (edge1.edge2) * u + (edge2.edge2) * v = (Xproj-a).edge2
+  // ここで (Xproj-a).edge = (diff - dist*N).edge = diff.edge (Nとedgeは直交)
 
-  // if (0 >= t0) {
-  //    auto [t1, closestX] = Nearest_(X, T2Tddd{b, c});
-  //    return {0., t1, closestX};
-  // } else if (0 >= t1) {
-  //    auto [t0, closestX] = Nearest_(X, T2Tddd{a, c});
-  //    return {t0, 0., closestX};
-  // } else if (t0 <= 1. && t1 <= 1. && t0 + t1 <= 1.) {
-  //    return {t0, t1, a * t0 + b * t1 + c * (1. - t0 - t1)};
-  // } else {
-  //    auto [t, closestX] = Nearest_(X, T2Tddd{a, b});
-  //    return {t, 1. - t, closestX};
-  // }
+  const double d00 = Dot(edge1, edge1);
+  const double d01 = Dot(edge1, edge2);
+  const double d11 = Dot(edge2, edge2);
+  const double b0 = Dot(diff, edge1);
+  const double b1 = Dot(diff, edge2);
+
+  // det = d00*d11 - d01*d01 と等価
+  const double u = (d11 * b0 - d01 * b1) / det;
+  const double v = (d00 * b1 - d01 * b0) / det;
+  const double w = 1.0 - u - v;
+
+  // 4. 内部判定: 重心座標がすべて正なら三角形の内部
+  if (u >= 0.0 && v >= 0.0 && w >= 0.0) {
+    // 戻り値: {weight_a, weight_b, Point, Normal}
+    // P = w*a + u*b + v*c
+    return {w, u, Xproj, unitNormal};
+  }
+
+  // 5. 外部判定: 3つの辺（線分）への最短距離を比較
+  // 領域判定ロジック（Voronoi Region）は複雑でバグを生みやすいため、
+  // 計算コストは僅かに増えるが、明示的に3辺を調べる方が圧倒的に堅牢。
+
+  // Segment AB: Nearest_ returns weight for first point (a)
+  auto [t_ab, P_ab] = Nearest_(X, T2Tddd{a, b});
+  // Segment BC: Nearest_ returns weight for first point (b)
+  auto [t_bc, P_bc] = Nearest_(X, T2Tddd{b, c});
+  // Segment CA: Nearest_ returns weight for first point (c)
+  auto [t_ca, P_ca] = Nearest_(X, T2Tddd{c, a});
+
+  double d_ab = NormSquared(X - P_ab);
+  double d_bc = NormSquared(X - P_bc);
+  double d_ca = NormSquared(X - P_ca);
+
+  if (d_ab <= d_bc && d_ab <= d_ca) {
+    return {t_ab, 1.0 - t_ab, P_ab, unitNormal};
+  } else if (d_bc <= d_ca) {
+    // P_bc = t_bc * b + (1-t_bc) * c
+    // weights: a=0, b=t_bc
+    return {0.0, t_bc, P_bc, unitNormal};
+  } else {
+    // P_ca = t_ca * c + (1-t_ca) * a
+    // weights: a=1-t_ca, b=0
+    return {1.0 - t_ca, 0.0, P_ca, unitNormal};
+  }
 };
+// ...existing code...
 
-Tddd Nearest(const Tddd &X, const T3Tddd &abc) { return std::get<2>(Nearest_(X, abc)); };
+inline Tddd Nearest(const Tddd &X, const T3Tddd &abc) { return std::get<2>(Nearest_(X, abc)); };
 
-Tddd Nearest(const Tddd &X, const std::vector<T3Tddd> &ABC) {
+inline Tddd Nearest(const Tddd &X, const std::vector<T3Tddd> &ABC) {
   double distance = 1E+20, tmp;
   Tddd near, ret;
   for (const auto &abc : ABC) {
@@ -1702,7 +1848,7 @@ Tddd Nearest(const Tddd &X, const std::vector<T3Tddd> &ABC) {
   return ret;
 };
 
-Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
+inline Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
   double distance = 1E+20, tmp;
   Tddd near, ret;
   CoordinateBounds B(minmax3);
@@ -1723,9 +1869,9 @@ Tddd Nearest(const Tddd &X, const T3Tdd &minmax3) {
   return ret;
 };
 
-Tddd Nearest(const Tddd &X, const Tddd &Y) { return Y; };
+inline Tddd Nearest(const Tddd &X, const Tddd &Y) { return Y; };
 
-T4d approximateNearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
+inline T4d approximateNearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
 
   auto t0t1_init = std::array<double, 2>{1 / 3., 1 / 3.};
 
@@ -1847,7 +1993,7 @@ T4d approximateNearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
 };
 
 //\label{Nearest(const T3Tddd &XYZ, const T3Tddd &ABC)}
-T2Tddd Nearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
+inline T2Tddd Nearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
   Tddd X0, X1, X0_near, X1_near;
   double nearest_distance = 1E+20, t0, t1, T0, T1, t0_min = 0, t0_max = 1, t1_min = 0, t1_max = 1, distance, w = 1;
   double nearest_t0, nearest_t1;
@@ -1985,7 +2131,7 @@ T2Tddd Nearest(const T3Tddd &XYZ, const T3Tddd &ABC) {
 
 // };
 
-double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
+inline double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
   auto [a, b] = line;
   auto [p0, p1, p2] = triangle;
   // オーダーが匹敵する物を選ぶ
@@ -2017,7 +2163,7 @@ double scalefactorToReach(const T2Tddd &line, const T3Tddd &triangle) {
 //             (std::get<1>(std::get<2>(b0)) < std::get<0>(std::get<2>(b1)) && std::get<1>(std::get<2>(b0)) < std::get<1>(std::get<2>(b1)) /*1のzの最大最小が，0のzの最大よりも大きい*/) /*これがtrueの場合，逆にhitなし*/);
 // };
 
-bool IntersectQ(const T3Tdd &b0, const T3Tdd &b1) {
+inline bool IntersectQ(const T3Tdd &b0, const T3Tdd &b1) {
   auto [x0min, x0max] = b0[0];
   auto [y0min, y0max] = b0[1];
   auto [z0min, z0max] = b0[2];
@@ -2035,21 +2181,21 @@ bool IntersectQ(const T3Tdd &b0, const T3Tdd &b1) {
 }
 
 //! cube - point
-bool IntersectQ(const Tddd &X, const T3Tdd &minmax3) { return !((std::get<0>(X) < std::get<0>(std::get<0>(minmax3)) || std::get<1>(std::get<0>(minmax3)) < std::get<0>(X)) || (std::get<1>(X) < std::get<0>(std::get<1>(minmax3)) || std::get<1>(std::get<1>(minmax3)) < std::get<1>(X)) || (std::get<2>(X) < std::get<0>(std::get<2>(minmax3)) || std::get<1>(std::get<2>(minmax3)) < std::get<2>(X))); };
-bool IntersectQ(const T3Tdd &minmax3, const Tddd &X) { return !((std::get<0>(X) < std::get<0>(std::get<0>(minmax3)) || std::get<1>(std::get<0>(minmax3)) < std::get<0>(X)) || (std::get<1>(X) < std::get<0>(std::get<1>(minmax3)) || std::get<1>(std::get<1>(minmax3)) < std::get<1>(X)) || (std::get<2>(X) < std::get<0>(std::get<2>(minmax3)) || std::get<1>(std::get<2>(minmax3)) < std::get<2>(X))); };
+inline bool IntersectQ(const Tddd &X, const T3Tdd &minmax3) { return !((std::get<0>(X) < std::get<0>(std::get<0>(minmax3)) || std::get<1>(std::get<0>(minmax3)) < std::get<0>(X)) || (std::get<1>(X) < std::get<0>(std::get<1>(minmax3)) || std::get<1>(std::get<1>(minmax3)) < std::get<1>(X)) || (std::get<2>(X) < std::get<0>(std::get<2>(minmax3)) || std::get<1>(std::get<2>(minmax3)) < std::get<2>(X))); };
+inline bool IntersectQ(const T3Tdd &minmax3, const Tddd &X) { return !((std::get<0>(X) < std::get<0>(std::get<0>(minmax3)) || std::get<1>(std::get<0>(minmax3)) < std::get<0>(X)) || (std::get<1>(X) < std::get<0>(std::get<1>(minmax3)) || std::get<1>(std::get<1>(minmax3)) < std::get<1>(X)) || (std::get<2>(X) < std::get<0>(std::get<2>(minmax3)) || std::get<1>(std::get<2>(minmax3)) < std::get<2>(X))); };
 //! sphere - point
-bool IntersectQ(const Tddd &center, const double &r, const Tddd &a) { return Norm(a - center) <= r; };
-bool IntersectQ(const Sphere &sp, const Tddd &a) { return Norm(a - sp.center) <= sp.radius; };
-bool IntersectQ(const Tddd &a, const Sphere &sp) { return Norm(a - sp.center) <= sp.radius; };
+inline bool IntersectQ(const Tddd &center, const double &r, const Tddd &a) { return Norm(a - center) <= r; };
+inline bool IntersectQ(const Sphere &sp, const Tddd &a) { return Norm(a - sp.center) <= sp.radius; };
+inline bool IntersectQ(const Tddd &a, const Sphere &sp) { return Norm(a - sp.center) <= sp.radius; };
 //! sphere - cube
-bool IntersectQ(const Tddd &X, const double &r, const T3Tdd &minmax3) { return IntersectQ(X, minmax3) || (r >= Norm(Nearest(X, minmax3) - X)); };
-bool IntersectQ(const Sphere &s, const T3Tdd &minmax3) { return IntersectQ(s.center, s.radius, minmax3); };
-bool IntersectQ(const T3Tdd &minmax3, const Sphere &s) { return IntersectQ(s.center, s.radius, minmax3); };
+inline bool IntersectQ(const Tddd &X, const double &r, const T3Tdd &minmax3) { return IntersectQ(X, minmax3) || (r >= Norm(Nearest(X, minmax3) - X)); };
+inline bool IntersectQ(const Sphere &s, const T3Tdd &minmax3) { return IntersectQ(s.center, s.radius, minmax3); };
+inline bool IntersectQ(const T3Tdd &minmax3, const Sphere &s) { return IntersectQ(s.center, s.radius, minmax3); };
 //! sphere - sphere
-bool IntersectQ(const Tddd &x0, const double r0, const Tddd &x1, const double r1) { return Norm(x0 - x1) <= (r0 + r1); };
-bool IntersectQ(const Sphere &s0, const Sphere &s1) { return Norm(s0.X - s1.X) >= (s0.radius + s1.radius); };
+inline bool IntersectQ(const Tddd &x0, const double r0, const Tddd &x1, const double r1) { return Norm(x0 - x1) <= (r0 + r1); };
+inline bool IntersectQ(const Sphere &s0, const Sphere &s1) { return Norm(s0.X - s1.X) >= (s0.radius + s1.radius); };
 //! sphere - line
-bool IntersectQ(const Tddd &center, const double radius, const T2Tddd &ab) {
+inline bool IntersectQ(const Tddd &center, const double radius, const T2Tddd &ab) {
   const auto a = std::get<0>(ab) - center;
   const auto b = std::get<1>(ab) - center;
   if (Norm(a) < radius || Norm(b) < radius)
@@ -2058,17 +2204,17 @@ bool IntersectQ(const Tddd &center, const double radius, const T2Tddd &ab) {
   const double t = Dot(-a, a2b) / Dot(a2b, a2b);
   return (0. <= t && t <= 1. && Norm(a + a2b * t) < radius);
 };
-bool IntersectQ(const Tddd &center, const double radius, const T6T2Tddd &ab) { return IntersectQ(center, radius, std::get<0>(ab)) || IntersectQ(center, radius, std::get<1>(ab)) || IntersectQ(center, radius, std::get<2>(ab)) || IntersectQ(center, radius, std::get<3>(ab)) || IntersectQ(center, radius, std::get<4>(ab)) || IntersectQ(center, radius, std::get<5>(ab)); };
+inline bool IntersectQ(const Tddd &center, const double radius, const T6T2Tddd &ab) { return IntersectQ(center, radius, std::get<0>(ab)) || IntersectQ(center, radius, std::get<1>(ab)) || IntersectQ(center, radius, std::get<2>(ab)) || IntersectQ(center, radius, std::get<3>(ab)) || IntersectQ(center, radius, std::get<4>(ab)) || IntersectQ(center, radius, std::get<5>(ab)); };
 
-bool IntersectQ(const Sphere &sp, const T6T2Tddd &ab) { return IntersectQ(sp.center, sp.radius, std::get<0>(ab)) || IntersectQ(sp.center, sp.radius, std::get<1>(ab)) || IntersectQ(sp.center, sp.radius, std::get<2>(ab)) || IntersectQ(sp.center, sp.radius, std::get<3>(ab)) || IntersectQ(sp.center, sp.radius, std::get<4>(ab)) || IntersectQ(sp.center, sp.radius, std::get<5>(ab)); };
+inline bool IntersectQ(const Sphere &sp, const T6T2Tddd &ab) { return IntersectQ(sp.center, sp.radius, std::get<0>(ab)) || IntersectQ(sp.center, sp.radius, std::get<1>(ab)) || IntersectQ(sp.center, sp.radius, std::get<2>(ab)) || IntersectQ(sp.center, sp.radius, std::get<3>(ab)) || IntersectQ(sp.center, sp.radius, std::get<4>(ab)) || IntersectQ(sp.center, sp.radius, std::get<5>(ab)); };
 
-bool IntersectQ(const Sphere &s, const T2Tddd &ab) { return IntersectQ(s.center, s.radius, ab); };
-bool IntersectQ(const T2Tddd &ab, const Sphere &sp) { return IntersectQ(sp, ab); };
+inline bool IntersectQ(const Sphere &s, const T2Tddd &ab) { return IntersectQ(s.center, s.radius, ab); };
+inline bool IntersectQ(const T2Tddd &ab, const Sphere &sp) { return IntersectQ(sp, ab); };
 //! sphere - triangle
-bool IntersectQ(const Tddd &X, const double r, const T3Tddd &abc) { return r >= Norm(Nearest(X, abc) - X); };
-bool IntersectQ(const Sphere &sp, const T3Tddd &abc) { return sp.radius > Norm(Nearest(sp.center, abc) - sp.center); };
+inline bool IntersectQ(const Tddd &X, const double r, const T3Tddd &abc) { return r >= Norm(Nearest(X, abc) - X); };
+inline bool IntersectQ(const Sphere &sp, const T3Tddd &abc) { return sp.radius > Norm(Nearest(sp.center, abc) - sp.center); };
 //! line - triangle
-std::tuple<bool, Tddd, Tddd> IntersectQ_(const T2Tddd &AB, const T3Tddd &abc) {
+inline std::tuple<bool, Tddd, Tddd> IntersectQ_(const T2Tddd &AB, const T3Tddd &abc) {
 
   if (IntersectQ(CoordinateBounds(AB).bounds, CoordinateBounds(abc).bounds)) {
     std::array<double, 3> x;
@@ -2117,7 +2263,7 @@ std::tuple<bool, Tddd, Tddd> IntersectQ_(const T2Tddd &AB, const T3Tddd &abc) {
   */
 };
 
-bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
+inline bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
   const auto [a, b, c] = abc;
   const auto [A, B] = AB;
   // const auto [t0, t1, T] = Dot(A - c, Inverse(T3Tddd{a - c, b - c, A - B}));
@@ -2129,9 +2275,9 @@ bool IntersectQ(const T2Tddd &AB, const T3Tddd &abc) {
   static const Tdd range = array_0_1;
   return Between(T, range) && Between(t0, range) && Between(t1, range) && Between(t0 + t1, range);
 };
-bool IntersectQ(const T3Tddd &abc, const T2Tddd &AB) { return IntersectQ(AB, abc); };
+inline bool IntersectQ(const T3Tddd &abc, const T2Tddd &AB) { return IntersectQ(AB, abc); };
 //! cube - line
-bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
+inline bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
   const auto [A, B] = AB;
   if (IntersectQ(minmax3, A) || IntersectQ(minmax3, B) || IntersectQ(minmax3, 0.5 * (A + B)))
     return true;
@@ -2196,10 +2342,10 @@ bool IntersectQ(const T3Tdd &minmax3, const T2Tddd &AB) {
   //! --------------------------------- */
   return Min(Tddd{std::get<1>(int0), std::get<1>(int1), std::get<1>(int2)}) >= Max(Tddd{std::get<0>(int0), std::get<0>(int1), std::get<0>(int2)});
 };
-bool IntersectQ(const T2Tddd &AB, const T3Tdd &minmax3) { return IntersectQ(minmax3, AB); };
+inline bool IntersectQ(const T2Tddd &AB, const T3Tdd &minmax3) { return IntersectQ(minmax3, AB); };
 
 //! cube - tringle
-bool IntersectQ(const T3Tdd &minmax3, const T3Tddd &abc) {
+inline bool IntersectQ(const T3Tdd &minmax3, const T3Tddd &abc) {
   // チェックの短縮化が必要
   CoordinateBounds boundTri(abc);
   if (IntersectQ(minmax3, boundTri.bounds)) {
@@ -2211,7 +2357,7 @@ bool IntersectQ(const T3Tdd &minmax3, const T3Tddd &abc) {
     return false;
 };
 
-Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
+inline Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
   auto [a, b, c] = abc;
   auto [A, B] = AB;
   // auto [t0, t1, T] = Dot(Inverse(Transpose(T3Tddd{a - c, b - c, A - B})), A - c);
@@ -2226,7 +2372,7 @@ Tddd XonTriangle(const T3Tddd &abc, const T2Tddd &AB) {
 };
 
 //! tetrahedron - point
-bool IntersectQ(const T4Tddd &abcd, Tddd X) {
+inline bool IntersectQ(const T4Tddd &abcd, Tddd X) {
   //@ barycentric coordinates
   //
   // | a0, b0, c0, d0 | | t0 |   | x |
@@ -2270,7 +2416,7 @@ bool IntersectQ(const T4Tddd &abcd, Tddd X) {
 }
 
 //! tetrahedron - sphere
-bool IntersectQ(const Tddd &center, const double r, const T4Tddd &abcd) {
+inline bool IntersectQ(const Tddd &center, const double r, const T4Tddd &abcd) {
   if (IntersectQ(abcd, center))
     return true;
   else {
@@ -2279,24 +2425,24 @@ bool IntersectQ(const Tddd &center, const double r, const T4Tddd &abcd) {
   }
 }
 
-bool IntersectQ(const Sphere &sp, const Tetrahedron &t) { return IntersectQ(sp.center, sp.radius, t.vertices); }
-bool IntersectQ(const Tetrahedron &t, const Sphere &sp) { return IntersectQ(sp.center, sp.radius, t.vertices); }
+inline bool IntersectQ(const Sphere &sp, const Tetrahedron &t) { return IntersectQ(sp.center, sp.radius, t.vertices); }
+inline bool IntersectQ(const Tetrahedron &t, const Sphere &sp) { return IntersectQ(sp.center, sp.radius, t.vertices); }
 
 //! tetrahedron - line
-bool IntersectQ(const T4Tddd &abcd, const T2Tddd &AB) {
+inline bool IntersectQ(const T4Tddd &abcd, const T2Tddd &AB) {
   auto [a, b, c, d] = abcd;
   auto [A, B] = AB;
   return IntersectQ(abcd, A) || IntersectQ(abcd, B) || IntersectQ(T3Tddd{{a, b, c}}, AB) || IntersectQ(T3Tddd{{a, b, d}}, AB) || IntersectQ(T3Tddd{{a, c, d}}, AB) || IntersectQ(T3Tddd{{b, c, d}}, AB);
 };
 
-bool IntersectQ(const Tetrahedron &Tet, const T2Tddd &AB) {
+inline bool IntersectQ(const Tetrahedron &Tet, const T2Tddd &AB) {
   if (IntersectQ(Tet.bounds, AB))
     return IntersectQ(Tet.vertices, AB);
   else
     return false;
 };
 
-bool IntersectQ(const Tetrahedron &Tet0, const Tetrahedron &Tet1) {
+inline bool IntersectQ(const Tetrahedron &Tet0, const Tetrahedron &Tet1) {
   if (IntersectQ(Tet0.bounds, Tet1.bounds)) {
     if (IntersectQ(Tet0.incenter, Tet0.inradius, Tet1.incenter, Tet1.inradius))
       return true;
@@ -2307,9 +2453,9 @@ bool IntersectQ(const Tetrahedron &Tet0, const Tetrahedron &Tet1) {
     return false;
 };
 
-bool IntersectQ(const T4Tddd &abcd, const T4Tddd &ABCD) { return IntersectQ(Tetrahedron(abcd), Tetrahedron(ABCD)); };
+inline bool IntersectQ(const T4Tddd &abcd, const T4Tddd &ABCD) { return IntersectQ(Tetrahedron(abcd), Tetrahedron(ABCD)); };
 
-Tddd t0_t1_alpha(const T3Tddd &p0p1p2, const Tddd &X) {
+inline Tddd t0_t1_alpha(const T3Tddd &p0p1p2, const Tddd &X) {
   //@ ３点の張る面　と　１点　の関係を調べる
   // a = (p0,p1,p2).(t0,t1,1-t0,t1)は，三角形が張る面上で，Xに最も近い点
   // この位置aから，alpha*nだけ移動した位置にXがある．n=(nx, ny, nz)は，三角形がつくる単位法線ベクトル
@@ -2321,19 +2467,15 @@ Tddd t0_t1_alpha(const T3Tddd &p0p1p2, const Tddd &X) {
 };
 
 /* -------------------------------------------------------------------------- */
-
-// bool ContactQ(
-
-/* -------------------------------------------------------------------------- */
 using V_d = std::vector<double>;
 using VV_d = std::vector<std::vector<double>>;
 using V_i = std::vector<int>;
 using VV_i = std::vector<std::vector<int>>;
 /* ------------------------------------------------------ */
 
-double normalDirDistanceFromTriangle(const T3Tddd &ps, const Tddd &a) { return Dot(TriangleNormal(ps), std::get<0>(ps) - a); };
+inline double normalDirDistanceFromTriangle(const T3Tddd &ps, const Tddd &a) { return Dot(TriangleNormal(ps), std::get<0>(ps) - a); };
 
-double factorOfVectorToReachTriangle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b) {
+inline double factorOfVectorToReachTriangle(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b) {
   // オーダーが匹敵する物を選ぶ
   double log_b_a = std::log10(Norm(b - a));
   double diff0 = std::abs(std::log10(Norm(p0 - a) - log_b_a));
@@ -2349,7 +2491,7 @@ double factorOfVectorToReachTriangle(const Tddd &p0, const Tddd &p1, const Tddd 
 };
 
 /* ------------------------------------------------------ */
-Tddd vectorToInfiniteLine(const Tddd &P, Tddd A, Tddd B) {
+inline Tddd vectorToInfiniteLine(const Tddd &P, Tddd A, Tddd B) {
   // Tddd BA = B - A, AP = A - P;
   // return AP - BA * Dot(AP, BA) / Dot(BA, BA);
   /* ------------------------------------------------------ */
@@ -2357,16 +2499,16 @@ Tddd vectorToInfiniteLine(const Tddd &P, Tddd A, Tddd B) {
   A -= P;
   return A - B * Dot(A, B) / Dot(B, B);
 };
-double distanceToInfiniteLine(const Tddd &P, const Tddd &A, const Tddd &B) { return Norm(vectorToInfiniteLine(P, A, B)); };
+inline double distanceToInfiniteLine(const Tddd &P, const Tddd &A, const Tddd &B) { return Norm(vectorToInfiniteLine(P, A, B)); };
 /* ------------------------------------------------------ */
-Tddd pOnSurfaceTuple(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b) {
+inline Tddd pOnSurfaceTuple(const Tddd &p0, const Tddd &p1, const Tddd &p2, const Tddd &a, const Tddd &b) {
   Tddd n = TriangleNormal(p0, p1, p2), b_a = b - a;
   return a + b_a * Dot(p0 - a, n) / Dot(b_a, n); // 分母が0の場合はあり得る
 }
-Tddd pOnSurfaceTuple(const T3Tddd &p0p1p2, const T2Tddd &ab) { return pOnSurfaceTuple(std::get<0>(p0p1p2), std::get<1>(p0p1p2), std::get<2>(p0p1p2), std::get<0>(ab), std::get<1>(ab)); }
+inline Tddd pOnSurfaceTuple(const T3Tddd &p0p1p2, const T2Tddd &ab) { return pOnSurfaceTuple(std::get<0>(p0p1p2), std::get<1>(p0p1p2), std::get<2>(p0p1p2), std::get<0>(ab), std::get<1>(ab)); }
 /* -------------------------------------------------------------------------- */
 
-bool isConvexPolygon(const std::vector<Tddd> &ps, const Tddd &n) {
+inline bool isConvexPolygon(const std::vector<Tddd> &ps, const Tddd &n) {
   auto s = ps.size();
   if (s < 3)
     return false;
@@ -2376,16 +2518,16 @@ bool isConvexPolygon(const std::vector<Tddd> &ps, const Tddd &n) {
   for (auto i = 0; i < s; ++i) {
     auto v0 = ps[i + 1] - ps[i];
     auto v1 = ps[i + 2] - ps[i + 1];
-    auto angle = Dot(Cross(v0, v1), n);
+    auto angle = CrossDot(v0, v1, n);
     if (angle <= 1E-13)
       return false; // 符号が変わったらfalse
   }
   return true;
 };
 
-bool isConcavePolygon(const std::vector<Tddd> &ps, const Tddd &n) { return !isConvexPolygon(ps, n); };
+inline bool isConcavePolygon(const std::vector<Tddd> &ps, const Tddd &n) { return !isConvexPolygon(ps, n); };
 
-bool isConvexPolygon(const std::vector<Tdd> &ps) {
+inline bool isConvexPolygon(const std::vector<Tdd> &ps) {
   std::vector<Tddd> Ps(ps.size());
   int i = 0;
   for (const auto &v : ps)
@@ -2393,9 +2535,9 @@ bool isConvexPolygon(const std::vector<Tdd> &ps) {
   return isConvexPolygon(Ps, Tddd{0., 0., 1});
 };
 
-bool isConcavePolygon(const std::vector<Tdd> &ps) { return !isConvexPolygon(ps); };
+inline bool isConcavePolygon(const std::vector<Tdd> &ps) { return !isConvexPolygon(ps); };
 
-bool isConcavePolygon(const std::vector<Tddd> &ps) {
+inline bool isConcavePolygon(const std::vector<Tddd> &ps) {
   auto s = ps.size();
   if (s < 3)
     return false;
@@ -2421,7 +2563,7 @@ bool isConcavePolygon(const std::vector<Tddd> &ps) {
 
 /* ------------------------------------------------------ */
 
-template <typename T> double windingNumber(const Tddd &X, const std::vector<std::array<T, 3>> &V_vertices) {
+template <typename T> inline double windingNumber(const Tddd &X, const std::vector<std::array<T, 3>> &V_vertices) {
   double ret = 0;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+ : ret)
@@ -2431,7 +2573,7 @@ template <typename T> double windingNumber(const Tddd &X, const std::vector<std:
   return ret / (4. * M_PI);
 };
 
-template <typename T> double windingNumber(const Tddd &X, const std::vector<T> &V_vertices) {
+template <typename T> inline double windingNumber(const Tddd &X, const std::vector<T> &V_vertices) {
   double ret = 0;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+ : ret)
@@ -2441,7 +2583,7 @@ template <typename T> double windingNumber(const Tddd &X, const std::vector<T> &
   return ret / (4. * M_PI);
 };
 
-template <> double windingNumber(const Tddd &X, const std::vector<T3Tddd> &V_vertices) {
+template <> inline double windingNumber(const Tddd &X, const std::vector<T3Tddd> &V_vertices) {
   double ret = 0;
 #ifdef _OPENMP
 #pragma omp parallel for reduction(+ : ret)
@@ -2451,7 +2593,7 @@ template <> double windingNumber(const Tddd &X, const std::vector<T3Tddd> &V_ver
   return ret / (4. * M_PI);
 };
 
-template <typename T> T8d windingNumber(const T8Tddd &Xs, const std::vector<T> &V_vertices) {
+template <typename T> inline T8d windingNumber(const T8Tddd &Xs, const std::vector<T> &V_vertices) {
   T8d ret = {0., 0., 0., 0., 0., 0., 0., 0.};
   // for (const auto &V : V_vertices)
   {
@@ -2468,18 +2610,18 @@ template <typename T> T8d windingNumber(const T8Tddd &Xs, const std::vector<T> &
   return ret / (4. * M_PI);
 };
 
-template <> T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
+template <> inline T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
   T8d ret = {0., 0., 0., 0., 0., 0., 0, 0.};
   for (const auto &V : V_vertices)
     for_each(ret, Xs, [&](auto &r, auto &X) { r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V); });
   // std::ranges::for_each(ret, Xs, [&](auto &r, const auto &X) { r += SolidAngle_VanOosteromAandStrackeeJ1983(X, V); });
   return ret / (4. * M_PI);
 };
-template <> T8d windingNumber(const T8Tddd &Xs, const std::vector<Tddd> &V_vertices) { return {0., 0., 0., 0., 0., 0., 0, 0.}; };
+template <> inline T8d windingNumber(const T8Tddd &Xs, const std::vector<Tddd> &V_vertices) { return {0., 0., 0., 0., 0., 0., 0, 0.}; };
 
-T8d windingNumber(const T8Tddd &Xs, const std::unordered_set<Tddd> &V_vertices) { return {0., 0., 0., 0., 0., 0., 0, 0.}; };
+inline T8d windingNumber(const T8Tddd &Xs, const std::unordered_set<Tddd> &V_vertices) { return {0., 0., 0., 0., 0., 0., 0, 0.}; };
 
-std::vector<double> windingNumber(const std::vector<Tddd> &Xs, const std::vector<T3Tddd> &V_vertices) {
+inline std::vector<double> windingNumber(const std::vector<Tddd> &Xs, const std::vector<T3Tddd> &V_vertices) {
   std::vector<double> ret(Xs.size(), 0.);
   for (auto i = 0; i < Xs.size(); ++i) {
     auto X = Xs[i];
@@ -2491,19 +2633,19 @@ std::vector<double> windingNumber(const std::vector<Tddd> &Xs, const std::vector
   return ret;
 };
 
-T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
+inline T8d windingNumber(const T8Tddd &Xs, const std::vector<T3Tddd> &V_vertices) {
   T8d ret = {0., 0., 0., 0., 0., 0., 0, 0.};
   for (const auto &vertices : V_vertices)
     for_each(ret, Xs, [&](auto &r, auto &X) { r += SolidAngle_VanOosteromAandStrackeeJ1983(X, vertices); });
   return ret / (4. * M_PI);
 };
 
-double windingNumber(const Tddd &X, const std::vector<Tddd> &V_vertices) { return 0.; };
+inline double windingNumber(const Tddd &X, const std::vector<Tddd> &V_vertices) { return 0.; };
 
 /* -------------------------------------------------------------------------- */
 
-bool InsideQ(const Tddd &X, const std::vector<T3Tddd> &V_vertices) { return (CoordinateBounds(V_vertices).InsideQ(X) && windingNumber(X, V_vertices) < 0.75); };
-bool InsideQ(const Tddd &X, const std::vector<Tddd> &V_vertices) { return !CoordinateBounds(V_vertices).InsideQ(X); };
+inline bool InsideQ(const Tddd &X, const std::vector<T3Tddd> &V_vertices) { return (CoordinateBounds(V_vertices).InsideQ(X) && windingNumber(X, V_vertices) < 0.75); };
+inline bool InsideQ(const Tddd &X, const std::vector<Tddd> &V_vertices) { return !CoordinateBounds(V_vertices).InsideQ(X); };
 // bool InsideQ(const CoordinateBounds &bounds, const geometry::Sphere &s) {
 //    // cube v.s. sphere
 //    // cube < sphere ?
@@ -2521,9 +2663,9 @@ bool InsideQ(const Tddd &X, const std::vector<Tddd> &V_vertices) { return !Coord
 // };
 /* ------------------------------------------------------ */
 
-Tddd ToX(const Tddd *X) { return *X; };
-Tddd ToX(const Tddd X) { return X; };
-T3Tddd ToX(const T3Tddd X) { return X; };
+inline Tddd ToX(const Tddd *X) { return *X; };
+inline Tddd ToX(const Tddd X) { return X; };
+inline T3Tddd ToX(const T3Tddd X) { return X; };
 
 // b% -------------------------------------------------------------------------- */
 // b%                                     八分木                                  */
@@ -2575,32 +2717,32 @@ template <typename T> struct octree : public CoordinateBounds {
     }
     //
     if (std::get<0>(depthlimit) >= this->depth || (std::get<1>(depthlimit) >= this->depth && objnum <= faces_.size())) {
-      auto [b0, b1, b2, b3, b4, b5, b6, b7] = to8Bounds();
+      const auto bounds8 = to8Bounds();
 
 #ifdef _OPENMP
       std::vector<octree<T> *> ret(8);
 #pragma omp parallel sections
       {
 #pragma omp section
-        ret[0] = new octree(b0, depthlimit, objnum, faces_, this);
+        ret[0] = new octree(std::get<0>(bounds8), depthlimit, objnum, faces_, this);
 #pragma omp section
-        ret[1] = new octree(b1, depthlimit, objnum, faces_, this);
+        ret[1] = new octree(std::get<1>(bounds8), depthlimit, objnum, faces_, this);
 #pragma omp section
-        ret[2] = new octree(b2, depthlimit, objnum, faces_, this);
+        ret[2] = new octree(std::get<2>(bounds8), depthlimit, objnum, faces_, this);
 #pragma omp section
-        ret[3] = new octree(b3, depthlimit, objnum, faces_, this);
+        ret[3] = new octree(std::get<3>(bounds8), depthlimit, objnum, faces_, this);
 #pragma omp section
-        ret[4] = new octree(b4, depthlimit, objnum, faces_, this);
+        ret[4] = new octree(std::get<4>(bounds8), depthlimit, objnum, faces_, this);
 #pragma omp section
-        ret[5] = new octree(b5, depthlimit, objnum, faces_, this);
+        ret[5] = new octree(std::get<5>(bounds8), depthlimit, objnum, faces_, this);
 #pragma omp section
-        ret[6] = new octree(b6, depthlimit, objnum, faces_, this);
+        ret[6] = new octree(std::get<6>(bounds8), depthlimit, objnum, faces_, this);
 #pragma omp section
-        ret[7] = new octree(b7, depthlimit, objnum, faces_, this);
+        ret[7] = new octree(std::get<7>(bounds8), depthlimit, objnum, faces_, this);
       }
       return ret;
 #else
-      return {new octree(b0, depthlimit, objnum, faces_, this), new octree(b1, depthlimit, objnum, faces_, this), new octree(b2, depthlimit, objnum, faces_, this), new octree(b3, depthlimit, objnum, faces_, this), new octree(b4, depthlimit, objnum, faces_, this), new octree(b5, depthlimit, objnum, faces_, this), new octree(b6, depthlimit, objnum, faces_, this), new octree(b7, depthlimit, objnum, faces_, this)};
+      return {new octree(std::get<0>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<1>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<2>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<3>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<4>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<5>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<6>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<7>(bounds8), depthlimit, objnum, faces_, this)};
 #endif
     } else
       return {};
@@ -2616,8 +2758,8 @@ template <typename T> struct octree : public CoordinateBounds {
       //@ maxDepth までしか回想は作れればい．最低は０階
       // 例えば，{10,1}の場合，最大で10階まで分割されている．またセルが１個含んでいればそれ以上分割されない．
       //@ また，オブジェクトがゼロなら１つ目の条件から分割されない
-      auto [b0, b1, b2, b3, b4, b5, b6, b7] = to8Bounds();
-      return {new octree(b0, depthlimit, objnum, faces_, this), new octree(b1, depthlimit, objnum, faces_, this), new octree(b2, depthlimit, objnum, faces_, this), new octree(b3, depthlimit, objnum, faces_, this), new octree(b4, depthlimit, objnum, faces_, this), new octree(b5, depthlimit, objnum, faces_, this), new octree(b6, depthlimit, objnum, faces_, this), new octree(b7, depthlimit, objnum, faces_, this)};
+      const auto bounds8 = to8Bounds();
+      return {new octree(std::get<0>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<1>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<2>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<3>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<4>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<5>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<6>(bounds8), depthlimit, objnum, faces_, this), new octree(std::get<7>(bounds8), depthlimit, objnum, faces_, this)};
     } else
       return {};
   };
@@ -2647,25 +2789,25 @@ template <typename T> struct octree : public CoordinateBounds {
       return {};
     } else {
       std::vector<octree<T> *> ret(8);
-      auto [b0, b1, b2, b3, b4, b5, b6, b7] = to8Bounds();
+      const auto bounds8 = to8Bounds();
 #pragma omp parallel sections
       {
 #pragma omp section
-        ret[0] = new octree<T>(b0, faces, depthlimit, this);
+        ret[0] = new octree<T>(std::get<0>(bounds8), faces, depthlimit, this);
 #pragma omp section
-        ret[1] = new octree<T>(b1, faces, depthlimit, this);
+        ret[1] = new octree<T>(std::get<1>(bounds8), faces, depthlimit, this);
 #pragma omp section
-        ret[2] = new octree<T>(b2, faces, depthlimit, this);
+        ret[2] = new octree<T>(std::get<2>(bounds8), faces, depthlimit, this);
 #pragma omp section
-        ret[3] = new octree<T>(b3, faces, depthlimit, this);
+        ret[3] = new octree<T>(std::get<3>(bounds8), faces, depthlimit, this);
 #pragma omp section
-        ret[4] = new octree<T>(b4, faces, depthlimit, this);
+        ret[4] = new octree<T>(std::get<4>(bounds8), faces, depthlimit, this);
 #pragma omp section
-        ret[5] = new octree<T>(b5, faces, depthlimit, this);
+        ret[5] = new octree<T>(std::get<5>(bounds8), faces, depthlimit, this);
 #pragma omp section
-        ret[6] = new octree<T>(b6, faces, depthlimit, this);
+        ret[6] = new octree<T>(std::get<6>(bounds8), faces, depthlimit, this);
 #pragma omp section
-        ret[7] = new octree<T>(b7, faces, depthlimit, this);
+        ret[7] = new octree<T>(std::get<7>(bounds8), faces, depthlimit, this);
       }
       return ret;
     }
@@ -2980,7 +3122,7 @@ template <typename T> struct octree : public CoordinateBounds {
 };
 
 // template <typename = typename std::enable_if<std::is_same<T, T3Tddd>::value>::type>
-template <typename T> void setVectorsToTriangle(octree<T> &tree) {
+template <typename T> inline void setVectorsToTriangle(octree<T> &tree) {
   auto tmp = tree.getAllDeepestInside();
   for (const auto &cell : tmp) {
     cell->checked_faces_passed.clear();
@@ -3064,5 +3206,5 @@ template <typename T> void setVectorsToTriangle(octree<T> &tree) {
       }
     }
 };
-template <typename T> void setVectorsToTriangle(octree<T> *tree) { setVectorsToTriangle(*tree); };
+template <typename T> inline void setVectorsToTriangle(octree<T> *tree) { setVectorsToTriangle(*tree); };
 #endif

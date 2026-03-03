@@ -1,0 +1,17 @@
+{
+    "max_dt": 0.03,
+    "end_time_step": 2,
+    "end_time": 0.1,
+    "element": "linear",
+    "ALE": "linear",
+    "ALEPERIOD": "1",
+    "output_directory": "/tmp/bem_metal_test",
+    "input_files": [
+        "tank.json",
+        "wavemaker.json",
+        "water.json",
+        "gauge1.json",
+        "gauge2.json",
+        "gauge3.json"
+    ]
+}

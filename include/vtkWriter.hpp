@@ -3,7 +3,7 @@
 #include "XML.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
 
-Tddd ToX(const std::shared_ptr<Tddd> &X) { return *X; };
+inline Tddd ToX(const std::shared_ptr<Tddd> &X) { return *X; };
 
 /*
 
@@ -710,7 +710,7 @@ template <size_t N> void vtkPolygonWrite(std::ofstream &ofs, const std::array<Td
 // /*                          Tddd                          */
 // /* ------------------------------------------------------ */
 
-void vtkPolygonWrite(std::ofstream &ofs, const std::vector<Tddd> &V) {
+inline void vtkPolygonWrite(std::ofstream &ofs, const std::vector<Tddd> &V) {
   vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
   vtp.reserve(V.size());
   for (const auto &X : V) {
@@ -730,7 +730,7 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::vector<Tddd> &V) {
 //    vtp.write(ofs);
 // };
 
-void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
+inline void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
   vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
   vtp.reserve(V.size());
   for (const auto &PorF : V) {
@@ -792,7 +792,7 @@ void vtkPolygonWrite(std::ofstream &ofs, const auto &V) {
 /* ------------------------------------------------------ */
 /*                         T2Tddd                         */
 /* ------------------------------------------------------ */
-void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T2Tddd> &V) {
+inline void vtkPolygonWrite(std::ofstream &ofs, const std::vector<T2Tddd> &V) {
   vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
   vtp.reserve(V.size());
   for (const auto &[X0, X1] : V) {
@@ -820,7 +820,7 @@ template <typename T, typename U> void vtkPolygonWrite(std::ofstream &ofs, const
   vtp.write(ofs);
 };
 /* ------------------------------------------------------ */
-void vtkPolygonWrite(std::ofstream &ofs, const Tddd &X) {
+inline void vtkPolygonWrite(std::ofstream &ofs, const Tddd &X) {
   vtkPolygonWriter<std::shared_ptr<Tddd>> vtp;
   std::shared_ptr<Tddd> x(new Tddd(X));
   vtp.add(x);

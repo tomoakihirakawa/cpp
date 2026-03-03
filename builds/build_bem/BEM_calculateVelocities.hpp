@@ -1,140 +1,143 @@
 #ifndef BEM_calculateVelocities_H
 #define BEM_calculateVelocities_H
 
-#include "BEM_utilities.hpp"
+#include "BEM_BoundaryValues.hpp"
 #include "Network.hpp"
+#include "minMaxOfFunctions.hpp"
 
 //$ -------------------------------------------------------------------------- */
 //$                         calculateVecToSurface                              */
 //$ -------------------------------------------------------------------------- */
 
-Tddd RK_without_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_update_BEM); };
-T3Tddd RK_without_Ubuff(const networkPoint *p0, const networkPoint *p1, const networkPoint *p2) { return {RK_without_Ubuff(p0), RK_without_Ubuff(p1), RK_without_Ubuff(p2)}; };
-T3Tddd RK_without_Ubuff(const T_PPP &p012) { return RK_without_Ubuff(std::get<0>(p012), std::get<1>(p012), std::get<2>(p012)); };
-T3Tddd RK_without_Ubuff(const networkFace *f) { return RK_without_Ubuff(f->getPoints()); };
-T2Tddd RK_without_Ubuff(const networkPoint *p0, const networkPoint *p1) { return {RK_without_Ubuff(p0), RK_without_Ubuff(p1)}; };
-Tddd RK_without_Ubuff_Normal(const networkFace *f) { return TriangleNormal(RK_without_Ubuff(f->getPoints())); };
-Tddd RK_without_Ubuff_Normal(const networkPoint *p) {
+inline Tddd RK_without_Ubuff(const networkPoint* p) {
+  return p->RK_X.getX(p->u_node);
+};
+inline T3Tddd RK_without_Ubuff(const networkPoint* p0, const networkPoint* p1, const networkPoint* p2) { return {RK_without_Ubuff(p0), RK_without_Ubuff(p1), RK_without_Ubuff(p2)}; };
+inline T3Tddd RK_without_Ubuff(const T_PPP& p012) { return RK_without_Ubuff(std::get<0>(p012), std::get<1>(p012), std::get<2>(p012)); };
+inline T3Tddd RK_without_Ubuff(const networkFace* f) { return RK_without_Ubuff(f->getPoints()); };
+inline T2Tddd RK_without_Ubuff(const networkPoint* p0, const networkPoint* p1) { return {RK_without_Ubuff(p0), RK_without_Ubuff(p1)}; };
+inline Tddd RK_without_Ubuff_Normal(const networkFace* f) { return TriangleNormal(RK_without_Ubuff(f->getPoints())); };
+inline Tddd RK_without_Ubuff_Normal(const networkPoint* p) {
   Tddd normal = {0., 0., 0.};
   double a = 0, total = 0;
-  for (const auto &f : p->getSurfaces()) {
+  for (const auto& f : p->getBoundaryFaces()) {
     a = TriangleArea(RK_without_Ubuff(f));
     FusedMultiplyIncrement(a, RK_without_Ubuff_Normal(f), normal);
     total += a;
   }
+  if (!(total > 0) || !std::isfinite(total) || !isFinite(normal))
+    return {0., 0., 0.};
   return Normalize(normal / total);
 };
-Tddd getNextNormalDirichlet_BEM(const networkPoint *p) {
+inline Tddd getNextNormalDirichlet_BEM(const networkPoint* p) {
   Tddd normal = {0., 0., 0.};
   double a = 0, total = 0;
-  for (const auto &f : p->getFacesDirichlet()) {
+  for (const auto& f : p->getFacesDirichlet()) {
     a = TriangleArea(RK_without_Ubuff(f));
     // normal += a * RK_without_Ubuff_Normal(f);
     FusedMultiplyIncrement(a, RK_without_Ubuff_Normal(f), normal);
     total += a;
   }
+  if (!(total > 0) || !std::isfinite(total) || !isFinite(normal))
+    return {0., 0., 0.};
   return Normalize(normal / total);
 };
-Tddd getNextNormalNeumann_BEM(const networkPoint *p) {
+inline Tddd getNextNormalNeumann_BEM(const networkPoint* p) {
   Tddd normal = {0., 0., 0.};
   double a = 0, total = 0;
-  for (const auto &f : p->getFacesNeumann()) {
+  for (const auto& f : p->getFacesNeumann()) {
     a = TriangleArea(RK_without_Ubuff(f));
     // normal += a * RK_without_Ubuff_Normal(f);
     FusedMultiplyIncrement(a, RK_without_Ubuff_Normal(f), normal);
     total += a;
   }
+  if (!(total > 0) || !std::isfinite(total) || !isFinite(normal))
+    return {0., 0., 0.};
   return Normalize(normal / total);
 };
 
-// Tddd RK_with_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->U_update_BEM + p->vecToSurface / p->RK_X.getdt()); };
-Tddd RK_with_Ubuff(const networkPoint *p) {
-  // return p->RK_X.toReachAtNextTimeQ(p->RK_X.getX(p->U_update_BEM) + p->vecToSurface);
+// Tddd RK_with_Ubuff(const networkPoint *p) { return p->RK_X.getX(p->u_node + p->vecToSurface / p->RK_X.getdt()); };
+inline Tddd RK_with_Ubuff(const networkPoint* p) {
+  // return p->RK_X.toReachAtNextTimeQ(p->RK_X.getX(p->u_node) + p->vecToSurface);
   const auto U = p->RK_X.getVectorToReachAtNextTimeQ(RK_without_Ubuff(p) + p->vecToSurface);
   return p->RK_X.getX(U);
 };
-Tddd RK_with_Ubuff(const networkPoint *p, const Tddd &vecToSurface) {
-  // return p->RK_X.getX(p->U_update_BEM + vecToSurface / p->RK_X.getdt());
+inline Tddd RK_with_Ubuff(const networkPoint* p, const Tddd& vecToSurface) {
+  // return p->RK_X.getX(p->u_node + vecToSurface / p->RK_X.getdt());
   const auto U = p->RK_X.getVectorToReachAtNextTimeQ(RK_without_Ubuff(p) + vecToSurface);
   return p->RK_X.getX(U);
 };
-T3Tddd RK_with_Ubuff(const networkPoint *p0, const networkPoint *p1, const networkPoint *p2) { return {RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2)}; };
-T3Tddd RK_with_Ubuff(const T_PPP &p012) { return {RK_with_Ubuff(p012[0]), RK_with_Ubuff(p012[1]), RK_with_Ubuff(p012[2])}; };
-T3Tddd RK_with_Ubuff(const networkFace *f) { return RK_with_Ubuff(f->getPoints()); };
-Tddd RK_with_Ubuff_Normal(const networkFace *f) { return TriangleNormal(RK_with_Ubuff(f->getPoints())); };
-double RK_with_Ubuff_Area(const networkFace *f) { return TriangleArea(RK_with_Ubuff(f->getPoints())); };
-Tddd RK_with_Ubuff_Normal(const networkPoint *p) {
+inline T3Tddd RK_with_Ubuff(const networkPoint* p0, const networkPoint* p1, const networkPoint* p2) { return {RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2)}; };
+inline T3Tddd RK_with_Ubuff(const T_PPP& p012) { return {RK_with_Ubuff(p012[0]), RK_with_Ubuff(p012[1]), RK_with_Ubuff(p012[2])}; };
+inline T3Tddd RK_with_Ubuff(const networkFace* f) { return RK_with_Ubuff(f->getPoints()); };
+inline Tddd RK_with_Ubuff_Normal(const networkFace* f) { return TriangleNormal(RK_with_Ubuff(f->getPoints())); };
+inline double RK_with_Ubuff_Area(const networkFace* f) { return TriangleArea(RK_with_Ubuff(f->getPoints())); };
+inline Tddd RK_with_Ubuff_Normal(const networkPoint* p) {
   Tddd normal = {0., 0., 0.};
-  double a = 0, total = 0;
-  for (const auto &f : p->getSurfaces()) {
-    a = RK_with_Ubuff_Area(f);
-    FusedMultiplyIncrement(a, RK_with_Ubuff_Normal(f), normal);
-    total += a;
-  }
-  return Normalize(normal / total);
+  for (const auto& f : p->getBoundaryFaces())
+    normal += RK_with_Ubuff_Area(f) * RK_with_Ubuff_Normal(f);
+  return Normalize(normal);
 };
 
-void add_vecToSurface_BUFFER_to_vecToSurface(const auto &p, const double a = 1.) {
+inline void add_vecToSurface_BUFFER_to_vecToSurface(const auto& p, const double a = 1.) {
   if (isFinite(p->vecToSurface_BUFFER))
     p->vecToSurface += p->vecToSurface_BUFFER * a;
 };
 
-std::array<double, 3> nextPositionOnBody(Network *net, networkPoint *p) {
-  auto velocity = net->velocityTranslational();
-  auto rotation = net->velocityRotational();
-  if (net->isRigidBody) {
+/* ---------- midpoint RK helpers ---------- */
+inline Tddd RK_without_Ubuff(const networkLine* l) {
+  return l->RK_X.getX(l->u_node);
+}
+inline Tddd RK_with_Ubuff(const networkLine* l) {
+  if (l->RK_X.steps == 0)
+    return l->X_mid + l->vecToSurface;
+  const auto U = l->RK_X.getVectorToReachAtNextTimeQ(RK_without_Ubuff(l) + l->vecToSurface);
+  return l->RK_X.getX(U);
+}
+
+// mooringで利用
+inline std::array<double, 3> nextPositionOnBody(Network* net, networkPoint* p) {
+  if (net->isSoftBody || net->inputJSON.find("relative_velocity")) {
+    auto v = p->velocityTranslational();
+
+    // 軸ごとの固定を適用（SoftBodyでもRigidBodyと同じ期待挙動にする）
+    for (auto i = 0; i < 3; ++i)
+      if (net->isFixed[i] == true)
+        v[i] = 0;
+
+    // 3並進が全部固定ならゼロ
+    if (net->isFixed.size() == 1)
+      if (net->isFixed[0] == true)
+        v.fill(0.0);
+
+    return p->RK_X.getX(v);
+  } else if (net->isRigidBody) {
+    auto velocity = net->velocityTranslational();
+    auto rotation = net->velocityRotational();
     for (auto i = 0; i < 3; ++i)
       if (net->isFixed[i])
         velocity[i] = 0;
     for (auto i = 3; i < 6; ++i)
       if (net->isFixed[i])
         rotation[i - 3] = 0;
+    auto COM_next = net->RK_COM.getX(velocity);
+    auto Q_next = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(rotation, net->RK_Q.getX())));
+    return rigidTransformation(net->ICOM, COM_next, Q_next.Rv(), p->initialX);
   }
-  auto COM_next = net->RK_COM.getX(velocity);
-  auto Q_next = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(rotation, net->RK_Q.getX())));
-  // return rigidTransformation(net->ICOM, COM_next, Q_next.Rv(), p->initialX);
-  return rigidTransformation(net->ICOM, COM_next, Q_next.Rv(), p->initialX);
-  // else return p->X;
+  return getPosition(p);
 }
 
-std::vector<std::tuple<T3Tddd, T3Tddd>> nextBodyVertices(const auto &Fs) {
+/* -------------------------------------------------------------------------- */
+
+inline std::vector<std::tuple<T3Tddd, T3Tddd>> nextBodyVertices(const auto& Fs) {
   std::vector<std::tuple<T3Tddd, T3Tddd>> ret(Fs.size());
   int i = -1;
-  for (auto &f : Fs) {
+  for (auto& f : Fs) {
     i++;
     auto net = f->getNetwork();
     auto [p0, p1, p2] = f->getPoints();
-    // if (net->isFixed)
-    //    ret[i] = ToX(f);
-    // else
-    if (net->isRigidBody) {
-      // 現在のv^nを使って問題ない．加速度はいらない．
-      // Quaternion q;
-      // q = q.d_dt(net->velocityRotational());
-      // Quaternion next_Q(net->RK_Q.getX(net->Q.AngularVelocityTodQdt(net->velocityRotational())));
-      // auto next_COM = net->RK_COM.getX(net->velocityTranslational());
 
-      auto velocity = net->velocityTranslational();
-      auto rotation = net->velocityRotational();
-
-      if (std::ranges::all_of(velocity, [](double v) { return v == 0; }) && std::ranges::all_of(rotation, [](double v) { return v == 0; })) {
-        ret[i] = {{p0->initialX, p1->initialX, p2->initialX}, {p0->initialX, p1->initialX, p2->initialX}};
-        continue;
-      }
-
-      for (auto i = 0; i < 3; ++i) {
-        if (net->isFixed[i])
-          velocity[i] = 0;
-        if (net->isFixed[i + 3])
-          rotation[i] = 0;
-      }
-
-      auto next_COM = net->RK_COM.getX(velocity);
-      auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(rotation, net->RK_Q.getX())));
-      auto X_next = [&](const auto &p) { return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX); };
-
-      ret[i] = {{p0->X, p1->X, p2->X}, {X_next(p0), X_next(p1), X_next(p2)}};
-    } else if (net->isSoftBody) {
+    if (net->isSoftBody || net->inputJSON.find("relative_velocity")) {
       auto v0 = p0->velocityTranslational();
       auto v1 = p1->velocityTranslational();
       auto v2 = p2->velocityTranslational();
@@ -147,144 +150,328 @@ std::vector<std::tuple<T3Tddd, T3Tddd>> nextBodyVertices(const auto &Fs) {
       auto X1 = p1->RK_X.getX(v1);
       auto X2 = p2->RK_X.getX(v2);
       ret[i] = {{p0->X, p1->X, p2->X}, {X0, X1, X2}};
+    } else if (net->isRigidBody) {
+      auto velocity = net->velocityTranslational();
+      auto rotation = net->velocityRotational();
+
+      if (std::ranges::all_of(velocity, [](double v) { return v == 0; }) && std::ranges::all_of(rotation, [](double v) { return v == 0; })) {
+        ret[i] = {{p0->X, p1->X, p2->X}, {p0->X, p1->X, p2->X}};
+        continue;
+      }
+
+      for (auto k = 0; k < 3; ++k) {
+        if (net->isFixed[k])
+          velocity[k] = 0;
+        if (net->isFixed[k + 3])
+          rotation[k] = 0;
+      }
+
+      auto next_COM = net->RK_COM.getX(velocity);
+      auto next_Q = Quaternion(net->RK_Q.getX(AngularVelocityTodQdt(rotation, net->RK_Q.getX())));
+      auto X_next = [&](const auto& p) { return rigidTransformation(net->ICOM, next_COM, next_Q.Rv(), p->initialX); };
+
+      ret[i] = {{p0->X, p1->X, p2->X}, {X_next(p0), X_next(p1), X_next(p2)}};
+    } else {
+      ret[i] = {{p0->X, p1->X, p2->X}, {p0->X, p1->X, p2->X}};
     }
   }
   return ret;
 };
 
-// \label{BEM:vectorTangentialShift}
-// Tddd vectorTangentialShift(const networkPoint *p, double scale = 1.) {
-//    Tddd V = {0., 0., 0.};
-//    // V += scale * ArithmeticWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-//    // V += scale * AreaWeightedSmoothingVector(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-//    V += scale * DistorsionMeasureWeightedSmoothingVector2(p, [](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-//    return condition_Ua(V, p);
-// };
+/* -------------------------------------------------------------------------- */
 
 // やはりこの辺りなのだろう
 
 // \label{BEM:vectorToNextSurface}
-const double dxi = 0.3;
-const T3Tdd t0t1_vertices = {{{1., 0.}, {1. - dxi, dxi}, {1. - dxi, 0.}}};
-const auto t0t1 = SymmetricSubdivisionOfTriangle(t0t1_vertices, 5);
-const auto t0t1_high = SymmetricSubdivisionOfTriangle(t0t1_vertices, 15);
+// 参照三角形上の均等格子点（TriShape<6>/TriShape<3> の入力用、コンパイル時計算）
+inline constexpr auto t0t1 = UniformPointsOnTriangle_00_10_01<6>();       // 28点
+inline constexpr auto t0t1_high = UniformPointsOnTriangle_00_10_01<15>(); // 136点
 
-Tddd vectorToNextSurface(const networkPoint *p) {
-  Tddd X_shifted = RK_with_Ubuff(p);
-  Tddd X_not_shifted = RK_without_Ubuff(p);
-  Tddd X, ret = {1E+20, 1E+20, 1E+20};
+/* -------------------------------------------------------------------------- */
+/*     Dirichlet面上の最近点探索                                               */
+/* -------------------------------------------------------------------------- */
 
-  struct DirectionInfo {
-    double distance;
-    Tddd direction;
-  };
-  std::vector<DirectionInfo> direction_infos;
+// グリッド探索の初期値から、曲面上の真の最近点パラメタをNewton法で精緻化
+// 勾配 g = {(X-P)·∂X/∂t0, (X-P)·∂X/∂t1} = 0 を解く
+// factor 2 は g と H 両方にかかるため省略
+template <typename XFunc, typename DXFunc>
+inline Tdd refineNearestParam(const Tddd& P, Tdd param,
+                              XFunc X_func, DXFunc DX_func,
+                              int max_iter = 5, double tol = 1e-10) {
+  auto [t0, t1] = param;
+  for (int iter = 0; iter < max_iter; ++iter) {
+    Tddd X = X_func(t0, t1);
+    Tddd diff = X - P;
 
-  auto add_vector = [&](const Tddd &V, Tddd n) {
-    n = Normalize(n);
-    double new_dist = Dot(V, n);
+    Tddd dXdt0 = DX_func(t0, t1, 1, 0);
+    Tddd dXdt1 = DX_func(t0, t1, 0, 1);
 
-    // delete if the new vector is better in a similar direction
-    std::erase_if(direction_infos, [&](const auto &info) { return Dot(n, info.direction) > std::cos(M_PI / 180. * 20.) && info.distance > new_dist; });
+    double g0 = Dot(diff, dXdt0);
+    double g1 = Dot(diff, dXdt1);
 
-    // Add the new vector if no existing better vector is in the same direction
-    if (std::ranges::none_of(direction_infos, [&](const auto &info) { return Dot(n, info.direction) > std::cos(M_PI / 180. * 20.); })) {
-      direction_infos.push_back({new_dist, n});
+    if (std::abs(g0) < tol && std::abs(g1) < tol)
+      break;
+
+    Tddd d2Xdt0dt0 = DX_func(t0, t1, 2, 0);
+    Tddd d2Xdt1dt1 = DX_func(t0, t1, 0, 2);
+    Tddd d2Xdt0dt1 = DX_func(t0, t1, 1, 1);
+
+    double H00 = Dot(dXdt0, dXdt0) + Dot(diff, d2Xdt0dt0);
+    double H11 = Dot(dXdt1, dXdt1) + Dot(diff, d2Xdt1dt1);
+    double H01 = Dot(dXdt0, dXdt1) + Dot(diff, d2Xdt0dt1);
+
+    double det = H00 * H11 - H01 * H01;
+    if (std::abs(det) < 1e-20)
+      break;
+    double dt0 = -(H11 * g0 - H01 * g1) / det;
+    double dt1 = -(H00 * g1 - H01 * g0) / det;
+
+    t0 += dt0;
+    t1 += dt1;
+
+    // 参照三角形内にクランプ: t0 >= 0, t1 >= 0, t0+t1 <= 1
+    t0 = std::max(0.0, t0);
+    t1 = std::max(0.0, t1);
+    if (t0 + t1 > 1.0) {
+      double s = t0 + t1;
+      t0 /= s;
+      t1 /= s;
     }
-  };
-
-  auto faces = p->getSurfaces();
-
-  if (p->Dirichlet || p->CORNER) {
-
-    auto Nearest_pseudo = [&](const auto X_shifted, const networkFace *f, const auto &t0t1) {
-      int index = -1;
-      for (auto i = 0; i < 3; ++i)
-        if (f->Points[i] == p) {
-          index = i;
-          break;
-        }
-      if (index == -1)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "error");
-      return Nearest(X_shifted, f->dodecaPoints[index]->interpolate(t0t1, [&](networkPoint *p) -> Tddd { return RK_without_Ubuff(p); }));
-    };
-
-    networkFace *closest_face = nullptr;
-
-    for (const auto &f : faces) {
-      if (f->Dirichlet) {
-        if (_ALE_ON_LINEAR_ELEMENT_)
-          X = Nearest(X_shifted, RK_without_Ubuff(f));
-        else
-          X = Nearest_pseudo(X_shifted, f, t0t1);
-
-        if (Norm(ret) >= Norm(X - X_shifted)) {
-          ret = X - X_shifted;
-          closest_face = f;
-        }
-      }
-    }
-
-    if (closest_face != nullptr) {
-      X = Nearest(X_shifted, RK_without_Ubuff(closest_face));
-      add_vector(X - X_shifted, Normalize(X - X_shifted));
-    }
-
-    if (p->Dirichlet)
-      return ret;
   }
+  return {t0, t1};
+}
 
-  if (/*p->Neumann || */ p->CORNER) {
+// pseudo-quadratic補間によるDirichlet面上の最近点
+// dodecaPoints[0] の補間で曲面を構成し、均一格子点でサンプルして最近点を探す
+// 均一分布なので頂点インデックスは0固定で面全体をカバーできる
+// out_param: 非nullなら最近点の(t0, t1)パラメタを書き出す
+inline Tddd NearestOnDirichletFace_pseudo(const Tddd& X_shifted, const networkFace* f,
+                                          const auto& t0t1_param, Tdd* out_param = nullptr) {
+  auto points = f->dodecaPoints[0]->interpolate(t0t1_param, [](networkPoint* q) -> Tddd { return RK_without_Ubuff(q); });
+  double nearest_dist = 1E+20, dist = 0.;
+  Tddd X_nearest = {1E+20, 1E+20, 1E+20};
+  std::size_t best_idx = 0;
+  for (std::size_t idx = 0; idx < points.size(); ++idx) {
+    if ((dist = Norm(points[idx] - X_shifted)) < nearest_dist) {
+      nearest_dist = dist;
+      X_nearest = points[idx];
+      best_idx = idx;
+    }
+  }
+  Tdd best_param = t0t1_param[best_idx];
+  // Newton精緻化
+  auto& dode = f->dodecaPoints[0];
+  auto rk_conv = [](networkPoint* q) -> Tddd { return RK_without_Ubuff(q); };
+  best_param = refineNearestParam(X_shifted, best_param, [&](double t0, double t1) -> Tddd { return dode->interpolate(t0, t1, rk_conv); }, [&](double t0, double t1, int i, int j) -> Tddd {
+        if (i == 1 && j == 0) return dode->template D_interpolate<1, 0>(t0, t1, rk_conv);
+        if (i == 0 && j == 1) return dode->template D_interpolate<0, 1>(t0, t1, rk_conv);
+        if (i == 2 && j == 0) return dode->template D_interpolate<2, 0>(t0, t1, rk_conv);
+        if (i == 0 && j == 2) return dode->template D_interpolate<0, 2>(t0, t1, rk_conv);
+        return dode->template D_interpolate<1, 1>(t0, t1, rk_conv); });
+  X_nearest = dode->interpolate(best_param[0], best_param[1], rk_conv);
+  if (out_param)
+    *out_param = best_param;
+  return X_nearest;
+}
 
-    const double short_range = 0.01; //@ short_range * radius is the detection range of the structure face
+// true-quadratic補間によるDirichlet面上の最近点
+// TriShape<6>で6節点（頂点3+midpoint3）の二次補間した曲面上でX_shiftedに最も近い点を返す
+// out_param: 非nullなら最近点の(t0, t1)パラメタを書き出す
+inline Tddd NearestOnDirichletFace_true_quad(const Tddd& X_shifted, const networkFace* f,
+                                             const auto& t0t1_param, Tdd* out_param = nullptr) {
+  auto [p0, l0, p1, l1, p2, l2] = f->PLPLPL;
+  T6Tddd X123456 = {RK_without_Ubuff(p0), RK_without_Ubuff(p1), RK_without_Ubuff(p2), RK_without_Ubuff(l0), RK_without_Ubuff(l1), RK_without_Ubuff(l2)};
+  double nearest_dist = 1E+20, dist = 0.;
+  Tddd X_nearest = {1E+20, 1E+20, 1E+20}, X_interp;
+  Tdd best_param = {0., 0.};
+  for (const Tdd& param : t0t1_param) {
+    X_interp = Dot(TriShape<6>(param), X123456);
+    if ((dist = Norm(X_interp - X_shifted)) < nearest_dist) {
+      nearest_dist = dist;
+      X_nearest = X_interp;
+      best_param = param;
+    }
+  }
+  // Newton精緻化
+  best_param = refineNearestParam(X_shifted, best_param, [&](double t0, double t1) -> Tddd { return Dot(TriShape<6>(t0, t1), X123456); }, [&](double t0, double t1, int i, int j) -> Tddd {
+        if (i == 1 && j == 0) return Dot(D_TriShape<6, 1, 0>(t0, t1), X123456);
+        if (i == 0 && j == 1) return Dot(D_TriShape<6, 0, 1>(t0, t1), X123456);
+        if (i == 2 && j == 0) return Dot(D_TriShape<6, 2, 0>(t0, t1), X123456);
+        if (i == 0 && j == 2) return Dot(D_TriShape<6, 0, 2>(t0, t1), X123456);
+        return Dot(D_TriShape<6, 1, 1>(t0, t1), X123456); });
+  X_nearest = Dot(TriShape<6>(best_param), X123456);
+  if (out_param)
+    *out_param = best_param;
+  return X_nearest;
+}
 
-    Tddd to_structure_face = {0., 0., 0.};
-    auto Vec_CurrentX012_NextX012 = nextBodyVertices(bfs(p->getContactFaces(), 1));
+// Dirichlet面上の最近点探索（モード自動選択）
+// out_param: 非nullなら最近点の(t0, t1)パラメタを書き出す
+inline Tddd NearestOnDirichletFace(const Tddd& X_shifted, const networkFace* f,
+                                   Tdd* out_param = nullptr) {
+  switch (node_relocation_surface) {
+  case NodeRelocationSurface::linear: {
+    auto [q0, q1, q2] = f->getPoints();
+    auto [wa, wb, X_near, normal] = Nearest_(X_shifted, T3Tddd{RK_without_Ubuff(q0), RK_without_Ubuff(q1), RK_without_Ubuff(q2)});
+    if (out_param)
+      *out_param = {wa, wb};
+    return X_near;
+  }
+  case NodeRelocationSurface::true_quadratic:
+    return NearestOnDirichletFace_true_quad(X_shifted, f, t0t1, out_param);
+  default:
+    return NearestOnDirichletFace_pseudo(X_shifted, f, t0t1, out_param);
+  }
+}
 
-    //! facesはDirichet面も含んでいる．これはCORNERの張り付きにおいて重要だと思われる．これがないと，コーナーは無限に上下方向に移動しても条件を満たすことになるだろう．
-    //! Dirichet面の法線方向距離も小さくする様にしている．
+/* -------------------------------------------------------------------------- */
 
-    auto contactAngle = [p](double distance) {
-      auto max_deg = 70.;
-      auto min_deg = 30.;
-      auto r = distance / p->contact_range;
-      auto deg = max_deg - (max_deg - min_deg) * r;
-      return M_PI * deg / 180.;
+// networkPoint* / networkLine* 共通のスナッピング関数
+// X_shifted: 補正済み予測位置（点: RK_with_Ubuff(p), 辺: 頂点平均）
+// entity: networkPoint* or networkLine* （Dirichlet/Neumann/CORNER/contact_range等の共通インターフェースを持つ）
+template <typename Entity>
+inline Tddd vectorToNextSurface(Entity entity, Tddd X_shifted) {
+
+  try {
+    if (!(entity->Dirichlet || entity->Neumann || entity->CORNER))
+      return {0., 0., 0.};
+
+    Tddd X_not_shifted = RK_without_Ubuff(entity);
+    Tddd X, vecToDirichlet = {1E+20, 1E+20, 1E+20};
+
+    struct DirectionInfo {
+      double distance;
+      Tddd direction;
     };
+    std::vector<DirectionInfo> direction_infos;
 
-    /*cornerのnextBodyVerticesへの張り付きは，思わぬ歪みを生じることがある*/
+    auto faces = entity->getBoundaryFaces();
+    if (faces.empty())
+      return {0., 0., 0.};
 
-    //! 面p_fが干渉する，最も近い構造物面を抽出
-    const double angle = 60 * M_PI / 180.; //! 少なくとも60度は必要のようだ．変更するとしたら，0.5 * radius >= distanceの値を変更する．
-    if (!Vec_CurrentX012_NextX012.empty())
-      for (const auto &f : faces /*p->getFacesNeumann()*/) {
-        for (const auto &CurrentX012_NextX012 : Vec_CurrentX012_NextX012) {
-          auto [struct_vertex, next_struct_vertex] = CurrentX012_NextX012;
-          if (isInContact(X_not_shifted /*シフトなし*/, f->normal, struct_vertex, p)) {
-            /*以下はシフトした場所からのベクトルを計算*/
-            auto [t0, t1, X_nearest, n] = Nearest_(X_shifted, struct_vertex);
-            std::array<double, 3> To_nearest = X_nearest - X_shifted;
-            double distance = Norm(To_nearest);
-            if ((isFlat(n, To_nearest, contactAngle(distance)) || isFlat(n, -To_nearest, contactAngle(distance))) && (p->contact_range >= distance))
-              add_vector(To_nearest, n);
-            else if ((short_range * p->contact_range >= distance))
-              add_vector(To_nearest, n);
+    networkFace* closest_face = nullptr;
+    Tdd best_face_param = {0., 0.};
+
+    //! CORNERは２段階処理する必要がある．まずDirichlet面に張り付く．その後，Neumann面に張り付く．
+    //! Dirichlet境界面への接近ベクトルを計算
+    if (entity->Dirichlet || entity->CORNER) {
+
+      for (const auto& f : faces) {
+        if (f->Dirichlet) {
+          Tdd face_param;
+          X = NearestOnDirichletFace(X_shifted, f, &face_param);
+
+          if (Norm(vecToDirichlet) >= Norm(X - X_shifted)) {
+            vecToDirichlet = X - X_shifted;
+            closest_face = f;
+            best_face_param = face_param;
           }
         }
       }
+      if (closest_face != nullptr) {
+        entity->relocation_face = closest_face;
+        entity->relocation_param = best_face_param;
+        if (entity->Dirichlet)
+          return vecToDirichlet;
+        X_shifted += vecToDirichlet; // for CORNER, shift the position to the closest Dirichlet surface
+      } else {
+        if (entity->Dirichlet)
+          return {0., 0., 0.};
+        vecToDirichlet = {0., 0., 0.};
+      }
+    }
 
+    auto add_vector = [&](const Tddd& V, Tddd n) {
+      if (!isFinite(V) || !isFinite(n) || !(Norm(n) > 0))
+        return;
+      n = Normalize(n);
+      double new_dist = Dot(V, n);
+      // delete if the new vector is closer in the same direction
+      std::erase_if(direction_infos, [&](const auto& info) { return Dot(n, info.direction) > std::cos(M_PI / 180. * 20.) && std::abs(info.distance) > std::abs(Dot(V, n)); });
+      // Add the new vector if no existing better vector is in the same direction
+      if (std::ranges::none_of(direction_infos, [&](const auto& info) { return Dot(n, info.direction) > std::cos(M_PI / 180. * 20.); })) {
+        direction_infos.push_back({new_dist, n});
+      }
+    };
+
+    // ! Neumann境界面への接近ベクトルを計算
+    std::vector<T3Tddd> next_triangles;
+    int isInContact_pass_count = 0;
+    if (entity->Neumann || entity->CORNER) {
+
+      const double short_range = 0.01; //@ short_range * radius is the detection range of the structure face
+
+      if (entity->getContactFaces().empty() && entity->penetratedBody != nullptr) {
+        auto [f, X_nearest] = entity->penetratedBody->Nearest(X_shifted, [&](const networkPoint* p) { return RK_without_Ubuff(p); });
+        if (f != nullptr) {
+          add_vector(X_nearest - X_shifted, Normalize(X_nearest - X_shifted));
+        }
+      }
+
+      auto Vec_CurrentX012_NextX012 = nextBodyVertices(bfs(getEffectiveContactFaces(entity), 2));
+      entity->debug_body_vertices_count = static_cast<int>(Vec_CurrentX012_NextX012.size());
+
+      auto contactAngle = [entity](double distance) {
+        auto max_deg = 80., min_deg = 60.;
+        if (!(entity->contact_range > 0) || !std::isfinite(entity->contact_range) || !std::isfinite(distance))
+          return M_PI * max_deg / 180.;
+        double r = std::clamp(distance / entity->contact_range, 0.0, 1.0);
+        double deg = std::clamp(max_deg - (max_deg - min_deg) * r, min_deg, max_deg);
+        return M_PI * deg / 180.;
+      };
+
+      if (!Vec_CurrentX012_NextX012.empty()) {
+        for (const auto& f : faces)
+          if (f->Neumann) {
+            for (const auto& [struct_vertex, next_struct_vertex] : Vec_CurrentX012_NextX012) {
+              if (!isInContact(X_not_shifted, f->normal, struct_vertex, entity->contact_range))
+                continue;
+              ++isInContact_pass_count;
+              next_triangles.emplace_back(next_struct_vertex);
+              auto [t0, t1, X_nearest, n] = Nearest_(X_shifted, next_struct_vertex);
+              Tddd To_nearest = X_nearest - X_shifted;
+              double distance = Norm(To_nearest);
+              if ((isFlat(n, To_nearest, contactAngle(distance)) || isFlat(n, -To_nearest, contactAngle(distance))) && (entity->contact_range >= distance))
+                add_vector(To_nearest, n);
+              else if ((short_range * entity->contact_range >= distance))
+                add_vector(To_nearest, n);
+            }
+          }
+      }
+    }
     std::vector<double> distances;
     std::vector<Tddd> directions;
-    for (const auto &info : direction_infos) {
+    for (const auto& info : direction_infos) {
       distances.push_back(info.distance);
       directions.push_back(info.direction);
     }
-    to_structure_face = optimalVector(distances, directions, {0., 0., 0.});
 
-    return to_structure_face;
+    entity->debug_direction_info_count = static_cast<int>(direction_infos.size());
+    entity->debug_contact_faces_count = static_cast<int>(entity->getContactFaces().size());
+    entity->debug_isInContact_pass_count = isInContact_pass_count;
+
+    if (distances.empty())
+      return (entity->CORNER ? vecToDirichlet : Tddd{0., 0., 0.});
+
+    auto V_opt = optimalVector(distances, directions, {0., 0., 0.});
+    if (!next_triangles.empty()) {
+      auto X_target = X_shifted + V_opt;
+      auto X_projected = Nearest(X_target, next_triangles);
+      V_opt = X_projected - X_shifted;
+    }
+    // CORNER: Neumann補正後の最終位置でDirichlet面上の(t0,t1)を再計算
+    if (entity->CORNER && closest_face != nullptr) {
+      Tdd updated_param;
+      NearestOnDirichletFace(X_shifted + V_opt, closest_face, &updated_param);
+      entity->relocation_param = updated_param;
+    }
+    return V_opt + (entity->CORNER ? vecToDirichlet : Tddd{0., 0., 0.});
+  } catch (const std::exception& e) {
+    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, e.what());
   }
-  return {0., 0., 0.};
-};
+}
+
+/* -------------------------------------------------------------------------- */
 
 /*DOC_EXTRACT 0_3_1_INITIAL_VALUE_PROBLEM
 
@@ -325,46 +512,48 @@ $\frac{D\phi}{Dt}=\frac{\partial\phi}{\partial t}+\frac{d{\mathbfit\chi}}{dt} \c
 */
 
 // \label{BEM:calculateVecToSurface}
-Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p, const std::array<double, 3> &current_pX, std::function<Tddd(const networkPoint *)> position) {
+Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint* p, const std::array<double, 3>& current_pX, std::function<Tddd(const networkPoint*)> position) {
   const int max_sum_depth = 20;
-  //   auto faces = p->CORNER ? p->getFacesDirichlet() : p->getSurfaces();
-  auto faces = p->getSurfaces();
-  std::vector<double> weights;
-  weights.reserve(faces.size());
-  std::vector<Tddd> positions;
-  positions.reserve(faces.size());
+  auto faces = p->CORNER ? p->getFacesDirichlet() : p->getBoundaryFaces();
+  thread_local std::vector<double> weights;
+  weights.clear();
+  thread_local std::vector<Tddd> positions;
+  positions.clear();
   Tddd X0, X1, X2, X3, Xmid, vertical, X_ideal, To_ideal;
   double W, height, normalized_discrepancy;
 
   // tetraがある場合
-  std::vector<networkTetra *> tetras = p->getTetras();
+  std::vector<networkTetra*> tetras = p->getTetras();
 
-  auto isSurface = [](const networkTetra *tet) -> bool {
-    for (const auto &f : tet->Faces)
+  auto isSurface = [](const networkTetra* tet) -> bool {
+    for (const auto& f : tet->Faces)
       if (f->Tetras[0] == nullptr || f->Tetras[1] == nullptr)
         return true;
     return false;
   };
 
   if (!tetras.empty()) {
-    for (const auto &tet : tetras) {
+    for (const auto& tet : tetras) {
       auto [p0, p1, p2, p3] = tet->getPoints(p);
       X0 = current_pX;
       X1 = position(p1);
       X2 = position(p2);
       X3 = position(p3);
-      W = CircumradiusToInradius(X0, X1, X2, X3) - 3; // CircumradiusToInradius(X0, X1, X2)は最小で3
-                                                      //   if (std::ranges::any_of(tet->Faces, [](const auto &f) { return f->SurfaceQ(); }))
-                                                      //     W *= 2.;
+      W = CircumradiusToInradius(X0, X1, X2, X3) - 3;
       //! 　面それぞれに対する，修正方向は正三角形の高さの方向としている
       auto Xmid = (X1 + X2 + X3) / 3.;
       auto cross = Cross(X2 - X1, X3 - X1);
-      auto vertical = Normalize(cross);
+      const auto cross_norm = Norm(cross);
+      if (!(cross_norm > 0) || !std::isfinite(cross_norm))
+        continue;
+      auto vertical = cross / cross_norm;
       if (Dot(vertical, X0 - Xmid) < 0)
         vertical = -vertical;
-      auto area = Norm(cross) * 0.5;
+      auto area = cross_norm * 0.5;
       auto approx_edge_length = (Norm(X1 - X2) + Norm(X2 - X3) + Norm(X3 - X1)) / 3.;
       auto height = approx_edge_length * std::sqrt(6.) / 3.; // 正四面体の高さ
+      if (!(height > 0) || !std::isfinite(height))
+        continue;
       if (Dot(vertical, current_pX - Xmid) < 0)
         vertical = -vertical;
       auto To_ideal = height * vertical + (Xmid - current_pX);
@@ -378,7 +567,7 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p, co
   //     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Tetrahedra are required for DistorsionMeasureWeightedSmoothingVector_modified.");
 
   {
-    for (const auto &f : faces) {
+    for (const auto& f : faces) {
       auto [p0, p1, p2] = f->getPoints(p);
       X0 = current_pX;
       X1 = position(p1);
@@ -387,8 +576,18 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p, co
       W = CircumradiusToInradius(X0, X1, X2) - 2.; // CircumradiusToInradius(X0, X1, X2)は最小で2
       //! 　面それぞれに対する，修正方向は正三角形の高さの方向としている
       Xmid = (X2 + X1) * 0.5;
-      vertical = Normalize(Chop(X0 - Xmid, X2 - X1));
-      height = Norm(X2 - X1) * std::sqrt(3.) * 0.5;
+      const auto e = X2 - X1;
+      const auto e_norm = Norm(e);
+      if (!(e_norm > 0) || !std::isfinite(e_norm))
+        continue;
+      auto v_raw = Chop(X0 - Xmid, e);
+      const auto v_norm = Norm(v_raw);
+      if (!(v_norm > 0) || !std::isfinite(v_norm))
+        continue;
+      vertical = v_raw / v_norm;
+      height = e_norm * std::sqrt(3.) * 0.5;
+      if (!(height > 0) || !std::isfinite(height))
+        continue;
       X_ideal = height * vertical + Xmid;
       To_ideal = X_ideal - current_pX;
       normalized_discrepancy = Norm(To_ideal) / height;
@@ -399,6 +598,9 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p, co
       positions.emplace_back(To_ideal);
     }
   }
+
+  if (weights.empty())
+    return {0., 0., 0.};
 
   double sum = Sum(weights);
   if (sum < 1E-12)
@@ -413,104 +615,226 @@ Tddd DistorsionMeasureWeightedSmoothingVector_modified(const networkPoint *p, co
 
 /* -------------------------------------------------------------------------- */
 
-void calculateVecToSurface(const Network &net, const int loop, const double coefIN) {
+void calculateVecToSurface(const Network& net, const int loop, const double coefIN) {
   auto points = ToVector(net.getPoints());
+  const std::size_t n_points = points.size();
+
   //! 初期化
-  for (const auto &p : points) {
+  for (const auto& p : points) {
     p->temporary_bool = true;
     p->vecToSurface.fill(0.);
     p->vecToSurface_BUFFER.fill(0.);
     p->vecToSurface_BUFFER_BUFFER.fill(0.);
   }
 
-  points = RandomSample(points);
-  std::vector<networkPoint *> points_multiple_node, points_inner;
-  points_multiple_node.reserve(points.size());
-  points_inner.reserve(points.size());
-  for (const auto &p : points) {
-    if (p->isMultipleNode)
-      points_multiple_node.push_back(p);
-    else
-      points_inner.push_back(p);
-  }
+  // 最適化: RK_with_Ubuff結果をキャッシュ
+  std::vector<Tddd> cached_positions(n_points);
+  // Shift limit should be based on the *un-corrected* (without vecToSurface) geometry.
+  // Using RK_with_Ubuff() here creates a positive feedback loop:
+  // once a point drifts, local element sizes appear larger -> larger allowed shifts -> runaway.
+  std::vector<Tddd> base_positions(n_points);
 
-  auto shiftable_distance = [&](const networkPoint *p) -> double {
-    double ret = 1E+20;
-    auto tet = p->getTetras();
-    // もし，隣接tetraがあれば，tetraの内接円半径の平均がシフト距離の上限
-    // tetraがない場合は，隣接面の内接円半径の平均をシフト距離の上限とする
-    if (!tet.empty()) {
-      for (const auto &t : tet) {
-        auto [p0, p1, p2, p3] = t->Points;
-        double dist = Inradius(RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2), RK_with_Ubuff(p3));
-        ret = std::min(ret, dist);
-      }
-      return ret;
-    } else {
-      for (const auto &f : p->getSurfaces()) {
-        auto [p0, p1, p2] = f->getPoints();
-        double dist = Inradius(RK_with_Ubuff(p0), RK_with_Ubuff(p1), RK_with_Ubuff(p2));
-        ret = std::min(ret, dist);
-      }
-      return ret;
-    }
+  _Pragma("omp parallel for") for (std::size_t i = 0; i < n_points; ++i)
+      base_positions[i] = RK_without_Ubuff(points[i]);
+
+  auto update_cache = [&]() {
+    _Pragma("omp parallel for") for (std::size_t i = 0; i < n_points; ++i)
+        cached_positions[i] = RK_with_Ubuff(points[i]);
   };
 
-  /* ------------------------------ 要素を整えるためのベクトル ----------------------------- */
+  // ポイントからインデックスへのマップ（隣接点の位置取得用）
+  std::unordered_map<const networkPoint*, std::size_t> point_to_index;
+  point_to_index.reserve(n_points);
+  for (std::size_t i = 0; i < n_points; ++i)
+    point_to_index[points[i]] = i;
 
-  TimeWatch watch;
-  double coef = coefIN;
+  auto get_cached_position = [&](const networkPoint* p) -> Tddd {
+    auto it = point_to_index.find(p);
+    if (it != point_to_index.end())
+      return cached_positions[it->second];
+    return RK_with_Ubuff(p); // フォールバック（他のネットワークの点など）
+  };
 
-  auto noThroughCondition = [&](const networkPoint *p, Tddd vec) {
-    if (p->Neumann || p->CORNER) {
-      auto Vec_CurrentX012_NextX012 = nextBodyVertices(p->getContactFaces());
-      for (const auto &CurrentX012_NextX012 : Vec_CurrentX012_NextX012) {
-        auto [CurrentX012, NextX012] = CurrentX012_NextX012;
-        auto n_current = Normalize(Cross(CurrentX012[1] - CurrentX012[0], CurrentX012[2] - CurrentX012[0]));
-        auto n_next = Normalize(Cross(NextX012[1] - NextX012[0], NextX012[2] - NextX012[0]));
-        vec = Chop(vec, (n_current + n_next) / 2.);
+  auto get_base_position = [&](const networkPoint* p) -> Tddd {
+    auto it = point_to_index.find(p);
+    if (it != point_to_index.end())
+      return base_positions[it->second];
+    return RK_without_Ubuff(p); // フォールバック（他のネットワークの点など）
+  };
+
+  auto shiftable_distance = [&](const networkPoint* p, std::size_t idx) -> double {
+    double ret = 1E+20;
+    auto tet = p->getTetras();
+    if (!tet.empty()) {
+      for (const auto& t : tet) {
+        auto [p0, p1, p2, p3] = t->Points;
+        // double dist = Inradius(get_cached_position(p0), get_cached_position(p1), get_cached_position(p2), get_cached_position(p3));
+        double dist = (Norm(get_cached_position(p0) - get_cached_position(p1)) + Norm(get_cached_position(p1) - get_cached_position(p2)) + Norm(get_cached_position(p2) - get_cached_position(p0)) + Norm(get_cached_position(p0) - get_cached_position(p3)) + Norm(get_cached_position(p1) - get_cached_position(p3)) + Norm(get_cached_position(p2) - get_cached_position(p3))) / 6.0;
+        ret = std::min(ret, dist);
       }
+    } else {
+      for (const auto& f : p->getBoundaryFaces()) {
+        auto [p0, p1, p2] = f->getPoints();
+        // double dist = Inradius(get_cached_position(p0), get_cached_position(p1), get_cached_position(p2));
+        double dist = (Norm(get_cached_position(p0) - get_cached_position(p1)) + Norm(get_cached_position(p1) - get_cached_position(p2)) + Norm(get_cached_position(p2) - get_cached_position(p0))) / 3.0;
+        ret = std::min(ret, dist);
+      }
+    }
+    const double a = 0.3; // 安全率
+    return a * ret;
+  };
+
+  /* ----------------------- 要素を整えるためのベクトル -------------------------- */
+
+  double coef = coefIN;
+  constexpr double convergence_tol = 1e-10; // 全体収束判定の閾値
+
+  auto noThroughCondition = [&](const networkPoint* p, Tddd vec) {
+    if (p->Neumann || p->CORNER) {
+      vec = Chop(vec, RK_with_Ubuff_Normal(p));
     }
     return vec;
   };
 
-  for (auto steps = 0; steps < loop; ++steps) {
+  // 各ステップでの最大変位を記録
+  std::vector<double> max_displacements(n_points);
 
-    if (steps < 3 || steps >= loop - 3)
-      coef = 1E-2 * coefIN;
-    else if (steps < 10)
-      coef = 1E-1 * coefIN;
-    else
-      coef = coefIN;
+  // Anderson acceleration用のフラット化されたベクトル
+  // X = [x0, y0, z0, x1, y1, z1, ...]
+  const std::size_t vec_size = n_points * 3;
+  AndersonAcceleration<std::vector<double>> anderson(5); // history_size = 5
+  const bool enable_anderson = []() {
+    // true quadratic ALE is more sensitive to overshoot in accelerated fixed-point updates.
+    // Keep Anderson off by default there; allow explicit opt-in.
+    if (node_relocation_surface == NodeRelocationSurface::true_quadratic) {
+      if (const char* env = std::getenv("BEM_ALE_TRUEQ_ANDERSON"))
+        return std::string(env) == "1";
+      return false;
+    }
+    return true;
+  }();
+
+  // vecToSurfaceをフラットベクトルに変換
+  auto flattenVecToSurface_into = [&](std::vector<double>& X) {
+    for (std::size_t i = 0; i < n_points; ++i) {
+      X[3 * i + 0] = points[i]->vecToSurface[0];
+      X[3 * i + 1] = points[i]->vecToSurface[1];
+      X[3 * i + 2] = points[i]->vecToSurface[2];
+    }
+  };
+
+  // フラットベクトルからvecToSurfaceに復元
+  auto unflatten = [&](const std::vector<double>& X) {
+    for (std::size_t i = 0; i < n_points; ++i) {
+      points[i]->vecToSurface[0] = X[3 * i + 0];
+      points[i]->vecToSurface[1] = X[3 * i + 1];
+      points[i]->vecToSurface[2] = X[3 * i + 2];
+    }
+  };
+
+  std::vector<double> X_curr(vec_size), X_next(vec_size), F(vec_size);
+  for (auto steps = 0; steps < loop; ++steps) {
+    coef = coefIN;
+
+    // 現在のvecToSurfaceを保存
+    flattenVecToSurface_into(X_curr);
+
+    // キャッシュを更新
+    update_cache();
 
     /* -------------------------------------------------------------------------- */
-    for (auto &points : {points_multiple_node, points_inner}) {
-#pragma omp parallel for
-      for (const auto &p : points) {
-        auto current_pX = RK_with_Ubuff(p);
-        Tddd V = DistorsionMeasureWeightedSmoothingVector_modified(p, current_pX, [&](const networkPoint *p) -> Tddd { return RK_with_Ubuff(p); });
-        if (isFinite(V)) {
-          V = noThroughCondition(p, V); // 不透過条件 No through flow boundary condition
-          p->vecToSurface_BUFFER = std::min(Norm(V), coef * shiftable_distance(p)) * Normalize(V);
-        }
-      }
-      for (const auto &p : points) {
-        p->vecToSurface += p->vecToSurface_BUFFER;
+    _Pragma("omp parallel for") for (std::size_t i = 0; i < n_points; ++i) {
+      const auto& p = points[i];
+      auto current_pX = cached_positions[i];
+      Tddd V = DistorsionMeasureWeightedSmoothingVector_modified(p, current_pX, get_cached_position);
+      V = noThroughCondition(p, V);
+      double v_norm = Norm(V);
+      if (v_norm > 1E-12) {
+        double shift_limit = coef * shiftable_distance(p, i);
+        p->vecToSurface_BUFFER = std::min(v_norm, shift_limit) * Normalize(V);
+      } else {
         p->vecToSurface_BUFFER.fill(0.);
       }
-#pragma omp parallel for
-      for (const auto &p : points) {
-        p->clungSurface = vectorToNextSurface(p);
-        // p->clungSurface = noThroughCondition(p, p->clungSurface);
-        if (!isFinite(p->clungSurface))
-          p->clungSurface.fill(0.);
-      }
-      for (const auto &p : points) {
-        p->vecToSurface += std::min(Norm(p->clungSurface), shiftable_distance(p)) * Normalize(p->clungSurface);
+      max_displacements[i] = Norm(p->vecToSurface_BUFFER);
+    }
+
+    // 全体の最大変位を計算
+    double global_max_displacement = 0.0;
+    for (std::size_t i = 0; i < n_points; ++i) {
+      global_max_displacement = std::max(global_max_displacement, max_displacements[i]);
+      points[i]->vecToSurface += points[i]->vecToSurface_BUFFER;
+      points[i]->vecToSurface_BUFFER.fill(0.);
+    }
+
+    // キャッシュを更新（clungSurface計算用）
+    update_cache();
+
+    _Pragma("omp parallel for") for (std::size_t i = 0; i < n_points; ++i) {
+      const auto& p = points[i];
+      p->clungSurface = vectorToNextSurface(p, RK_with_Ubuff(p));
+      if (!isFinite(p->clungSurface))
         p->clungSurface.fill(0.);
+      max_displacements[i] = Norm(p->clungSurface);
+    }
+
+    for (std::size_t i = 0; i < n_points; ++i) {
+      const auto& p = points[i];
+      double clung_norm = Norm(p->clungSurface);
+      if (clung_norm > 1E-12) {
+        double shift_limit = shiftable_distance(p, i);
+        p->vecToSurface += std::min(clung_norm, shift_limit) * Normalize(p->clungSurface);
+        global_max_displacement = std::max(global_max_displacement, std::min(clung_norm, shift_limit));
       }
+      p->clungSurface.fill(0.);
+    }
+
+    // Anderson acceleration: 残差 F = G(X) - X を計算
+    flattenVecToSurface_into(X_next);
+    for (std::size_t i = 0; i < vec_size; ++i)
+      F[i] = X_next[i] - X_curr[i];
+
+    // Anderson accelerationで次の推定値を計算
+    if (enable_anderson) {
+      std::vector<double> X_accelerated = anderson.compute_next(X_curr, F);
+      bool finite_ok = true;
+      for (const auto& v : X_accelerated) {
+        if (!std::isfinite(v)) {
+          finite_ok = false;
+          break;
+        }
+      }
+      if (finite_ok)
+        unflatten(X_accelerated);
+      else
+        unflatten(X_next); // fallback to non-accelerated update
+    } else {
+      unflatten(X_next);
+    }
+
+    // 全体収束判定: 最大変位が閾値以下なら早期終了
+    if (global_max_displacement < convergence_tol) {
+      std::cout << Green << "  [ALE] Converged at step " << steps << " (max_disp=" << global_max_displacement << ")" << colorReset << std::endl;
+      break;
     }
     /* -------------------------------------------------------------------------- */
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*  midpoint ALE: 頂点の品質改善後、midpointを面上にスナッピング               */
+  /* -------------------------------------------------------------------------- */
+  for (auto* l : net.getBoundaryLines()) {
+    l->vecToSurface.fill(0.);
+    l->clungSurface.fill(0.);
+  }
+
+  // midpointの面スナッピング: 頂点の補正に追従 + Neumann面制約
+  for (auto* l : net.getBoundaryLines()) {
+    auto [pA, pB] = l->getPoints();
+    auto X_shidted = 0.5 * (RK_with_Ubuff(pA) + RK_with_Ubuff(pB));
+    l->clungSurface = vectorToNextSurface(l, X_shidted);
+    if (!isFinite(l->clungSurface))
+      l->clungSurface.fill(0.);
+    l->vecToSurface = l->clungSurface + (X_shidted - RK_without_Ubuff(l));
   }
 };
 
@@ -518,22 +842,73 @@ void calculateVecToSurface(const Network &net, const int loop, const double coef
 // !                               calculateVelocities                          */
 // ! -------------------------------------------------------------------------- */
 
-void calculateCurrentVelocities(const Network &net) {
-#pragma omp parallel for
-  for (const auto &p : ToVector(net.getPoints())) {
-    p->U_update_BEM = p->U_BEM = gradPhi(p);
-    if (p->Neumann)
-      p->U_update_BEM = contactNormalVelocity(p);
+using FuncU = std::function<Tddd(const networkPoint*)>;
+
+inline void set_u_potential_BEM(const Network& net) {
+  _Pragma("omp parallel for") for (const auto& p : ToVector(net.getPoints())) {
+    p->u_potential_BEM = gradPhi(p);
+  }
+
+  // Compute edge midpoint potential velocity.
+  // For true quadratic elements, use the proper quadratic gradient at the midpoint
+  // instead of the linear average of endpoint velocities.
+  for (auto* l : net.getBoundaryLines()) {
+    auto [pA, pB] = l->getPoints();
+    l->u_potential_BEM = 0.5 * (pA->u_potential_BEM + pB->u_potential_BEM); // default
+    bool has_true_quad = std::ranges::any_of(l->getBoundaryFaces(), [](const auto* f) { return f->isTrueQuadraticElement; });
+    if (has_true_quad)
+      l->u_potential_BEM = gradPhi(l);
   }
 }
 
-void calculateCurrentUpdateVelocities(const Network &net, const int loop, const double coef) {
+inline double DphiDt_at_midpoint(const networkLine* l) {
+  double aphiat = -0.5 * Dot(l->u_potential_BEM, l->u_potential_BEM) - _GRAVITY_ * l->X_mid[2];
+  return aphiat + Dot(l->u_node, l->u_potential_BEM);
+}
 
-  for (const auto &p : net.getPoints()) {
-    if (!isFinite(p->U_update_BEM)) {
+/* -------------------------------------------------------------------------- */
+
+inline void set_u_total(const Network& net) {
+
+  _Pragma("omp parallel for") for (const auto& p : ToVector(net.getPoints())) { p->u_total = p->u_potential_BEM + p->u_omega_VPM; }
+
+  for (auto* l : net.getBoundaryLines()) {
+    auto [pA, pB] = l->getPoints();
+    l->u_total = 0.5 * (pA->u_total + pB->u_total); //default
+    bool has_true_quad = std::ranges::any_of(l->getBoundaryFaces(), [](const auto* f) { return f->isTrueQuadraticElement; });
+    if (has_true_quad)
+      l->u_total = l->u_potential_BEM + l->u_omega_VPM;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+
+inline void setNodeVelocity(const Network& net, const int loop = 0, const double coef = 0.) {
+  for (const auto& p : ToVector(net.getPoints())) {
+    p->u_node = p->u_total;
+    // CAUTIION : 以下のようにNeuamnnだけことなる時間発展の方法を使うのはよくないようだ．
+    // 基本的にラグランジュ的に時間発展させ，修正も同じ状態に対して行うのが安全だ．
+    // CORNERで見られた，内部との若干のズレもこのあたりが原因の可能性がある．
+    // if (p->Neumann)
+    //   p->u_node = velocity_of_Body(std::get<0>(getEffectiveNearestContactFace(p)), getPosition(p));
+  }
+
+  for (const auto& l : net.getBoundaryLines()) {
+    // もし，lineがtrue_quadratic_elementを持っていなるなら，意味がある．linear elementの場合は，そもそもu_nodeは使わない．
+    // true quadraticの場合，ラグランジュ的時間発展で予測される曲面は，２次補間で予測される曲面でなくては，２次補間を利用する意味がない．
+    l->u_node = l->u_total;
+    // if (l->Neumann) {
+    //   auto [f, X, dist] = getEffectiveNearestContactFace(l);
+    //   if (f)
+    //     l->u_node = velocity_of_Body(f, getPosition(l));
+    // }
+  }
+
+  for (const auto& p : net.getPoints()) {
+    if (!isFinite(p->u_node)) {
       std::cout << "p->X = " << p->X << std::endl;
-      std::cout << "p->U_BEM = " << p->U_BEM << ", gradPhi(p) = " << gradPhi(p) << std::endl;
-      std::cout << "p->U_update_BEM = " << p->U_update_BEM << std::endl;
+      std::cout << "p->u_potential_BEM = " << p->u_potential_BEM << ", gradPhi(p) = " << gradPhi(p) << std::endl;
+      std::cout << "p->u_node = " << p->u_node << std::endl;
       std::cout << "p->vecToSurface = " << p->vecToSurface << std::endl;
       std::cout << "p->Dirichlet = " << p->Dirichlet << std::endl;
       std::cout << "p->Neumann = " << p->Neumann << std::endl;
@@ -541,17 +916,39 @@ void calculateCurrentUpdateVelocities(const Network &net, const int loop, const 
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     }
   }
+
+  if (loop <= 0 || !(coef > 0.))
+    return;
+
   calculateVecToSurface(net, loop, coef);
 
-  for (const auto &p : net.getPoints())
-    p->U_update_BEM = p->RK_X.getVectorToReachAtNextTimeQ(p->vecToSurface + RK_without_Ubuff(p));
+  for (const auto& p : net.getPoints()) {
+    const Tddd target = p->vecToSurface + RK_without_Ubuff(p);
+    const Tddd u_new = p->RK_X.getVectorToReachAtNextTimeQ(target);
+    if (isFinite(u_new))
+      p->u_node = u_new;
+    else
+      p->u_node = isFinite(p->u_total) ? p->u_total : Tddd{0., 0., 0.};
+  }
+
+  // midpoint ALE correction: vecToSurface を反映
+  for (auto* l : net.getBoundaryLines()) {
+    const Tddd target = l->vecToSurface + RK_without_Ubuff(l);
+    const Tddd u_new = l->RK_X.getVectorToReachAtNextTimeQ(target);
+    if (isFinite(u_new))
+      l->u_node = u_new;
+    else
+      l->u_node = isFinite(l->u_total) ? l->u_total : Tddd{0., 0., 0.};
+  }
 }
+
+/* ========================================================================== */
 
 /*DOC_EXTRACT 0_7_OTHERS
 
 ### エネルギー保存則（計算精度のチェックに利用できる）
 
-流体全体の運動エネルギーは，ラプラス方程式と発散定理を使うと，次のように境界面に沿った積分で表される．
+流体全体の運動エネルギーは，ラプラス���程式と発散定理を使うと，次のように境界面に沿った積分で表される．
 
 $$
 E_K =\frac{\rho}{2} \iint_\Gamma \phi\nabla\phi\cdot {\bf n} d\Gamma
@@ -595,27 +992,27 @@ $$
 
 */
 
-double KinematicEnergy(const auto &faces) {
+inline double KinematicEnergy(const auto& faces) {
   double EK = 0;
-  for (const auto &f : faces) {
+  for (const auto& f : faces) {
     auto [p0, p1, p2] = f->getPoints();
     EK += Dot((p0->phiphin[0] + p1->phiphin[0] + p2->phiphin[0]) / 3. * gradPhi(f), f->normal) * f->area;
   }
   return _WATER_DENSITY_ * EK / 2.;
 };
 
-double PotentialEnergy(const auto &faces) {
+inline double PotentialEnergy(const auto& faces) {
   double EP = 0;
-  for (const auto &f : faces) {
+  for (const auto& f : faces) {
     auto [p0, p1, p2] = f->getPoints();
     auto intpX = interpolationTriangleLinear0101(T3Tddd{p0->X, p1->X, p2->X});
-    for (const auto &[x0, x1, w0w1] : __GWGW10__Tuple)
+    for (const auto& [x0, x1, w0w1] : __GWGW10__Tuple)
       EP += std::pow(intpX(x0, x1)[2], 2) * f->normal[2] * w0w1 * intpX.J(x0, x1);
   }
   return _WATER_DENSITY_ * EP / 2.;
 };
 
-double TotalEnergy(const auto &faces) { return KinematicEnergy(faces) + PotentialEnergy(faces); };
+inline double TotalEnergy(const auto& faces) { return KinematicEnergy(faces) + PotentialEnergy(faces); };
 
 /*DOC_EXTRACT 0_7_OTHERS
 

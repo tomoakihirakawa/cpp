@@ -1,0 +1,102 @@
+# =========================
+# Executables (no extension)
+# =========================
+main_time_domain
+main_time_domain_*
+main_freq_domain
+main_freq_domain*
+main_frequency_domain
+main_metal_test
+frequency_domain_test
+network_integrity_check
+FourierM2L_double
+SimpleM2L
+LapackLU
+fast
+middle
+horikawa
+tonegawa
+bench_*
+test_*
+
+# =========================
+# Build system
+# =========================
+build.ninja
+.ninja_deps
+.ninja_log
+.cache/
+.ccache/
+compile_commands.json
+
+# =========================
+# Sourcetrail
+# =========================
+*.srctrldb
+*.srctrlbm
+*.srctrlprj
+
+# =========================
+# LaTeX
+# =========================
+*.dvi
+*.synctex.gz
+*.fls
+*.pdf
+
+# =========================
+# Metal (copied build artifacts)
+# =========================
+metal_m2l.metal
+libmetal_m2l.dylib
+metal_m2l/build/
+metal_nearfield/
+
+# =========================
+# Symlinks to parent dirs
+# =========================
+include
+src
+
+# =========================
+# AI tool files
+# =========================
+.gemini/
+.aiexclude
+AGENTS.md
+GEMINI.md
+
+# =========================
+# Jupyter / images / temp
+# =========================
+*.ipynb
+*.png
+debug/
+sandbox_inputs/
+
+# =========================
+# Backup / conflict copies
+# =========================
+*.modified
+*.patch
+*競合コピー*
+*from backup*
+
+# =========================
+# Misc
+# =========================
+histogram.json
+log.txt
+*.txt
+!README.md
+build_bem_freq/
+build_bem_time/
+refference/
+refference_/
+refference_of_FMM
+refference_solitary_wave/
+oc6_psd_results/
+paper_digitize/
+BEM_FMM_recommended_papers/
+GUI_for_simulation_inputfiles
+plan.md

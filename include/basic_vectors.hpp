@@ -46,7 +46,7 @@ template <typename T> bool add_element(std::vector<T> &vec, const T &val) {
 
 /* -------------------------------------------------------------------------- */
 
-template <> void IdentityMatrix<VV_d>(VV_d &mat) {
+template <> inline void IdentityMatrix<VV_d>(VV_d &mat) {
   int i = 0, j = 0;
   for (auto &m : mat) {
     j = 0;
@@ -393,7 +393,7 @@ template <typename T> std::vector<T> Flatten(const std::vector<std::unordered_se
       ret.emplace_back(n);
   return ret;
 };
-std::vector<Tddd> Flatten(const std::vector<std::vector<Tddd>> &mat) {
+inline std::vector<Tddd> Flatten(const std::vector<std::vector<Tddd>> &mat) {
   std::vector<Tddd> ret(0);
   ret.reserve(mat.size() * mat[0].size());
   for (const auto &m : mat)
@@ -455,7 +455,7 @@ template <class T> std::vector<std::vector<T>> Transpose(const std::vector<std::
   return ans;
 };
 
-VVV_d Transpose(const std::vector<VV_d> &mat) {
+inline VVV_d Transpose(const std::vector<VV_d> &mat) {
   VVV_d ans(mat[0][0].size(), VV_d(mat[0].size(), V_d(mat.size())));
   for (size_t i = 0; i < mat.size(); i++)
     for (size_t j = 0; j < mat[i].size(); j++)
@@ -464,7 +464,7 @@ VVV_d Transpose(const std::vector<VV_d> &mat) {
   return ans;
 };
 
-VV_d TensorProduct(const V_d &vec1, const V_d &vec2) {
+inline VV_d TensorProduct(const V_d &vec1, const V_d &vec2) {
   VV_d ret(vec1.size(), V_d(vec2.size()));
   for (auto m = 0; m < vec1.size(); ++m)
     for (auto j = 0; j < vec2.size(); ++j)
@@ -472,7 +472,7 @@ VV_d TensorProduct(const V_d &vec1, const V_d &vec2) {
   return ret;
 };
 
-VVV_d TensorProductSet(const V_d &vec1, const V_d &vec2) {
+inline VVV_d TensorProductSet(const V_d &vec1, const V_d &vec2) {
   VVV_d ret(vec1.size(), VV_d(vec2.size(), V_d(2, 0)));
   for (size_t m = 0; m < vec1.size(); m++)
     for (size_t j = 0; j < vec2.size(); j++)
@@ -554,25 +554,25 @@ template <typename T> std::vector<T> ToVector(const std::tuple<T, T, T> &v) { re
 template <typename T> std::vector<T> ToVector(const std::tuple<T, T, T, T, T, T, T> &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v), std::get<4>(v), std::get<5>(v), std::get<6>(v)}; };
 template <typename T> std::vector<T> ToVector(const std::tuple<T, T, T, T, T, T, T, T> &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v), std::get<4>(v), std::get<5>(v), std::get<6>(v), std::get<7>(v)}; };
 
-std::vector<double> ToVector(const Tddd &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v)}; };
-std::vector<double> ToVector(const T4d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v)}; };
-std::vector<double> ToVector(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v), std::get<4>(v), std::get<5>(v)}; };
-std::vector<double> ToVector(const T7d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v), std::get<4>(v), std::get<5>(v), std::get<6>(v)}; };
+inline std::vector<double> ToVector(const Tddd &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v)}; };
+inline std::vector<double> ToVector(const T4d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v)}; };
+inline std::vector<double> ToVector(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v), std::get<4>(v), std::get<5>(v)}; };
+inline std::vector<double> ToVector(const T7d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v), std::get<3>(v), std::get<4>(v), std::get<5>(v), std::get<6>(v)}; };
 
-VV_d ToVector(const std::vector<Tddd> &v) {
+inline VV_d ToVector(const std::vector<Tddd> &v) {
   VV_d ret(v.size(), {0, 0, 0});
   for (auto i = 0; i < v.size(); ++i)
     ret[i] = ToVector(v[i]);
   return ret;
 };
-VV_d ToVector(const T3Tddd &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v))}; };
-VV_d ToVector(const T4T4d &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v)), ToVector(std::get<3>(v))}; };
-VV_d ToVector(const T6T6d &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v)), ToVector(std::get<3>(v)), ToVector(std::get<4>(v)), ToVector(std::get<5>(v))}; };
-VV_d ToVector(const T7T7d &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v)), ToVector(std::get<3>(v)), ToVector(std::get<4>(v)), ToVector(std::get<5>(v)), ToVector(std::get<6>(v))}; };
-T6d ToT6d(const Tddd tmp) { return {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.}; };
-Tddd ToTddd(const V_d &v) { return {v[0], v[1], v[2]}; };
-Tddd ToTddd(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v)}; };
-Tdd ToTdd(const V_d &v) { return {v[0], v[1]}; };
+inline VV_d ToVector(const T3Tddd &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v))}; };
+inline VV_d ToVector(const T4T4d &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v)), ToVector(std::get<3>(v))}; };
+inline VV_d ToVector(const T6T6d &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v)), ToVector(std::get<3>(v)), ToVector(std::get<4>(v)), ToVector(std::get<5>(v))}; };
+inline VV_d ToVector(const T7T7d &v) { return {ToVector(std::get<0>(v)), ToVector(std::get<1>(v)), ToVector(std::get<2>(v)), ToVector(std::get<3>(v)), ToVector(std::get<4>(v)), ToVector(std::get<5>(v)), ToVector(std::get<6>(v))}; };
+inline T6d ToT6d(const Tddd tmp) { return {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.}; };
+inline Tddd ToTddd(const V_d &v) { return {v[0], v[1], v[2]}; };
+inline Tddd ToTddd(const T6d &v) { return {std::get<0>(v), std::get<1>(v), std::get<2>(v)}; };
+inline Tdd ToTdd(const V_d &v) { return {v[0], v[1]}; };
 // std::vector<double> ToVector(const Tdd &v) { return {std::get<0>(v), std::get<1>(v)}; };
 // double Norm(const T4d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) + std::get<1>(t) * std::get<1>(t) + std::get<2>(t) * std::get<2>(t) + std::get<3>(t) * std::get<3>(t)); };
 // double Norm(const T6d &t) { return std::sqrt(std::get<0>(t) * std::get<0>(t) +
@@ -784,14 +784,14 @@ Tdd ToTdd(const V_d &v) { return {v[0], v[1]}; };
 //   return true;
 // };
 
-bool isfinite(const V_d &v_IN) {
+inline bool isfinite(const V_d &v_IN) {
   for (const auto &v : v_IN)
     if (v < -1E+20 || v > 1E+20)
       return false;
   return true;
 };
 
-bool myIsfinite(const double v) {
+inline bool myIsfinite(const double v) {
   if (v < -1E+20 || v > 1E+20)
     return false;
   else
@@ -809,10 +809,10 @@ bool myIsfinite(const double v) {
 //       return true;
 // };
 
-bool isFinite(const double v, const double max = 1E+20) { return std::abs(v) < max && !std::isinf(v) && !std::isnan(v); };
+inline bool isFinite(const double v, const double max = 1E+20) { return std::abs(v) < max && !std::isinf(v) && !std::isnan(v); };
 
 // isFinite for complex numbers
-bool isFinite(const std::complex<double> &v, const double eps = 1E+20) { return isFinite(v.real(), eps) && isFinite(v.imag(), eps); };
+inline bool isFinite(const std::complex<double> &v, const double eps = 1E+20) { return isFinite(v.real(), eps) && isFinite(v.imag(), eps); };
 
 // bool isFinite(const double v, const double eps = std::numeric_limits<double>::max()) {
 //    if (std::isnan(v)) {
@@ -821,11 +821,11 @@ bool isFinite(const std::complex<double> &v, const double eps = 1E+20) { return 
 //    return (v >= -eps && v <= eps);
 // };
 
-bool isFinite(const V_d &v_IN, const double eps = 1E+20) {
+inline bool isFinite(const V_d &v_IN, const double eps = 1E+20) {
   return std::ranges::all_of(v_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
 
-bool isFinite(const VV_d &vv_IN, const double eps = 1E+20) {
+inline bool isFinite(const VV_d &vv_IN, const double eps = 1E+20) {
   return std::ranges::all_of(vv_IN, [&](const auto &v) { return isFinite(v, eps); });
 };
 
@@ -846,7 +846,7 @@ template <std::size_t N, std::size_t M> bool isFinite(const std::array<std::arra
 };
 
 /* ------------------------------------------------------ */
-double Total(const std::vector<double> &V) {
+inline double Total(const std::vector<double> &V) {
   double ret = 0;
   for (const auto &v : V)
     ret += v;
@@ -855,18 +855,18 @@ double Total(const std::vector<double> &V) {
 
 /* -------------------------------------------------------------------------- */
 
-double Mean(const Tdd &v) { return Total(v) / 2.; };
-double Mean(const T4d &v) { return Total(v) / 4.; };
-double Mean(const Tddd &v) { return Total(v) / 3.; };
+inline double Mean(const Tdd &v) { return Total(v) / 2.; };
+inline double Mean(const T4d &v) { return Total(v) / 4.; };
+inline double Mean(const Tddd &v) { return Total(v) / 3.; };
 
-Tddd Mean(const Tddd &A, const Tddd &B, const Tddd &C) { return (A + B + C) / 3.; };
+inline Tddd Mean(const Tddd &A, const Tddd &B, const Tddd &C) { return (A + B + C) / 3.; };
 
-Tddd Mean(const T2Tddd &X) { return Total(X) / 2.; };
-Tddd Mean(const T3Tddd &X) { return Total(X) / 3.; };
-Tddd Mean(const T4Tddd &X) { return Total(X) / 4.; };
-Tddd Mean(const T8Tddd &X) { return Total(X) / 8.; };
+inline Tddd Mean(const T2Tddd &X) { return Total(X) / 2.; };
+inline Tddd Mean(const T3Tddd &X) { return Total(X) / 3.; };
+inline Tddd Mean(const T4Tddd &X) { return Total(X) / 4.; };
+inline Tddd Mean(const T8Tddd &X) { return Total(X) / 8.; };
 
-Tddd Mean(const std::vector<Tddd> &X) {
+inline Tddd Mean(const std::vector<Tddd> &X) {
   Tddd ret = {0., 0., 0.};
   double count = 0.;
   for (const auto &x : X) {
@@ -881,7 +881,7 @@ Tddd Mean(const std::vector<Tddd> &X) {
   return ret;
 };
 
-double Mean(const std::vector<double> &X) { return Total(X) / X.size(); };
+inline double Mean(const std::vector<double> &X) { return Total(X) / X.size(); };
 
 template <typename... Args> std::array<double, 3> Mean(const Args &...args) {
   std::array<double, 3> sum = {0, 0, 0};
@@ -920,7 +920,7 @@ template <class T> T Min(const std::vector<std::vector<T>> &v) {
   return ret;
 };
 
-Tdd MinMax(const std::vector<double> &v) {
+inline Tdd MinMax(const std::vector<double> &v) {
   auto it = std::minmax_element(std::begin(v), std::end(v));
   return {*it.first, *it.second};
 };
@@ -971,7 +971,7 @@ template <class T> T Max(const std::vector<std::vector<T>> &v) {
 //    auto [X, Y, Z, W] = A;
 //    return X >= Y ? (X >= Z ? (X >= W ? X : W) : (Z >= W ? Z : W)) : (Y >= Z ? (Y >= W ? Y : W) : (Z >= W ? Z : W));
 // };
-Tdd MinMax(const T4d &A) {
+inline Tdd MinMax(const T4d &A) {
   auto [X, Y, Z, W] = A;
   return {X >= Y ? (X >= Z ? (X >= W ? X : W) : (Z >= W ? Z : W)) : (Y >= Z ? (Y >= W ? Y : W) : (Z >= W ? Z : W)), X <= Y ? (X <= Z ? (X <= W ? X : W) : (Z <= W ? Z : W)) : (Y <= Z ? (Y <= W ? Y : W) : (Z <= W ? Z : W))};
 };
@@ -981,7 +981,7 @@ template <std::size_t N, typename T> constexpr typename std::enable_if_t<std::is
 
 // Min function template
 template <std::size_t N, typename T> constexpr typename std::enable_if_t<std::is_arithmetic<T>::value && !is_std_array<T>::value, T> Min(const std::array<T, N> &v) { return *std::min_element(std::begin(v), std::end(v)); }
-double FiniteMin(const Tddd &A) {
+inline double FiniteMin(const Tddd &A) {
   // イコールが重要
   auto [X, Y, Z] = A;
   if (isFinite(X) && !isFinite(Y) && !isFinite(Z)) {
@@ -1012,7 +1012,7 @@ double FiniteMin(const Tddd &A) {
 //    return {{{Min(Xs), Max(Xs)}, {Min(Ys), Max(Ys)}, {Min(Zs), Max(Zs)}}};
 // };
 
-double Max(const std::vector<Tddd> &A) {
+inline double Max(const std::vector<Tddd> &A) {
   double ret = -1E-10;
   for (const auto &a : A)
     if (ret < Max(a))
@@ -1020,11 +1020,11 @@ double Max(const std::vector<Tddd> &A) {
   return ret;
 };
 
-T3Tdd MinMax(const std::tuple<V_d, V_d, V_d> &A) { return {{MinMax(std::get<0>(A)), MinMax(std::get<1>(A)), MinMax(std::get<2>(A))}}; };
+inline T3Tdd MinMax(const std::tuple<V_d, V_d, V_d> &A) { return {{MinMax(std::get<0>(A)), MinMax(std::get<1>(A)), MinMax(std::get<2>(A))}}; };
 // T3Tdd MinMaxTranspose(const std::vector<Tddd> &A) { return MinMax(Transpose(A)); };
 /* ------------------------------------------------------ */
-double Rot(const V_d vec1, const V_d vec2) { return vec1[0] * vec2[1] - vec1[1] * vec2[0]; };
-std::vector<V_d> Inv(const std::vector<V_d> &mat) {
+inline double Rot(const V_d vec1, const V_d vec2) { return vec1[0] * vec2[1] - vec1[1] * vec2[0]; };
+inline std::vector<V_d> Inv(const std::vector<V_d> &mat) {
   std::vector<V_d> ans(mat.size(), V_d(mat[0].size(), 0.));
   double det = mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
   ans[1][1] = mat[0][0] / det;
@@ -1049,13 +1049,13 @@ template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::
   }
 };
 //==========================================================
-V_d log10(const V_d &vec) {
+inline V_d log10(const V_d &vec) {
   V_d ret(vec.size());
   for (size_t i = 0; i < vec.size(); i++)
     ret[i] = std::log10(vec[i]);
   return ret;
 };
-V_d log(const V_d &vec) {
+inline V_d log(const V_d &vec) {
   V_d ret(vec.size());
   for (size_t i = 0; i < vec.size(); i++)
     ret[i] = std::log(vec[i]);
@@ -1070,17 +1070,17 @@ template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::
   //    ret = std::fma(v, v, ret);
   // return std::sqrt(ret);
 };
-double Norm(const std::vector<Tddd> &vec) {
+inline double Norm(const std::vector<Tddd> &vec) {
   double ret = 0;
   for (const auto &v : vec)
     ret += Dot(v, v);
   return std::sqrt(ret);
 };
 /* ------------------------------------------------------ */
-V_d Normalize(const V_d &X) { return X / Norm(X); };
+inline V_d Normalize(const V_d &X) { return X / Norm(X); };
 
 // 　これは，グラムシュミット直交化法
-VV_d Orthogonalize(VV_d VV) {
+inline VV_d Orthogonalize(VV_d VV) {
   // VVは正方行列に限る
   for (auto i = 0; i < VV.size(); ++i) {
     for (auto j = 0; j < i; ++j)
@@ -1090,7 +1090,7 @@ VV_d Orthogonalize(VV_d VV) {
   return VV;
 };
 
-double Norm3d(const V_d &vec) {
+inline double Norm3d(const V_d &vec) {
   if (vec.size() != 3) {
     std::stringstream ss;
     ss << vec;
@@ -1397,7 +1397,7 @@ struct Quaternion {
   void set(const Quaternion &qIN) { this->set(qIN()); };
 };
 
-Quaternion operator*(const Quaternion &A, const Quaternion &B) {
+inline Quaternion operator*(const Quaternion &A, const Quaternion &B) {
   // https://en.wikipedia.org/wiki/Quaternion
   // Tddd v = A.a * B.v + B.a * A.v + Cross(A.v, B.v);
   // return Quaternion(T4d{A.a * B.a - Dot(A.v, B.v),
@@ -1497,9 +1497,9 @@ $$
 これを使えば，$q_{\text next} = q + \frac{dq}{dt} dt$という形で初期値問題を解くことができる．
 
 */
-Quaternion AngularVelocityToQuaternion(const Tddd &w /*angular velocity*/) { return Quaternion({1., 0., 0.}, w[0]) * Quaternion({0., 1., 0.}, w[1]) * Quaternion({0., 0., 1.}, w[2]); };
+inline Quaternion AngularVelocityToQuaternion(const Tddd &w /*angular velocity*/) { return Quaternion({1., 0., 0.}, w[0]) * Quaternion({0., 1., 0.}, w[1]) * Quaternion({0., 0., 1.}, w[2]); };
 
-T4d AngularVelocityTodQdt(const Tddd &w /*angular velocity*/, const Quaternion &q) {
+inline T4d AngularVelocityTodQdt(const Tddd &w /*angular velocity*/, const Quaternion &q) {
   auto [q0, q1, q2, q3] = q();
   auto [w0, w1, w2] = w;
   // return {0.5 * (-q1 * w0 - q2 * w1 - q3 * w2),
@@ -1510,44 +1510,44 @@ T4d AngularVelocityTodQdt(const Tddd &w /*angular velocity*/, const Quaternion &
   return {0.5 * std::fma(-q1, w0, std::fma(-q2, w1, -q3 * w2)), 0.5 * std::fma(q0, w0, std::fma(q3, w1, -q2 * w2)), 0.5 * std::fma(-q3, w0, std::fma(q0, w1, q1 * w2)), 0.5 * std::fma(q2, w0, std::fma(-q1, w1, q0 * w2))};
 };
 
-Quaternion &operator*=(Quaternion &A, const Quaternion &B) {
+inline Quaternion &operator*=(Quaternion &A, const Quaternion &B) {
   return A = (A * B); // ok
 };
-Quaternion operator*(Quaternion A, const double dt) {
+inline Quaternion operator*(Quaternion A, const double dt) {
   A.set(A.q * dt); // ok
   return A;
 };
 /* ------------------------- 足し算 ------------------------ */
-Quaternion operator+(Quaternion B, const double A) {
+inline Quaternion operator+(Quaternion B, const double A) {
   //()はただのT4d
   B.set(A + B.q);
   return B;
 };
-Quaternion operator+(const double A, Quaternion B) {
+inline Quaternion operator+(const double A, Quaternion B) {
   //()はただのT4d
   B.set(A + B.q);
   return B;
 };
-Quaternion operator+(Quaternion A, const Quaternion &B) {
+inline Quaternion operator+(Quaternion A, const Quaternion &B) {
   //()はただのT4d
   A.set(A.q + B.q);
   return A;
 };
-Quaternion operator+(Quaternion A, const T4d &B) {
+inline Quaternion operator+(Quaternion A, const T4d &B) {
   //()はただのT4d
   A.set(A.q + B);
   return A;
 };
-Quaternion operator+(const T4d &B, Quaternion A) {
+inline Quaternion operator+(const T4d &B, Quaternion A) {
   //()はただのT4d
   A.set(A.q + B);
   return A;
 };
-Quaternion &operator+=(Quaternion &A, const Quaternion &B) {
+inline Quaternion &operator+=(Quaternion &A, const Quaternion &B) {
   A.set(A.q + B.q);
   return A;
 };
-double Norm(const Quaternion &A) { return Norm(A.q); };
+inline double Norm(const Quaternion &A) { return Norm(A.q); };
 /* ------------------------------------------------------ */
 
 /*DOC_EXTRACT rigidTransformation
@@ -1566,12 +1566,12 @@ $$
 
 */
 
-std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_initial, const std::array<double, 3> &COM_next, const std::array<std::array<double, 3>, 3> &M_rotation_current, const std::array<double, 3> &X_initial) { return Dot(M_rotation_current, X_initial - COM_initial) + COM_next; };
+inline std::array<double, 3> rigidTransformation(const std::array<double, 3> &COM_initial, const std::array<double, 3> &COM_next, const std::array<std::array<double, 3>, 3> &M_rotation_current, const std::array<double, 3> &X_initial) { return Dot(M_rotation_current, X_initial - COM_initial) + COM_next; };
 
 /* -------------------------------------------------------------------------- */
 // double VectorAngle(const Tddd &V1, const Tddd &V2) { return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2)); };
 //! CAUTION: VectorAngle returns ambiguous results when the angle is 0 or M_PI
-double VectorAngle(const Tddd &a, const Tddd &b) {
+inline double VectorAngle(const Tddd &a, const Tddd &b) {
   // return std::acos(Dot(a, b) / (Norm(a) * Norm(b)));
   // return std::(Norm(Cross(a, b)), Dot(a, b));
 
@@ -1580,7 +1580,7 @@ double VectorAngle(const Tddd &a, const Tddd &b) {
   // if (Norm(nb * a + na * b) == 0.)
   return 2. * std::atan2(Norm(nb * a - na * b), Norm(nb * a + na * b));
 };
-double VectorAngle(const Tddd &X1, const Tddd &X2, const Tddd &axis) {
+inline double VectorAngle(const Tddd &X1, const Tddd &X2, const Tddd &axis) {
   // r = RotationMatrix[VectorAngle[A, {1, 0, 0}] * If[Dot[cross, axis] >= 0, 1, -1], axis];
   // return VectorAngle(X1, X2) * (Dot(Cross(X1, X2), axis) >= 0. ? 1. : -1.);
   // return std::atan2(Norm(Cross(X1 - axis, X2 - axis)), Dot(X1 - axis, X2 - axis));
@@ -1590,7 +1590,7 @@ double VectorAngle(const Tddd &X1, const Tddd &X2, const Tddd &axis) {
   return (Dot(cross, axis) >= 0.0) ? angle : -angle;
 };
 
-double MyVectorAngle(const Tddd &v0, const Tddd &v1, const Tddd &frontdir /*右手系のzとなる*/) {
+inline double MyVectorAngle(const Tddd &v0, const Tddd &v1, const Tddd &frontdir /*右手系のzとなる*/) {
   //      /|
   //     / |
   //    /  |y
@@ -1622,7 +1622,7 @@ double MyVectorAngle(const Tddd &v0, const Tddd &v1, const Tddd &frontdir /*右�
 
   return std::atan2(Dot(v1, y), Dot(v1, x));
 };
-double MyVectorAngle(const V_d &v0, const V_d &v1, const V_d &frontdir /*右手系のzとなる*/) {
+inline double MyVectorAngle(const V_d &v0, const V_d &v1, const V_d &frontdir /*右手系のzとなる*/) {
   //      /|
   //     / |
   //    /  |y
@@ -1655,7 +1655,7 @@ double MyVectorAngle(const V_d &v0, const V_d &v1, const V_d &frontdir /*右手�
   return std::atan2(Dot(v1, y), Dot(v1, x));
 };
 
-double MyVectorAngle(const V_d &v0, const V_d &v1) {
+inline double MyVectorAngle(const V_d &v0, const V_d &v1) {
   // cannot distingish ccw(positive) or cw(negative)
   // return MyVectorAngle(v0, v1, Cross(v0, v1));
 
@@ -1668,7 +1668,7 @@ double MyVectorAngle(const V_d &v0, const V_d &v1) {
   //      a2 \[Element] Reals && b0 \[Element] Reals &&
   //      b1 \[Element] Reals && b2 \[Element] Reals}]
 };
-double MyVectorAngle(const Tddd &v0, const Tddd &v1) { return std::acos(Dot(v0, v1) / (Norm(v0) * Norm(v1))); };
+inline double MyVectorAngle(const Tddd &v0, const Tddd &v1) { return std::acos(Dot(v0, v1) / (Norm(v0) * Norm(v1))); };
 template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type> T MathematicaVectorAngle(const std::vector<T> &V1, const std::vector<T> &V2) {
   if (V1.size() > 1) {
     return std::atan2(Norm(Cross(V1, V2)), Dot(V1, V2));
@@ -1693,13 +1693,13 @@ template <typename T, typename = typename std::enable_if<std::is_arithmetic<T>::
   return (a < 0) ? (2 * M_PI - a) : a;
 };
 
-double TriangleArea(const Tddd &a, const Tddd &b, const Tddd &c) { return 0.5 * Norm(Cross(b - a, c - a)); };
+inline double TriangleArea(const Tddd &a, const Tddd &b, const Tddd &c) { return 0.5 * Norm(Cross(b - a, c - a)); };
 
-double TriangleArea(const T3Tddd &abc) { return TriangleArea(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc)); };
+inline double TriangleArea(const T3Tddd &abc) { return TriangleArea(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc)); };
 
 static const std::tuple<Tiii, Tiii, Tiii, Tiii> TetrahedronPolygons = {{1, 2, 3}, {0, 1, 3}, {0, 2, 1}, {0, 3, 2}};
 
-T4Tddd TetrahedronNormals(const T4Tddd &X) {
+inline T4Tddd TetrahedronNormals(const T4Tddd &X) {
   auto [x0, x1, x2, x3] = X;
   Tddd c = (x0 + x1 + x2 + x3) * 0.25;
   Tddd n0 = Normalize(Cross(x1 - x0, x3 - x0)), m0 = (x0 + x1 + x3) / 3. - c;
@@ -1709,20 +1709,20 @@ T4Tddd TetrahedronNormals(const T4Tddd &X) {
   return {(Dot(n0, m0) >= 0 ? 1. : -1.) * n0, (Dot(n1, m1) >= 0 ? 1. : -1.) * n1, (Dot(n2, m2) >= 0 ? 1. : -1.) * n2, (Dot(n3, m3) >= 0 ? 1. : -1.) * n3};
 };
 
-double TetrahedronVolume(const std::array<double, 3> &a, const std::array<double, 3> &b, const std::array<double, 3> &c, const std::array<double, 3> &d) { return std::abs(CrossDot(c - a, d - a, b - a)) / 6.0; }
+inline double TetrahedronVolume(const std::array<double, 3> &a, const std::array<double, 3> &b, const std::array<double, 3> &c, const std::array<double, 3> &d) { return std::abs(CrossDot(c - a, d - a, b - a)) / 6.0; }
 
-double TetVolume(const std::array<double, 3> &a, const std::array<double, 3> &b, const std::array<double, 3> &c, const std::array<double, 3> &d) { return std::abs(CrossDot(c - a, d - a, b - a)) / 6.0; };
+inline double TetVolume(const std::array<double, 3> &a, const std::array<double, 3> &b, const std::array<double, 3> &c, const std::array<double, 3> &d) { return std::abs(CrossDot(c - a, d - a, b - a)) / 6.0; };
 
-double TetrahedronVolume(const T4Tddd &X) { return TetrahedronVolume(std::get<0>(X), std::get<1>(X), std::get<2>(X), std::get<3>(X)); };
+inline double TetrahedronVolume(const T4Tddd &X) { return TetrahedronVolume(std::get<0>(X), std::get<1>(X), std::get<2>(X), std::get<3>(X)); };
 
-double TetVolume(const T4Tddd &X) {
+inline double TetVolume(const T4Tddd &X) {
   auto [a, b, c, d] = X;
   return TetVolume(a, b, c, d);
 };
 
 #include "basic_linear_systems.hpp"
 
-Tddd TetrahedronCircumCenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
+inline Tddd TetrahedronCircumCenter(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) {
   double a2 = Dot(a, a);
   auto Inverse = [](const std::array<std::array<double, 3>, 3> &a) -> std::array<std::array<double, 3>, 3> {
     const double inv_det = 1.0 / std::fma(-std::get<2>(std::get<0>(a)), std::get<1>(std::get<1>(a)) * std::get<0>(std::get<2>(a)),
@@ -1736,9 +1736,9 @@ Tddd TetrahedronCircumCenter(const Tddd &a, const Tddd &b, const Tddd &c, const 
   return Dot(Inverse(T3Tddd{b - a, c - a, d - a}), 0.5 * Tddd{Dot(b, b) - a2, Dot(c, c) - a2, Dot(d, d) - a2});
 };
 
-Tddd TetrahedronCircumCenter(const T4Tddd &abcd) { return TetrahedronCircumCenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
+inline Tddd TetrahedronCircumCenter(const T4Tddd &abcd) { return TetrahedronCircumCenter(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd)); };
 
-Tddd TriangleAngles(const T3Tddd &abc) {
+inline Tddd TriangleAngles(const T3Tddd &abc) {
   auto [a, b, c] = abc;
   double A0 = VectorAngle(b - a, c - a);
   double A1 = VectorAngle(c - b, a - b);
@@ -1757,16 +1757,16 @@ Tddd TriangleAngles(const T3Tddd &abc) {
   return {A0, A1, A2};
 }
 
-Tddd TriangleAngles(const Tddd &a, const Tddd &b, const Tddd &c) { return TriangleAngles(T3Tddd{a, b, c}); }
+inline Tddd TriangleAngles(const Tddd &a, const Tddd &b, const Tddd &c) { return TriangleAngles(T3Tddd{a, b, c}); }
 
-Tddd TriangleNormal(const Tddd &a, const Tddd &b, const Tddd &c) { return Normalize(Cross((b - a), (c - a))); };
+inline Tddd TriangleNormal(const Tddd &a, const Tddd &b, const Tddd &c) { return Normalize(Cross((b - a), (c - a))); };
 
-Tddd TriangleNormal(const T3Tddd &abc) {
+inline Tddd TriangleNormal(const T3Tddd &abc) {
   const auto [a, b, c] = abc;
   return Normalize(Cross((b - a), (c - a)));
 };
 
-bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
+inline bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
   if (!isFinite(nA) || !isFinite(nB))
     return false;
   else
@@ -1776,25 +1776,25 @@ bool isFlat(const Tddd &nA, const Tddd &nB, const double lim_rad) {
   //! 0.==0.の場合を回避するために > を使う
 };
 
-bool isFlat(const std::array<double, 3> &A0, const std::array<double, 3> &A1, const std::array<double, 3> &A2, const std::array<double, 3> &B0, const std::array<double, 3> &B1, const std::array<double, 3> &B2, const double lim_rad) { return isFlat(Normalize(Cross(A1 - A0, A2 - A0)), Normalize(Cross(B1 - B0, B2 - B0)), lim_rad); }
+inline bool isFlat(const std::array<double, 3> &A0, const std::array<double, 3> &A1, const std::array<double, 3> &A2, const std::array<double, 3> &B0, const std::array<double, 3> &B1, const std::array<double, 3> &B2, const double lim_rad) { return isFlat(Normalize(Cross(A1 - A0, A2 - A0)), Normalize(Cross(B1 - B0, B2 - B0)), lim_rad); }
 
-bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
+inline bool isFlat(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
   auto [X0, X1, X2] = tri;
   return isFlat(a, Normalize(Cross(X1 - X0, X2 - X0)), lim_rad);
 };
 
-bool isFlat(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isFlat(a, tri, lim_rad); };
+inline bool isFlat(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isFlat(a, tri, lim_rad); };
 
-bool isFlat(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
+inline bool isFlat(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
   auto [X0, X1, X2] = tri0;
   auto [A0, A1, A2] = tri1;
   return isFlat(Normalize(Cross(X1 - X0, X2 - X0)), Normalize(Cross(A1 - A0, A2 - A0)), lim_rad);
 };
 
-bool isFlat_(const Tddd &a, const Tddd &b, const double lim_rad) { return isFlat(a, b, lim_rad); };
+inline bool isFlat_(const Tddd &a, const Tddd &b, const double lim_rad) { return isFlat(a, b, lim_rad); };
 
 // \label{isValidTriangle}
-bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI / 180.) {
+inline bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI / 180.) {
   if (TriangleArea(tri) == 0.)
     return false;
   auto angles = TriangleAngles(tri);
@@ -1815,20 +1815,20 @@ bool isValidTriangle(const T3Tddd &tri, const double accuracy_limit_angle = M_PI
 
 /* -------------------------------------------------------------------------- */
 
-bool isFacing(const Tddd &a, const Tddd &b, const double lim_rad) {
+inline bool isFacing(const Tddd &a, const Tddd &b, const double lim_rad) {
   // return Dot(a, -b) > std::cos(lim_rad) * Norm(a) * Norm(b);
   return isFlat(a, -b, lim_rad);
   //!  isFlat(a, b, lim_rad)はまちがい．
 };
 
-bool isFacing(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
+inline bool isFacing(const Tddd &a, const T3Tddd &tri, const double lim_rad) {
   auto [X0, X1, X2] = tri;
   return isFacing(a, Cross(X1 - X0, X2 - X0), lim_rad);
 };
 
-bool isFacing(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isFacing(a, tri, lim_rad); };
+inline bool isFacing(const T3Tddd &tri, const Tddd &a, const double lim_rad) { return isFacing(a, tri, lim_rad); };
 
-bool isFacing(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
+inline bool isFacing(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
   auto [X0, X1, X2] = tri0;
   auto [A0, A1, A2] = tri1;
   return isFacing(Cross(X1 - X0, X2 - X0), Cross(A1 - A0, A2 - A0), lim_rad);
@@ -1847,7 +1847,7 @@ bool isFacing(const T3Tddd &tri0, const T3Tddd &tri1, const double lim_rad) {
 //    return ret;
 // };
 
-double InteriorAngle(const V_d &x, const V_d &b, const V_d &z) {
+inline double InteriorAngle(const V_d &x, const V_d &b, const V_d &z) {
   // this can distingish ccw(positive) or cw(negative)
   auto Y = Cross(z, x); // 右手系
   return std::atan2(Dot(b, Y / Norm(Y)), Dot(b, x / Norm(x)));
@@ -1872,7 +1872,7 @@ double InteriorAngle(const V_d &x, const V_d &b, const V_d &z) {
 //    return MyVectorAngle(s01, s02);
 // };
 
-T3Tddd RotationMatrix(const double theta, const Tddd &V) {
+inline T3Tddd RotationMatrix(const double theta, const Tddd &V) {
   // // Euler Rodrigues
   // double c = std::cos(theta), s = std::sin(theta), e = (1. - c);
   // return {{std::get<0>(V) * std::get<0>(V) * e + c, std::get<0>(V) * std::get<1>(V) * e - std::get<2>(V) * s, std::get<0>(V) * std::get<2>(V) * e + std::get<1>(V) * s},
@@ -1885,48 +1885,48 @@ T3Tddd RotationMatrix(const double theta, const Tddd &V) {
 /* -------------------------------------------------------------------------- */
 /*                        vector modification operators                       */
 /* -------------------------------------------------------------------------- */
-std::vector<double> Projection(const std::vector<double> &v, std::vector<double> n, double &w) {
+inline std::vector<double> Projection(const std::vector<double> &v, std::vector<double> n, double &w) {
   /* the component in n direction of v will be returned */
   n = Normalize(n);
   return (w = Dot(v, n)) * n;
 };
 
-Tddd Projection(const Tddd &v, Tddd n) {
+inline Tddd Projection(const Tddd &v, Tddd n) {
   /* the component in n direction of v will be returned */
   n = Normalize(n);
   return Dot(v, n) * n;
 };
 
-Tddd Chop(const Tddd &v, Tddd n) {
+inline Tddd Chop(const Tddd &v, Tddd n) {
   /* the component in n direction of v will be chopped */
   n = Normalize(n);
   return FusedMultiplyAdd(-Dot(v, n), n, v);
   // return v - Dot(v, n) * n;
 };
 
-std::array<Tddd, 2> DecomposeVector(const Tddd &v, Tddd n) {
+inline std::array<Tddd, 2> DecomposeVector(const Tddd &v, Tddd n) {
   n = Normalize(n);
   return {Dot(v, n) * n, Chop(v, n)};
 };
 
-Tddd Reflect(const Tddd &v, Tddd n) {
+inline Tddd Reflect(const Tddd &v, Tddd n) {
   /* n is a normal vector of a surface*/
   n = Normalize(n);
   return FusedMultiplyAdd(-2. * Dot(v, n), n, v);
 };
 
-Tddd Scaled(const Tddd &v, const double d) {
+inline Tddd Scaled(const Tddd &v, const double d) {
   /* Returns the scaled vector */
   return d * Normalize(v);
 };
 
-Tddd Mirror(const Tddd &position, const Tddd &a_point_on_mirror, const Tddd &normal_vector) { return position + 2 * Projection(a_point_on_mirror - position, normal_vector); };
+inline Tddd Mirror(const Tddd &position, const Tddd &a_point_on_mirror, const Tddd &normal_vector) { return position + 2 * Projection(a_point_on_mirror - position, normal_vector); };
 
 /* ------------------------------------------------------ */
 /*                        線形方程式の解法                   */
 /* ------------------------------------------------------ */
 
-V_d diagonal_scaling_vector(VV_d mat) {
+inline V_d diagonal_scaling_vector(VV_d mat) {
   V_d ret(mat.size());
   int s = mat.size();
   for (auto i = 0; i < s; ++i)
@@ -1957,7 +1957,7 @@ template <typename T> std::vector<T> Range(const T xmin, const T xmax, const T d
 // 		ret[i] = i * dx + xmin;
 // 	return ret;
 // };
-std::vector<double> Subdivide(const double xmin, const double xmax, const int n) {
+inline std::vector<double> Subdivide(const double xmin, const double xmax, const int n) {
   if (n <= 0) {
     std::stringstream ss;
     ss << "Subdivide(" << xmin << "," << xmax << "," << n << ")の位置3に与えられた分割数は正の整数でなければなりません．";
@@ -1970,7 +1970,7 @@ std::vector<double> Subdivide(const double xmin, const double xmax, const int n)
   return ret;
 };
 
-std::vector<double> Subdivide(const std::array<double, 2> &xminxmax, const int n) { return Subdivide(std::get<0>(xminxmax), std::get<1>(xminxmax), n); };
+inline std::vector<double> Subdivide(const std::array<double, 2> &xminxmax, const int n) { return Subdivide(std::get<0>(xminxmax), std::get<1>(xminxmax), n); };
 
 template <typename T, std::size_t N> std::vector<std::array<T, N>> Subdivide(const std::array<T, N> &xmin, const std::array<T, N> &xmax, const int n) {
   std::vector<std::array<T, N>> ret(n + 1);
@@ -2077,7 +2077,7 @@ template <typename T> std::vector<std::vector<T>> SubdivideExclude(const std::ve
 
 //@　3次元の四面体要素の線形補間関数の勾配
 
-std::array<double, 3> gradP1(const std::array<std::array<double, 3>, 4> &X0123, const std::array<double, 4> &V0123) {
+inline std::array<double, 3> gradP1(const std::array<std::array<double, 3>, 4> &X0123, const std::array<double, 4> &V0123) {
   const auto [X0, X1, X2, X3] = X0123;
   const auto [v0, v1, v2, v3] = V0123;
 
@@ -2109,7 +2109,7 @@ template <size_t N> std::array<std::array<double, 3>, N> gradP1(const std::array
 
 //@ ３次元の三角要素の線形補間関数の勾配
 
-std::array<double, 3> gradP1(const std::array<std::array<double, 3>, 3> &X012, const std::array<double, 3> &V012) {
+inline std::array<double, 3> gradP1(const std::array<std::array<double, 3>, 3> &X012, const std::array<double, 3> &V012) {
   const auto [X0, X1, X2] = X012;
   const auto [v0, v1, v2] = V012;
 
@@ -2127,13 +2127,13 @@ std::array<double, 3> gradP1(const std::array<std::array<double, 3>, 3> &X012, c
   return ret;
 };
 
-std::array<std::array<double, 3>, 3> gradCoefficientsP1(const std::array<double, 3> &X0, const std::array<double, 3> &X1, const std::array<double, 3> &X2) {
+inline std::array<std::array<double, 3>, 3> gradCoefficientsP1(const std::array<double, 3> &X0, const std::array<double, 3> &X1, const std::array<double, 3> &X2) {
   const std::array<double, 3> X = Normalize(X1 - X0), Z = Normalize(Cross(X1 - X0, X2 - X0)), Y = Normalize(Cross(Z, X));
   const double x1 = Norm(X1 - X0), x2 = Dot(X2 - X0, X), y2 = Dot(X2 - X0, Y);
   return {(-1. / x1) * X + ((-x1 + x2) / (x1 * y2)) * Y, (1. / x1) * X - (x2 / (x1 * y2)) * Y, (x1 / (x1 * y2)) * Y};
 };
 
-std::array<double, 3> gradP1(const std::array<std::pair<std::array<double, 3>, double>, 3> &X012_values) {
+inline std::array<double, 3> gradP1(const std::array<std::pair<std::array<double, 3>, double>, 3> &X012_values) {
   const auto [X0_V0, X1_V1, X2_V2] = X012_values;
   const auto [X0, v0] = X0_V0;
   const auto [X1, v1] = X1_V1;

@@ -315,7 +315,7 @@ template <typename T> bool isEdge(const T *l) { // 周囲の全ての線が面�
   return (l->getFaces().size() < 2);
 };
 
-bool isEdgePoint(const auto &p) {
+inline bool isEdgePoint(const auto &p) {
   return p->getLines().empty() || std::any_of(p->getLines().begin(), p->getLines().end(), [&](const auto &l) { return (!l || l->getFaces().size() <= 1); });
 };
 

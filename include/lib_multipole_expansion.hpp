@@ -1,12 +1,18 @@
 #ifndef lib_multipole_expansion_H
 #define lib_multipole_expansion_H
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
+#include <cstdlib>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <memory>
+#include <ankerl/unordered_dense.h>
+#include <numbers>
 #include <sstream>
 
 #include "basic_arithmetic_array_operations.hpp"
@@ -16,7 +22,18 @@
 using namespace std::literals::complex_literals;
 using cmplx = std::complex<double>;
 
-const std::array<std::array<double, 31>, 31> sqrt_nm_nm = {
+inline bool bemNearUseRunsEnabled() {
+  static const bool enabled = []() -> bool {
+    if (const char* env = std::getenv("BEM_NEAR_USE_RUNS")) {
+      // Disable only when explicitly set to "0".
+      return !(env[0] == '0' && env[1] == '\0');
+    }
+    return true;
+  }();
+  return enabled;
+}
+
+inline const std::array<std::array<double, 31>, 31> sqrt_nm_nm = {
     {{1., 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
      {1., 0.7071067811865475, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
      {1., 0.4082482904638631, 0.20412414523193154, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -413,7 +430,7 @@ $$
 
 */
 
-constexpr double factorial(const int n) {
+inline constexpr double factorial(const int n) {
   if (n < 0)
     throw std::runtime_error("factorial of negative number");
   else if (n < factorial_list_as_double.size())
@@ -421,6 +438,55 @@ constexpr double factorial(const int n) {
   else
     return n * factorial(n - 1);
 }
+
+#if defined(_LIBCPP_VERSION)
+namespace bem_sf {
+inline double assoc_legendre_nonneg_m(const int l, const int m, const double x) {
+  if (m < 0 || m > l)
+    return 0.0;
+  // Numerical Recipes recurrence with Condon–Shortley phase.
+  double pmm = 1.0;
+  if (m > 0) {
+    const double somx2 = std::sqrt(std::max(0.0, (1.0 - x) * (1.0 + x)));
+    double fact = 1.0;
+    for (int i = 1; i <= m; ++i) {
+      pmm *= (-fact) * somx2;
+      fact += 2.0;
+    }
+  }
+  if (l == m)
+    return pmm;
+  double pmmp1 = x * (2.0 * m + 1.0) * pmm;
+  if (l == m + 1)
+    return pmmp1;
+  double pll = 0.0;
+  double pprev = pmm;
+  double pcurr = pmmp1;
+  for (int ll = m + 2; ll <= l; ++ll) {
+    pll = ((2.0 * ll - 1.0) * x * pcurr - (ll + m - 1.0) * pprev) / (ll - m);
+    pprev = pcurr;
+    pcurr = pll;
+  }
+  return pcurr;
+}
+
+inline double assoc_legendre(const int l, const int m, const double x) {
+  if (m >= 0)
+    return assoc_legendre_nonneg_m(l, m, x);
+  const int mp = -m;
+  const double p = assoc_legendre_nonneg_m(l, mp, x);
+  const double scale = (mp & 1 ? -1.0 : 1.0) * (factorial(l - mp) / factorial(l + mp));
+  return scale * p;
+}
+
+inline double sph_legendre(const int l, const int m, const double theta) {
+  const double x = std::cos(theta);
+  const double p = assoc_legendre_nonneg_m(l, m, x);
+  const double norm = std::sqrt((2.0 * l + 1.0) / (4.0 * std::numbers::pi) * (factorial(l - m) / factorial(l + m)));
+  return norm * p;
+}
+} // namespace bem_sf
+#endif
 
 /* ------------------------- Basic Vector Operations ------------------------ */
 
@@ -431,28 +497,28 @@ constexpr double factorial(const int n) {
 
 */
 
-constexpr cmplx complex_zero(0., 0.);
-constexpr std::array<cmplx, 3> complex_zero3D{complex_zero, complex_zero, complex_zero};
+inline constexpr cmplx complex_zero(0., 0.);
+inline constexpr std::array<cmplx, 3> complex_zero3D{complex_zero, complex_zero, complex_zero};
 
-cmplx Dot(const std::array<double, 3> &normal, const std::array<cmplx, 3> &abc) { return std::get<0>(abc) * std::get<0>(normal) + std::get<1>(abc) * std::get<1>(normal) + std::get<2>(abc) * std::get<2>(normal); };
+inline cmplx Dot(const std::array<double, 3>& normal, const std::array<cmplx, 3>& abc) { return std::get<0>(abc) * std::get<0>(normal) + std::get<1>(abc) * std::get<1>(normal) + std::get<2>(abc) * std::get<2>(normal); };
 
-cmplx Dot(const std::array<cmplx, 3> &abc, const std::array<double, 3> &normal) { return std::get<0>(abc) * std::get<0>(normal) + std::get<1>(abc) * std::get<1>(normal) + std::get<2>(abc) * std::get<2>(normal); };
+inline cmplx Dot(const std::array<cmplx, 3>& abc, const std::array<double, 3>& normal) { return std::get<0>(abc) * std::get<0>(normal) + std::get<1>(abc) * std::get<1>(normal) + std::get<2>(abc) * std::get<2>(normal); };
 
-std::array<cmplx, 3> operator*(std::array<cmplx, 3> a, const std::array<cmplx, 3> &A) {
+inline std::array<cmplx, 3> operator*(std::array<cmplx, 3> a, const std::array<cmplx, 3>& A) {
   std::get<0>(a) *= std::get<0>(A);
   std::get<1>(a) *= std::get<1>(A);
   std::get<2>(a) *= std::get<2>(A);
   return a;
 };
 
-std::array<cmplx, 3> operator*(cmplx a, std::array<cmplx, 3> A) {
+inline std::array<cmplx, 3> operator*(cmplx a, std::array<cmplx, 3> A) {
   std::get<0>(A) *= a;
   std::get<1>(A) *= a;
   std::get<2>(A) *= a;
   return A;
 };
 
-std::array<cmplx, 3> operator*(cmplx a, std::array<double, 3> A) {
+inline std::array<cmplx, 3> operator*(cmplx a, std::array<double, 3> A) {
   std::array<cmplx, 3> B = {a, a, a};
   std::get<0>(B) *= std::get<0>(A);
   std::get<1>(B) *= std::get<1>(A);
@@ -460,17 +526,18 @@ std::array<cmplx, 3> operator*(cmplx a, std::array<double, 3> A) {
   return B;
 };
 
-std::array<cmplx, 3> operator+(std::array<cmplx, 3> a, const std::array<double, 3> &A) {
+inline std::array<cmplx, 3> operator+(std::array<cmplx, 3> a, const std::array<double, 3>& A) {
   std::get<0>(a) += std::get<0>(A);
   std::get<1>(a) += std::get<1>(A);
   std::get<2>(a) += std::get<2>(A);
   return a;
 };
 
-std::array<cmplx, 3> operator+(const std::array<double, 3> &A, const std::array<cmplx, 3> &a) { return a + A; };
+inline std::array<cmplx, 3> operator+(const std::array<double, 3>& A, const std::array<cmplx, 3>& a) { return a + A; };
 
 // 2つの2次元ベクトルの要素ごとの積を計算する operator*
-template <typename T> std::vector<std::vector<T>> operator*(const std::vector<std::vector<T>> &lhs, const std::vector<std::vector<T>> &rhs) {
+template <typename T>
+inline std::vector<std::vector<T>> operator*(const std::vector<std::vector<T>>& lhs, const std::vector<std::vector<T>>& rhs) {
   // --- サイズのチェック ---
   if (lhs.empty() || rhs.empty() || lhs.size() != rhs.size() || lhs[0].size() != rhs[0].size()) {
     throw std::invalid_argument("Matrices must have the same dimensions for element-wise multiplication.");
@@ -490,7 +557,8 @@ template <typename T> std::vector<std::vector<T>> operator*(const std::vector<st
 }
 
 // 2つの2次元ベクトルを要素ごとに加算する operator+=
-template <typename T> std::vector<std::vector<T>> &operator+=(std::vector<std::vector<T>> &lhs, const std::vector<std::vector<T>> &rhs) {
+template <typename T>
+std::vector<std::vector<T>>& operator+=(std::vector<std::vector<T>>& lhs, const std::vector<std::vector<T>>& rhs) {
   // --- サイズのチェック ---
   if (lhs.empty() || rhs.empty() || lhs.size() != rhs.size() || lhs[0].size() != rhs[0].size()) {
     throw std::invalid_argument("Matrices must have the same dimensions for element-wise addition.");
@@ -567,37 +635,111 @@ $$
 
 */
 
-template <typename T> struct source4FMM {
-  // --- Geometry (Buckets 要件) ---
-  Tddd X{0.0, 0.0, 0.0};      // 位置（public：Buckets が p->X にアクセス）
-  Tddd normal{0.0, 0.0, 1.0}; // 単位法線（dipoleベクトル = normal * dipole_strength）
-  Tdd weighted_source_densities{0.0, 0.0};
+struct DirectAccumulator {
+  std::vector<double> phi_acc, phin_acc;
+  std::vector<uint8_t> touched_flags;
+  std::vector<int32_t> touched_list;
+  std::size_t high_water_mark = 0;
 
-  // --- Callbacks ---
-  // φ, φ_n などから weighted_source_densities を組み立てる
+  inline void reset() {
+    if (high_water_mark > 0 && phi_acc.size() < high_water_mark) {
+      phi_acc.assign(high_water_mark, 0.);
+      phin_acc.assign(high_water_mark, 0.);
+      touched_flags.assign(high_water_mark, 0);
+    }
+    touched_list.clear();
+  }
+
+  inline void add(int32_t idx, const double& phi_w, const double& phin_w) {
+    const std::size_t i = static_cast<std::size_t>(idx);
+    if (i >= phi_acc.size()) [[unlikely]] {
+      const std::size_t new_size = i + 1;
+      phi_acc.resize(new_size, 0.);
+      phin_acc.resize(new_size, 0.);
+      touched_flags.resize(new_size, 0);
+    }
+    phi_acc[i] += phi_w;
+    phin_acc[i] += phin_w;
+    if (!touched_flags[i]) {
+      touched_flags[i] = 1;
+      touched_list.push_back(idx);
+    }
+  }
+
+  inline void update_high_water_mark() {
+    if (phi_acc.size() > high_water_mark)
+      high_water_mark = phi_acc.size();
+  }
+};
+
+template <typename T>
+struct source4FMM {
+  // --- ツリー配置用（代表位置 = 要素重心） ---
+  Tddd X{0.0, 0.0, 0.0}; // public: Buckets が p->X にアクセス
+
+  // --- 内部P2Mソース（複数求積点を内包） ---
+  struct P2MSource {
+    Tddd X{0.0, 0.0, 0.0};      // 求積点の座標
+    Tddd normal{0.0, 0.0, 1.0};  // その点での法線
+    Tdd weighted_source_densities{0.0, 0.0};
+    std::function<std::array<double, 2>()> get_weighted_source_densities;
+
+    inline void updateDensity() {
+      if (get_weighted_source_densities)
+        weighted_source_densities = get_weighted_source_densities();
+    }
+  };
+  std::vector<P2MSource> p2m_sources; // D1=1個, D3=3個, D6=6個, D7=7個
+
+  // --- MAC拡張用: 重心から最も遠い内部P2Mソースまでの距離 ---
+  double max_source_offset = 0.0;
+
+  // --- 直接積分（要素レベル、1面1回） ---
+  std::function<void(const T*, DirectAccumulator&)> fill_direct_entries;
+  std::function<void(const T*, DirectAccumulator&)> fill_direct_entries_nonadj;
+
+  // --- 面情報（既存） ---
+  std::array<const T*, 3> face_vertices{nullptr, nullptr, nullptr};
+  std::array<const T*, 3> face_midpoints{nullptr, nullptr, nullptr}; // 辺中点 (true_quadratic のみ)
+  int32_t dof_indices[3] = {-1, -1, -1}; // Linear element DOF indices (for SIMD path)
+  float near_region = 0.f;                // near/far threshold (for SIMD path)
+
+  // --- 後方互換用（旧APIとの橋渡し） ---
+  Tddd normal{0.0, 0.0, 1.0};
+  Tdd weighted_source_densities{0.0, 0.0};
   std::function<std::array<double, 3>()> get_X;
   std::function<std::array<double, 3>()> get_normal;
   std::function<std::array<double, 2>()> get_weighted_source_densities;
-  std::function<std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>>(const T *)> use_this_source_when_set_direct_integration;
 
-  // --- Ctors ---
-  source4FMM() = default; // デフォルト構築（後で setter で埋める）
-
-  source4FMM(std::function<std::array<double, 3>()> get_X_, std::function<std::array<double, 3>()> get_normal_, std::function<std::array<double, 2>()> get_weighted_source_densities_, std::function<std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>>(const T *)> direct_handler_)
-      : get_X(std::move(get_X_)), get_normal(std::move(get_normal_)), get_weighted_source_densities(std::move(get_weighted_source_densities_)), use_this_source_when_set_direct_integration(std::move(direct_handler_)) {
-    update();
+  [[nodiscard]] inline bool isAdjacentTo(const T* target) const noexcept {
+    return face_vertices[0] == target || face_vertices[1] == target || face_vertices[2] == target ||
+           face_midpoints[0] == target || face_midpoints[1] == target || face_midpoints[2] == target;
   }
 
+  // --- Ctors ---
+  source4FMM() = default;
+
+  source4FMM(std::function<std::array<double, 3>()> get_X_,
+             std::function<std::array<double, 3>()> get_normal_,
+             std::function<std::array<double, 2>()> get_weighted_source_densities_,
+             std::function<void(const T*, DirectAccumulator&)> direct_handler_)
+      : get_X(std::move(get_X_)),
+        get_normal(std::move(get_normal_)),
+        get_weighted_source_densities(std::move(get_weighted_source_densities_)),
+        fill_direct_entries(std::move(direct_handler_)) { update(); }
+
   // --- Mutators ---
-  inline void set_geometry(const Tddd &X_, const Tddd &n_) noexcept {
+  inline void set_geometry(const Tddd& X_, const Tddd& n_) noexcept {
     X = X_;
     normal = n_;
   }
 
-  // --- Mutators ---
-  inline void set_callbacks(std::function<std::array<double, 2>()> get_weighted_source_densities_, std::function<std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>>(const T *)> direct_handler_) {
+  inline void set_callbacks(std::function<std::array<double, 2>()> get_weighted_source_densities_,
+                            std::function<void(const T*, DirectAccumulator&)> direct_handler_,
+                            std::function<void(const T*, DirectAccumulator&)> direct_handler_nonadj_ = nullptr) {
     get_weighted_source_densities = std::move(get_weighted_source_densities_);
-    use_this_source_when_set_direct_integration = std::move(direct_handler_);
+    fill_direct_entries = std::move(direct_handler_);
+    fill_direct_entries_nonadj = std::move(direct_handler_nonadj_);
   }
 
   // --- Lifecycle / helpers ---
@@ -607,30 +749,29 @@ template <typename T> struct source4FMM {
   }
 
   inline void updateDensity() {
-    if (get_weighted_source_densities)
+    if (!p2m_sources.empty()) {
+      for (auto& s : p2m_sources) s.updateDensity();
+    } else if (get_weighted_source_densities) {
       weighted_source_densities = get_weighted_source_densities();
+    }
   }
 
   inline void updatePosition() {
-    this->X = get_X();
-    this->normal = get_normal();
+    if (get_X) this->X = get_X();
+    if (get_normal) this->normal = get_normal();
   }
 
-  [[nodiscard]] inline bool valid() const noexcept { return static_cast<bool>(get_weighted_source_densities); }
+  [[nodiscard]] inline bool valid() const noexcept {
+    return !p2m_sources.empty() || static_cast<bool>(get_weighted_source_densities);
+  }
 
-  // 可読性の高いアクセサ
-  inline double monopole() const noexcept { return weighted_source_densities[0]; }        // 例: φ_n * Jw
-  inline double dipole_strength() const noexcept { return weighted_source_densities[1]; } // 例: φ   * Jw
-  inline Tddd dipole_vec() const noexcept {                                               // normal * dipole_strength
+  // 可読性の高いアクセサ（後方互換用）
+  inline double monopole() const noexcept { return weighted_source_densities[0]; }
+  inline double dipole_strength() const noexcept { return weighted_source_densities[1]; }
+  inline Tddd dipole_vec() const noexcept {
     return Tddd{normal[0] * weighted_source_densities[1], normal[1] * weighted_source_densities[1], normal[2] * weighted_source_densities[1]};
   }
 
-  // 直接項の取得（未設定なら空）
-  inline std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>> direct_list(const T *tgt) const {
-    if (use_this_source_when_set_direct_integration)
-      return use_this_source_when_set_direct_integration(tgt);
-    return {};
-  }
 };
 
 /* -------------------------------------------------------------------------- */
@@ -644,7 +785,7 @@ struct SphericalCoordinates {
   double phi;
   double theta;
   double scale;
-  SphericalCoordinates(const std::array<double, 3> &XIN, const double scale = 1.)
+  SphericalCoordinates(const std::array<double, 3>& XIN, const double scale = 1.)
       : X(XIN / scale), r2D(std::hypot(std::get<0>(X), std::get<1>(X))), //! 方向非依存
         rho(std::hypot(std::get<0>(X), std::get<1>(X), std::get<2>(X))), //! 方向非依存
         div_r2D(1. / r2D),                                               //! 方向非依存
@@ -657,7 +798,7 @@ struct SphericalCoordinates {
   // theta(x_r * std::cos(phi) >= 0 ? std::atan2(r2D, std::get<2>(X)) : std::atan2(-r2D, std::get<2>(X)))  //! これは元の定義z/r=cos(theta)を書き換えたもの
   {}
 
-  void initialize(const std::array<double, 3> &XIN, const double scale = 1.) {
+  void initialize(const std::array<double, 3>& XIN, const double scale = 1.) {
     this->X = XIN / scale;
     this->r2D = std::hypot(std::get<0>(X), std::get<1>(X));                 //! 方向非依存
     this->rho = std::hypot(std::get<0>(X), std::get<1>(X), std::get<2>(X)); //! 方向非依存
@@ -670,25 +811,60 @@ struct SphericalCoordinates {
     this->scale = scale;                                                    //! 方向非依存
   }
 
-  int pre_max = -1; // 0,1,2,...,pre_max
+  int pre_max = -1;     // 0,1,2,...,pre_max (for sph_harmonics, rho, div_rhon1)
+  int pre_max_ypq = -1; // independent bound for Ypq (i_absk_A_FMM)
+  unsigned pre_mask = 0;
   std::vector<std::vector<cmplx>> pre_compute_sph_harmonics, pre_compute_sph_harmonics_rho_n, pre_compute_sph_harmonics_div_rhon1, pre_compute_div_rhon1_i_absk_A_FMM;
-  void precompute_sph(const int pre_max_IN) {
-    this->pre_max = pre_max_IN;
-    pre_compute_sph_harmonics.resize(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
-    pre_compute_sph_harmonics_rho_n.resize(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
-    pre_compute_sph_harmonics_div_rhon1.resize(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
-    pre_compute_div_rhon1_i_absk_A_FMM.resize(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
-    double rho_n;
+
+  enum PrecomputeMask : unsigned {
+    PrecomputeBase = 1u << 0,
+    PrecomputeRho = 1u << 1,
+    PrecomputeDiv = 1u << 2,
+    PrecomputeYpq = 1u << 3
+  };
+
+  void precompute_sph_mask(const int pre_max_IN, unsigned mask) {
+    if (pre_max_IN < 0)
+      return;
+    // Keep the larger bound if already computed.
+    const int target_max = (pre_max < 0) ? pre_max_IN : std::max(pre_max, pre_max_IN);
+    mask |= PrecomputeBase;
+    pre_max = target_max;
+    pre_mask |= mask;
+    if (pre_mask & PrecomputeBase)
+      pre_compute_sph_harmonics.assign(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
+    if (pre_mask & PrecomputeRho)
+      pre_compute_sph_harmonics_rho_n.assign(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
+    if (pre_mask & PrecomputeDiv)
+      pre_compute_sph_harmonics_div_rhon1.assign(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
+    if (pre_mask & PrecomputeYpq)
+      pre_compute_div_rhon1_i_absk_A_FMM.assign(pre_max + 1, std::vector<cmplx>(2 * pre_max + 1, 0.));
+
+    if (pre_mask & PrecomputeYpq)
+      pre_max_ypq = std::min(pre_max, N_i_absk_A_FMM);
+
     for (int n = 0; n <= pre_max; n++) {
-      rho_n = std::pow(rho, n); // runtime value, cannot be constexpr
-      for (int m = -pre_max; m <= pre_max; m++) {
+      const double rho_n = std::pow(rho, n); // runtime value, cannot be constexpr
+      const double inv_rho_n1 = 1.0 / (rho_n * rho);
+      for (int m = -n; m <= n; m++) {
         auto tmp = sph_harmonics_polar_form_(n, m);
-        this->pre_compute_sph_harmonics_rho_n[n][m + pre_max] = (this->pre_compute_sph_harmonics[n][m + pre_max] = std::polar(std::get<0>(tmp), std::get<1>(tmp))) * rho_n;
-        this->pre_compute_sph_harmonics_div_rhon1[n][m + pre_max] = this->pre_compute_sph_harmonics[n][m + pre_max] / (rho_n * rho);
-        this->pre_compute_div_rhon1_i_absk_A_FMM[n][m + pre_max] = this->pre_compute_sph_harmonics[n][m + pre_max] / ((std::pow(rho, n + 1)) * static_cast<std::complex<double>>(i_absk_A_FMM[n][m + N_i_absk_A_FMM]));
+        const cmplx Y = std::polar(std::get<0>(tmp), std::get<1>(tmp));
+        if (pre_mask & PrecomputeBase)
+          this->pre_compute_sph_harmonics[n][m + pre_max] = Y;
+        if (pre_mask & PrecomputeRho)
+          this->pre_compute_sph_harmonics_rho_n[n][m + pre_max] = Y * rho_n;
+        if (pre_mask & PrecomputeDiv)
+          this->pre_compute_sph_harmonics_div_rhon1[n][m + pre_max] = Y * inv_rho_n1;
+        if ((pre_mask & PrecomputeYpq) && n <= pre_max_ypq)
+          this->pre_compute_div_rhon1_i_absk_A_FMM[n][m + pre_max] = Y * inv_rho_n1 / static_cast<std::complex<double>>(i_absk_A_FMM[n][m + N_i_absk_A_FMM]);
       }
     }
   }
+
+  void precompute_sph_rho(const int pre_max_IN) { precompute_sph_mask(pre_max_IN, PrecomputeRho); }
+  void precompute_sph_div_rhon1(const int pre_max_IN) { precompute_sph_mask(pre_max_IN, PrecomputeDiv); }
+  void precompute_sph_Ypq(const int pre_max_IN) { precompute_sph_mask(pre_max_IN, PrecomputeYpq); }
+  void precompute_sph(const int pre_max_IN) { precompute_sph_mask(pre_max_IN, PrecomputeRho | PrecomputeDiv | PrecomputeYpq); }
 
 private:
   std::array<std::array<double, 3>, 3> Jacobian_inv() const {
@@ -700,47 +876,55 @@ private:
   inline int negOnePower(const int p) const { return 1 - ((p & 1) << 1); }
 
   inline cmplx sph_harmonics_(const int n, const int m) const {
-    constexpr double sqrt_MPI2 = std::sqrt(2.0 * M_PI);
+    const double sqrt_MPI2 = std::sqrt(2.0 * std::numbers::pi);
     const double abs_m = std::abs(m);
     if (abs_m <= n) {
       double s = sqrt_MPI2 / std::sqrt(n + 0.5);
+#if defined(_LIBCPP_VERSION)
+      return std::polar(bem_sf::sph_legendre(n, static_cast<int>(abs_m), theta) * s, m * phi);
+#else
       return std::polar(std::sph_legendre(n, abs_m, theta) * s, m * phi);
+#endif
     } else
       return 0.0;
   }
 
   inline std::array<double, 2> sph_harmonics_polar_form_(const int n, const int m) const {
-    constexpr double sqrt_MPI2 = std::sqrt(2.0 * M_PI);
+    const double sqrt_MPI2 = std::sqrt(2.0 * std::numbers::pi);
     const double abs_m = std::abs(m);
     if (abs_m <= n) {
       double s = sqrt_MPI2 / std::sqrt(n + 0.5);
+#if defined(_LIBCPP_VERSION)
+      return {bem_sf::sph_legendre(n, static_cast<int>(abs_m), theta) * s, m * phi};
+#else
       return {std::sph_legendre(n, abs_m, theta) * s, m * phi};
+#endif
     } else
       return {0.0, 0.0};
   }
 
   inline cmplx sph_harmonics(const int n, const int m) const {
-    if (n <= pre_max && std::abs(m) <= pre_max)
+    if ((pre_mask & PrecomputeBase) && n <= pre_max && std::abs(m) <= pre_max)
       return this->pre_compute_sph_harmonics[n][m + pre_max];
     else
       return this->sph_harmonics_(n, m);
   }
 
   inline cmplx sph_harmonics_rho(const int n, const int m) const {
-    if (n > pre_max || m > pre_max || m < -pre_max)
+    if (!(pre_mask & PrecomputeRho) || n > pre_max || m > pre_max || m < -pre_max)
       return this->sph_harmonics_(n, m) * std::pow(rho, n);
     else
       return this->pre_compute_sph_harmonics_rho_n[n][m + pre_max];
   }
 
   inline cmplx sph_harmonics_div_rhon1(const int n, const int m) const {
-    if (n <= pre_max && std::abs(m) <= pre_max)
+    if ((pre_mask & PrecomputeDiv) && n <= pre_max && std::abs(m) <= pre_max)
       return this->pre_compute_sph_harmonics_div_rhon1[n][m + pre_max];
     else
       return this->sph_harmonics_(n, m) / (std::pow(rho, n) * rho);
   }
 
-  inline std::array<cmplx, 2> SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(const int n, const int m, const std::array<double, 3> &normal) const {
+  inline std::array<cmplx, 2> SolidHarmonicR_ForNear_Grad_SolidHarmonicR_ForNear_normal(const int n, const int m, const std::array<double, 3>& normal) const {
     cmplx Rnm = sph_harmonics_rho(n, m);
     auto [J0, J1, J2] = Jacobian_inv();
     /*rについての微分*/
@@ -748,7 +932,11 @@ private:
     /*thetaについての微分*/
     const double cos_theta = std::get<2>(X) / rho;
     const int abs_m = std::abs(m);
+#if defined(_LIBCPP_VERSION)
+    grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (bem_sf::assoc_legendre(n, abs_m + 1, cos_theta) / bem_sf::assoc_legendre(n, abs_m, cos_theta))) * Rnm * Dot(normal, J1);
+#else
     grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (std::assoc_legendre(n, abs_m + 1, cos_theta) / std::assoc_legendre(n, abs_m, cos_theta))) * Rnm * Dot(normal, J1);
+#endif
     /*phiについての微分*/
     grad_Rnm1_dot_normal += (cmplx(0., m) * Rnm) * Dot(normal, J2);
     return {Rnm, grad_Rnm1_dot_normal};
@@ -757,22 +945,38 @@ private:
   //! Nishimura2002 eq. (15)
   inline cmplx Rnm_Nishimura2002(const int n, const int m) const {
     const double cos_theta = std::get<2>(X) / rho;
+#if defined(_LIBCPP_VERSION)
+    return std::polar(bem_sf::assoc_legendre(n, m, cos_theta) * (std::pow(rho, n) / factorial(n + m)), m * phi);
+#else
     return std::polar(std::assoc_legendre(n, m, cos_theta) * (std::pow(rho, n) / factorial(n + m)), m * phi);
+#endif
   }
 
   inline cmplx Rnm_Nishimura2002_reversed(const int n, const int m) const {
     const double cos_theta = -std::get<2>(X) / rho;
+#if defined(_LIBCPP_VERSION)
+    return std::polar(bem_sf::assoc_legendre(n, m, cos_theta) * (std::pow(rho, n) / factorial(n + m)), m * phi);
+#else
     return std::polar(std::assoc_legendre(n, m, cos_theta) * (std::pow(rho, n) / factorial(n + m)), m * phi);
+#endif
   }
 
   inline cmplx Snm_Nishimura2002(const int n, const int m) const {
     const double cos_theta = std::get<2>(X) / rho;
+#if defined(_LIBCPP_VERSION)
+    return std::polar(bem_sf::assoc_legendre(n, m, cos_theta) * (factorial(n - m) / std::pow(rho, n + 1)), m * phi);
+#else
     return std::polar(std::assoc_legendre(n, m, cos_theta) * (factorial(n - m) / std::pow(rho, n + 1)), m * phi);
+#endif
   }
 
   inline cmplx Snm_Nishimura2002_reversed(const int n, const int m) const {
     const double cos_theta = -std::get<2>(X) / rho;
+#if defined(_LIBCPP_VERSION)
+    return std::polar(bem_sf::assoc_legendre(n, m, cos_theta) * (factorial(n - m) / std::pow(rho, n + 1)), m * phi);
+#else
     return std::polar(std::assoc_legendre(n, m, cos_theta) * (factorial(n - m) / std::pow(rho, n + 1)), m * phi);
+#endif
   }
 
 #define GreenGardAndRokhlin1997
@@ -783,31 +987,39 @@ public:
   inline cmplx Ypq(const int n, int m) const {
     if (std::abs(m) > n || n < 0)
       return {0.0, 0.0};
-    else if (n <= pre_max && std::abs(m) <= pre_max)
+    else if ((pre_mask & PrecomputeYpq) && n <= pre_max_ypq && std::abs(m) <= pre_max_ypq)
       return this->pre_compute_div_rhon1_i_absk_A_FMM[n][m + pre_max];
     else
       return this->sph_harmonics(n, m) / ((std::pow(rho, n + 1)) * static_cast<std::complex<double>>(i_absk_A_FMM[n][m + N_i_absk_A_FMM]));
   }
 
-  inline std::array<cmplx, 2> p2mFunction(const int n, int m, const std::array<double, 3> &normal) const {
+  inline std::array<cmplx, 2> p2mFunction(const int n, int m, const std::array<double, 3>& normal) const {
 #ifdef GreenGardAndRokhlin1997
     m = -m; //! マイナスをつけるわけは，モーメントとなる側Y(a,b)_n^-mだからだ．eq. (5.3)
     cmplx Rnm = this->sph_harmonics_rho(n, m);
     auto [J0, J1, J2] = Jacobian_inv();
     const double cos_theta = std::get<2>(X) / rho;
     const int abs_m = std::abs(m);
-    cmplx grad_Rnm1_dot_normal = (static_cast<double>(n) * (Rnm / rho)) * Dot(normal, J0);                                                                                      //! rについての微分
+    cmplx grad_Rnm1_dot_normal = (static_cast<double>(n) * (Rnm / rho)) * Dot(normal, J0); //! rについての微分
+#if defined(_LIBCPP_VERSION)
+    grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (bem_sf::assoc_legendre(n, abs_m + 1, cos_theta) / bem_sf::assoc_legendre(n, abs_m, cos_theta))) * Rnm * Dot(normal, J1); //! thetaについての微分
+#else
     grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (std::assoc_legendre(n, abs_m + 1, cos_theta) / std::assoc_legendre(n, abs_m, cos_theta))) * Rnm * Dot(normal, J1); //! thetaについての微分
-    grad_Rnm1_dot_normal += (cmplx(0., m) * Rnm) * Dot(normal, J2);                                                                                                             //! phiについての微分
+#endif
+    grad_Rnm1_dot_normal += (cmplx(0., m) * Rnm) * Dot(normal, J2); //! phiについての微分
     return {Rnm, grad_Rnm1_dot_normal};
 #elif defined(Nishimura2002)
     const double cos_theta = std::get<2>(X) / rho;
     cmplx Rnm = this->Rnm_Nishimura2002(n, m);
     auto [J0, J1, J2] = Jacobian_inv();
     const int abs_m = std::abs(m);
-    cmplx grad_Rnm1_dot_normal = (static_cast<double>(n) * (Rnm / rho)) * Dot(normal, J0);                                                                                      //! rについての微分
+    cmplx grad_Rnm1_dot_normal = (static_cast<double>(n) * (Rnm / rho)) * Dot(normal, J0); //! rについての微分
+#if defined(_LIBCPP_VERSION)
+    grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (bem_sf::assoc_legendre(n, abs_m + 1, cos_theta) / bem_sf::assoc_legendre(n, abs_m, cos_theta))) * Rnm * Dot(normal, J1); //! thetaについての微分
+#else
     grad_Rnm1_dot_normal += (std::get<2>(X) / r2D * abs_m - (std::assoc_legendre(n, abs_m + 1, cos_theta) / std::assoc_legendre(n, abs_m, cos_theta))) * Rnm * Dot(normal, J1); //! thetaについての微分
-    grad_Rnm1_dot_normal += (cmplx(0., m) * Rnm) * Dot(normal, J2);                                                                                                             //! phiについての微分
+#endif
+    grad_Rnm1_dot_normal += (cmplx(0., m) * Rnm) * Dot(normal, J2); //! phiについての微分
     return {Rnm, grad_Rnm1_dot_normal};
 #else
     static_assert(false, "Please define either GreenGardAndRokhlin1997 or Nishimura2002");
@@ -876,12 +1088,37 @@ public:
 #include "basic_exception.hpp"
 
 struct target4FMM {
-  target4FMM(const std::array<double, 3> &Xtarget) : Xtarget(Xtarget) {};
+  target4FMM() = default;
+  target4FMM(const std::array<double, 3>& Xtarget) : Xtarget(Xtarget) {};
 
-  std::array<double, 3> Xtarget; //! 位置ベクトル
-  std::vector<std::tuple<std::array<double *, 2>, std::array<double, 2>>> vec_phiphin_WGNWGnN;
+  std::array<double, 3> Xtarget{0., 0., 0.}; //! 位置ベクトル
+  // Near-field cache (direct integration): SoA for SIMD/cache efficiency
+  // Indices correspond to the global dense vector (NetworkPoint::f2Index)
+  std::vector<int32_t> near_indices;
+  std::vector<double> near_weights_phi;  // multiplies phin
+  std::vector<double> near_weights_phin; // multiplies phi
+  //
+  std::vector<std::vector<int32_t>> near_indices_per_cell;     // cellごとに分けたnear_indices
+  std::vector<std::vector<double>> near_weights_phi_per_cell;  // multiplies phin
+  std::vector<std::vector<double>> near_weights_phin_per_cell; // multiplies phi
+  // Per-cell RLE structures (for optimized access patterns within each cell)
+  std::vector<std::vector<int32_t>> near_run_base_idx_per_cell;
+  std::vector<std::vector<int32_t>> near_run_pos_per_cell;
+  std::vector<std::vector<int32_t>> near_run_len_per_cell;
+  //
+  // Run-length encoding of `near_indices` to turn indirect loads into contiguous runs where possible.
+  // For each run r:
+  //   idx = near_run_base_idx[r] + j
+  //   weight pos = near_run_pos[r] + j
+  // for j=0..near_run_len[r)-1
+  std::vector<int32_t> near_run_base_idx;
+  std::vector<int32_t> near_run_pos;
+  std::vector<int32_t> near_run_len;
+
+  size_t near_cell_count = 0; // 訪問したセル数（統計用）
+
   double diagonal_coefficient = 0.;
-  std::vector<std::tuple<cmplx, std::array<cmplx, 2> *>> list_Ynm_rhon1_MM_; //! 大した計算量ではないのでこだわらない
+  std::vector<std::tuple<cmplx, std::array<cmplx, 2>*>> list_Ynm_rhon1_MM_; //! 大した計算量ではないのでこだわらない
 
   /* ---------------------------------------- */
 
@@ -890,21 +1127,22 @@ struct target4FMM {
   L2Pのために，localのmomentを取得し，和を取る準備をしておく
   */
 
-  void setL2P(const auto &Bsources) {
+  void setL2P(const auto& Bsources) {
     auto b_deepest = Bsources.getBucketAtDeepest(Xtarget);
     if (b_deepest == nullptr)
       throw std::runtime_error("target4FMM::setL2P: b_deepest is nullptr");
-    auto &Mlocal = b_deepest->MomentsLocalExpansion;
-    this->list_Ynm_rhon1_MM_.resize(Mlocal.nm_set.size(), {0., nullptr});
+    auto& Mlocal = b_deepest->MomentsLocalExpansion;
+    this->list_Ynm_rhon1_MM_.assign(Mlocal.nm_set.size(), {0., nullptr});
     SphericalCoordinates S(Xtarget - Mlocal.X);
-    for (const auto &[n, m] : Mlocal.nm_set) {
+    for (const auto& [n, m] : Mlocal.nm_set) {
       this->list_Ynm_rhon1_MM_[Mlocal.index(n, m)] = {S.l2pFunction(n, m), &Mlocal.MM_[Mlocal.index(n, m)]};
     }
   }
 
-  std::array<double, 2> integrateFMM() const {
+  // old name: integrateFMM
+  std::array<double, 2> integrateFarField() const {
     cmplx w_G_phin = 0., w_Gn_phi = 0.;
-    for (const auto &[Ynm_rhon1, MM_] : this->list_Ynm_rhon1_MM_) {
+    for (const auto& [Ynm_rhon1, MM_] : this->list_Ynm_rhon1_MM_) {
       w_G_phin += Ynm_rhon1 * std::get<0>(*MM_);
       w_Gn_phi += Ynm_rhon1 * std::get<1>(*MM_);
     }
@@ -939,31 +1177,32 @@ struct target4FMM {
 
   */
 
-  void setDirectIntegration(const auto &Bucket_sources) {
-    /*
-    関数の説明：
-    このtarget4FMMにとってのnear fieldのソース点を，FMMのツリー構造から選び出し，直接積分を行うための準備をする関数である．
-
-    具体的には，vec_phiphin_WGNWGnNを作成する，
-    vec_phiphin_WGNWGnNは，GMRESの反復で変化し，かつ求解対象である未知変数へのポインタ2つと，境界積分方程式においてその未知変数にかかる重み2つまとめたもののベクトルである．
-
-     */
+  void setDirectIntegration(const auto& Bucket_sources) {
     auto b_deepest = Bucket_sources.getBucketAtDeepest(this->Xtarget);
-    std::unordered_map<std::array<double *, 2>, std::array<double, 2>> uo_phiphin_WGNWGnN;
-    uo_phiphin_WGNWGnN.reserve(b_deepest->data1D_vector.size() * 3);
-    //! これはsorceがsource4FMM_Elementの場合のものになっている
-    auto setNear = [&](const auto *B) {
-      for (const auto &source : B->data1D_vector)
-        for (const auto &[phiphin, WGN_WGnN] : source->use_this_source_when_set_direct_integration(this))
-          uo_phiphin_WGNWGnN[phiphin] += WGN_WGnN;
-      //$ このソース点の直接積分計算をどのように行うかを指定する関数
+
+    thread_local DirectAccumulator acc;
+    acc.reset();
+    near_cell_count = 0;
+
+    auto setNear = [&](const auto* B) {
+      ++near_cell_count;
+      for (const auto& source : B->data1D_vector) {
+        if (!source->fill_direct_entries)
+          continue;
+        if (source->fill_direct_entries_nonadj && !source->isAdjacentTo(this)) {
+          source->fill_direct_entries_nonadj(this, acc);
+        } else {
+          source->fill_direct_entries(this, acc);
+        }
+      }
     };
 
-    setNear(b_deepest); // 自分を内包するバケツ内のソース点を追加
-    for (const auto &b : b_deepest->buckets_near)
-      setNear(b); // 自分を内包するバケツ内のnear fieldのバケツ内のソース点を追加
+    setNear(b_deepest);
 
-    auto set_parent = [&](auto b, auto &set_parent__) -> void {
+    for (const auto& b : b_deepest->buckets_near)
+      setNear(b);
+
+    auto set_parent = [&](auto b, auto& set_parent__) -> void {
       if (b != nullptr) {
         for (auto B : b->buckets_near)
           if (!B->hasChildren())
@@ -971,56 +1210,101 @@ struct target4FMM {
         set_parent__(b->parent, set_parent__);
       }
     };
+    set_parent(b_deepest->parent, set_parent);
 
-    set_parent(b_deepest->parent, set_parent); // 上を辿って，途中で止まったバケツ内のソース点（そのバケツのソース点数は少ないはず）も追加．M2Lされていないため．
+    // Sort touched_list (much smaller than old all_entries)
+    std::sort(acc.touched_list.begin(), acc.touched_list.end());
 
-    this->vec_phiphin_WGNWGnN.assign(uo_phiphin_WGNWGnN.begin(), uo_phiphin_WGNWGnN.end());
+    // Extract results into sparse arrays
+    near_indices.clear();
+    near_weights_phi.clear();
+    near_weights_phin.clear();
 
-    // 小さい重みから順に安定ソート（数値和の安定化・再現性向上）
-    auto weight2 = [](const auto &t) {
-      const auto &W = std::get<1>(t);   // std::array<double,2>
-      return W[0] * W[0] + W[1] * W[1]; // ||W||^2
-    };
-    std::stable_sort(this->vec_phiphin_WGNWGnN.begin(), this->vec_phiphin_WGNWGnN.end(), [&](const auto &a, const auto &b) {
-      const auto wa = weight2(a), wb = weight2(b);
-      if (wa != wb)
-        return wa < wb; // 小さい方から
-      // 同値時はポインタの順で決定的に
-      const auto &pa = std::get<0>(a);
-      const auto &pb = std::get<0>(b);
-      if (pa[0] != pb[0])
-        return pa[0] < pb[0];
-      return pa[1] < pb[1];
-    });
-  }
+    const std::size_t n_touched = acc.touched_list.size();
+    near_indices.reserve(n_touched);
+    near_weights_phi.reserve(n_touched);
+    near_weights_phin.reserve(n_touched);
 
-  std::array<double, 2> integrate() const {
-    //! setDirectIntegrationは，FMMのツリー構造から，near fieldのバケツだけを選択肢，そのバケツ内のソース点に対して，vec_phiphin_WGNWGnNを作成しておく．
-    //! vec_phiphin_WGNWGnNのポインタと値は，GMRESの反復において変化させる必要がないため，高速に反復計算ができる．
-    std::array<double, 2> ret = {0., 0.};
-    for (const auto &[phiphin, WGN_WGnN] : this->vec_phiphin_WGNWGnN) {
-      ret[0] += (*std::get<1>(phiphin)) * WGN_WGnN[0];
-      ret[1] += (*std::get<0>(phiphin)) * WGN_WGnN[1];
+    for (int32_t idx : acc.touched_list) {
+      near_indices.push_back(idx);
+      near_weights_phi.push_back(acc.phi_acc[idx]);
+      near_weights_phin.push_back(acc.phin_acc[idx]);
+      // Reset for next target
+      acc.phi_acc[idx] = 0.;
+      acc.phin_acc[idx] = 0.;
+      acc.touched_flags[idx] = 0;
     }
-    return ret;
+    acc.update_high_water_mark();
+
+    const std::size_t n = near_indices.size();
+
+    // Build contiguous runs for unified arrays (near_indices is already sorted by idx).
+    near_run_base_idx.clear();
+    near_run_pos.clear();
+    near_run_len.clear();
+    if (n > 0) {
+      near_run_base_idx.reserve(n / 4 + 1);
+      near_run_pos.reserve(n / 4 + 1);
+      near_run_len.reserve(n / 4 + 1);
+      std::size_t pos0 = 0;
+      int32_t base = near_indices[0];
+      int32_t prev = base;
+      for (std::size_t i = 1; i < n; ++i) {
+        const int32_t cur = near_indices[i];
+        if (cur == prev + 1) {
+          prev = cur;
+          continue;
+        }
+        const std::size_t len = i - pos0;
+        near_run_base_idx.push_back(base);
+        near_run_pos.push_back(static_cast<int32_t>(pos0));
+        near_run_len.push_back(static_cast<int32_t>(len));
+        pos0 = i;
+        base = cur;
+        prev = cur;
+      }
+      const std::size_t len = n - pos0;
+      near_run_base_idx.push_back(base);
+      near_run_pos.push_back(static_cast<int32_t>(pos0));
+      near_run_len.push_back(static_cast<int32_t>(len));
+    }
   }
 
-  std::array<double, 2> integrate(const auto &Bsources) const {
-    //! この関数は，FMMのツリー構造を使うことはしない．
-    //! 引数として与えられたBsources内のソース点全てに対して，use_this_source_when_set_direct_integrationで指定された方法に従って，直接積分を行う．
-    std::array<double, 2> ret = {0., 0.};
-    for (const auto &source : Bsources.data1D_vector)
-      for (const auto &[phiphin, WGN_WGnN] : source->use_this_source_when_set_direct_integration(this)) {
-        ret[0] += (*std::get<1>(phiphin)) * WGN_WGnN[0];
-        ret[1] += (*std::get<0>(phiphin)) * WGN_WGnN[1];
+  std::array<double, 2> integrateNearField(const double* phi_by_index, const double* phin_by_index) const {
+    double ret0 = 0.0;
+    double ret1 = 0.0;
+    if (!bemNearUseRunsEnabled()) {
+      const std::size_t n = near_indices.size();
+      for (std::size_t i = 0; i < n; ++i) {
+        const int32_t idx = near_indices[i];
+        ret0 += phin_by_index[idx] * near_weights_phi[i];
+        ret1 += phi_by_index[idx] * near_weights_phin[i];
       }
-    return ret;
+      return {ret0, ret1};
+    }
+    const std::size_t nr = near_run_len.size();
+    for (std::size_t r = 0; r < nr; ++r) {
+      const int32_t base = near_run_base_idx[r];
+      const int32_t pos = near_run_pos[r];
+      const int32_t len = near_run_len[r];
+      double local0 = 0.0;
+      double local1 = 0.0;
+#pragma omp simd reduction(+ : local0, local1)
+      for (int32_t j = 0; j < len; ++j) {
+        const int32_t idx = base + j;
+        local0 += phin_by_index[idx] * near_weights_phi[static_cast<std::size_t>(pos + j)];
+        local1 += phi_by_index[idx] * near_weights_phin[static_cast<std::size_t>(pos + j)];
+      }
+      ret0 += local0;
+      ret1 += local1;
+    }
+    return {ret0, ret1};
   }
 };
 
 /* -------------------------------------------------------------------------- */
 
-constexpr std::size_t computeSizeM2M(std::size_t N) {
+inline constexpr std::size_t computeSizeM2M(std::size_t N) {
   std::size_t count = 0;
   for (std::size_t j = 0; j <= N; ++j)
     for (int k = -static_cast<int>(j); k <= static_cast<int>(j); ++k)
@@ -1032,7 +1316,8 @@ constexpr std::size_t computeSizeM2M(std::size_t N) {
 }
 
 /* -------------------------------------------------------------------------- */
-template <int N> constexpr std::array<std::array<int, 2>, (N + 1) * (N + 1)> make_nm_set() {
+template <int N>
+constexpr std::array<std::array<int, 2>, (N + 1) * (N + 1)> make_nm_set() {
   std::array<std::array<int, 2>, (N + 1) * (N + 1)> arr{};
   int ind = 0;
   for (int n = 0; n <= N; ++n)
@@ -1041,13 +1326,14 @@ template <int N> constexpr std::array<std::array<int, 2>, (N + 1) * (N + 1)> mak
   return arr;
 }
 
-template <int N> constexpr auto make_zero_MM() {
+template <int N>
+constexpr auto make_zero_MM() {
   std::array<std::array<cmplx, 2>, (N + 1) * (N + 1)> result{};
-  for (auto &pair : result)
+  for (auto& pair : result)
     pair = {0.0, 0.0};
   return result;
 }
 
-double fma(const double &a, const double &b, const double &c, const double &d, const double &e) { return std::fma(a, b, std::fma(c, d, e)); }
+inline double fma(const double& a, const double& b, const double& c, const double& d, const double& e) { return std::fma(a, b, std::fma(c, d, e)); }
 
 #endif

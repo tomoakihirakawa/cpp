@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <execution>
 #include <limits>
 #include <ranges>
@@ -7,6 +8,44 @@
 #include "lib_Fourier.hpp"
 #include "lib_multipole_expansion.hpp"
 #include "moments.hpp" // 外部化した Moments
+
+namespace spatial_partitioning_detail {
+template <class It, class Pred>
+inline bool any_of_unseq(It first, It last, Pred pred) {
+#if defined(__cpp_lib_execution)
+  return std::any_of(std::execution::unseq, first, last, pred);
+#else
+  return std::any_of(first, last, pred);
+#endif
+}
+
+template <class It, class Pred>
+inline bool all_of_unseq(It first, It last, Pred pred) {
+#if defined(__cpp_lib_execution)
+  return std::all_of(std::execution::unseq, first, last, pred);
+#else
+  return std::all_of(first, last, pred);
+#endif
+}
+
+template <class It, class Fn>
+inline void for_each_unseq(It first, It last, Fn fn) {
+#if defined(__cpp_lib_execution)
+  std::for_each(std::execution::unseq, first, last, fn);
+#else
+  std::for_each(first, last, fn);
+#endif
+}
+
+template <class It, class Fn>
+inline void for_each_par_unseq(It first, It last, Fn fn) {
+#if defined(__cpp_lib_execution)
+  std::for_each(std::execution::par_unseq, first, last, fn);
+#else
+  std::for_each(first, last, fn);
+#endif
+}
+} // namespace spatial_partitioning_detail
 
 /*DOC_EXTRACT lib_spatial_partitioning
 
@@ -180,7 +219,10 @@ B.rebuild_tree_if_needed();
 // Buckets is derived from CoordinateBounds
 // N <= 8, 10だと破綻することがあった．
 //! ./fast ./input_files/Goring1979_DT0d05_MESHwater0d04refined.obj_ELEMlinear_ALEpseudo_quad_ALEPERIOD1
-template <typename T /*Stored Object*/, int N = 0> struct Buckets : public CoordinateBounds {
+template <typename T /*Stored Object*/, int N = 0>
+struct Buckets : public CoordinateBounds {
+
+  static constexpr int expansion_order = N; // FMM展開次数を公開
   using sizeType = int;
   using ST = sizeType;
   using ST2 = std::array<sizeType, 2>;
@@ -196,10 +238,13 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   std::vector<T> data1D_vector;
   std::unordered_map<T, ST3> map_to_ijk;
   double dL;
+  double inv_dL; // Inverse of dL for fast multiplication instead of division
+  // Cached lower bounds for fast index calculation
+  double xmin, ymin, zmin;
   double bucketVolume() const { return std::pow(this->dL, 3.); };
 
   Buckets() = default;
-  Buckets(const CoordinateBounds &c_bounds) : CoordinateBounds(c_bounds) {
+  Buckets(const CoordinateBounds& c_bounds) : CoordinateBounds(c_bounds) {
     auto [xmin, xmax] = c_bounds.bounds[0];
     auto [ymin, ymax] = c_bounds.bounds[1];
     auto [zmin, zmax] = c_bounds.bounds[2];
@@ -207,11 +252,11 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     initialize(this->bounds, max_dL);
     this->center = this->X;
   };
-  Buckets(const CoordinateBounds &c_bounds, const double dL_IN) : CoordinateBounds(c_bounds) {
+  Buckets(const CoordinateBounds& c_bounds, const double dL_IN) : CoordinateBounds(c_bounds) {
     initialize(this->bounds, dL_IN);
     this->center = this->X;
   };
-  Buckets(const T3Tdd &boundingboxIN, const double dL_IN) : CoordinateBounds(boundingboxIN) {
+  Buckets(const T3Tdd& boundingboxIN, const double dL_IN) : CoordinateBounds(boundingboxIN) {
     initialize(this->bounds, dL_IN);
     this->center = this->X;
   };
@@ -222,9 +267,9 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     this->data1D.clear();
     this->data1D_vector.clear();
     this->map_to_ijk.clear();
-    for (auto &i : this->children)
-      for (auto &j : i)
-        for (auto &k : j)
+    for (auto& i : this->children)
+      for (auto& j : i)
+        for (auto& k : j)
           if (k != nullptr) {
             delete k;
             k = nullptr;
@@ -234,7 +279,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
 
   std::vector<std::array<int, 3>> vector_ijk;
 
-  ST calculate_size(const auto &bounds, const double &dL) {
+  ST calculate_size(const auto& bounds, const double& dL) {
     const std::size_t max_size = 1000000;
     double size = std::ceil((std::get<1>(bounds) - std::get<0>(bounds)) / dL);
     if (size <= 0.)
@@ -247,7 +292,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   };
 
   bool is_data_assigned_as_3D = false;
-  void initialize(const auto &boundingboxIN, const double dL_IN) {
+  void initialize(const auto& boundingboxIN, const double dL_IN) {
 
     this->vector_is_set = false;
     this->data1D.clear();
@@ -258,6 +303,11 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
 
     CoordinateBounds::setBounds(boundingboxIN);
     this->dL = dL_IN;
+    this->inv_dL = 1.0 / dL_IN; // Precompute inverse for fast multiplication
+    // Cache lower bounds for fast index calculation
+    this->xmin = std::get<0>(this->xbounds());
+    this->ymin = std::get<0>(this->ybounds());
+    this->zmin = std::get<0>(this->zbounds());
 
     auto xsize_last = this->xsize;
     auto ysize_last = this->ysize;
@@ -315,25 +365,46 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
 
   */
 
-  // x座標を内包するバケツのインデックスを返す
-  constexpr Tddd itox(const ST i, const ST j, const ST k) const { return {this->dL * 0.5 + this->dL * i + std::get<0>(this->xbounds()), this->dL * 0.5 + this->dL * j + std::get<0>(this->ybounds()), this->dL * 0.5 + this->dL * k + std::get<0>(this->zbounds())}; };
-  constexpr Tddd itox(const ST3 &ijk) const { return itox(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
-  constexpr ST3 indices_no_clamp(const Tddd &x) const {
+  // x座標を内包するバケツのインデックスを返す (optimized with cached bounds)
+#if defined(__GNUC__) || defined(__clang__)
+  [[nodiscard]] __attribute__((always_inline)) inline Tddd itox(const ST i, const ST j, const ST k) const
+#else
+  [[nodiscard]] inline Tddd itox(const ST i, const ST j, const ST k) const
+#endif
+  {
+    return {this->dL * (0.5 + i) + this->xmin,
+            this->dL * (0.5 + j) + this->ymin,
+            this->dL * (0.5 + k) + this->zmin};
+  }
+  [[nodiscard]] inline Tddd itox(const ST3& ijk) const {
+    return itox(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk));
+  }
+  // Optimized: use cached bounds and multiplication instead of division (multiplication is faster)
+#if defined(__GNUC__) || defined(__clang__)
+  [[nodiscard]] __attribute__((always_inline)) inline ST3 indices_no_clamp(const Tddd& x) const
+#else
+  [[nodiscard]] inline ST3 indices_no_clamp(const Tddd& x) const
+#endif
+  {
     //! floorは必要！もし直接intキャストを使うと，-0.**が0になってしまい，isInsideがfalseなはずがtrueが返ってしまう．
-    return {static_cast<ST>(std::floor((std::get<0>(x) - std::get<0>(this->xbounds())) / this->dL)), static_cast<ST>(std::floor((std::get<1>(x) - std::get<0>(this->ybounds())) / this->dL)), static_cast<ST>(std::floor((std::get<2>(x) - std::get<0>(this->zbounds())) / this->dL))};
+    return {static_cast<ST>(std::floor((std::get<0>(x) - this->xmin) * this->inv_dL)),
+            static_cast<ST>(std::floor((std::get<1>(x) - this->ymin) * this->inv_dL)),
+            static_cast<ST>(std::floor((std::get<2>(x) - this->zmin) * this->inv_dL))};
   };
 
-  constexpr ST3 indices(const Tddd &x) const {
+  [[nodiscard]] inline ST3 indices(const Tddd& x) const {
     const auto ijk = indices_no_clamp(x);
-    return {std::clamp(std::get<0>(ijk), static_cast<ST>(0), this->xsize - 1), std::clamp(std::get<1>(ijk), static_cast<ST>(0), this->ysize - 1), std::clamp(std::get<2>(ijk), static_cast<ST>(0), this->zsize - 1)};
+    return {std::clamp(std::get<0>(ijk), static_cast<ST>(0), this->xsize - 1),
+            std::clamp(std::get<1>(ijk), static_cast<ST>(0), this->ysize - 1),
+            std::clamp(std::get<2>(ijk), static_cast<ST>(0), this->zsize - 1)};
   };
-  constexpr ST6 indices_ranges(const Tddd &x, const double d) const {
+  constexpr ST6 indices_ranges(const Tddd& x, const double d) const {
     auto [i_min, j_min, k_min] = indices(x - d);
     auto [i_max, j_max, k_max] = indices(x + d);
     return {i_min, i_max, j_min, j_max, k_min, k_max};
   };
 
-  constexpr ST6 indices_ranges(const Tddd &x, const Tddd &dx_dy_dz) const {
+  constexpr ST6 indices_ranges(const Tddd& x, const Tddd& dx_dy_dz) const {
     auto [dx, dy, dz] = dx_dy_dz;
     auto minmax_x = indices_ranges(x, dx);
     auto minmax_y = indices_ranges(x, dy);
@@ -345,31 +416,58 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   //%                                 整合性の確認                                 */
   //% -------------------------------------------------------------------------- */
 
-  bool InsideQ(const ST i, const ST j, const ST k) const { return (i >= 0 && j >= 0 && k >= 0 && i < this->xsize && j < this->ysize && k < this->zsize); };
-  bool InsideQ(const ST3 &ijk) const { return InsideQ(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk)); };
-  bool InsideQ(const Tddd &x) const { return InsideQ(indices_no_clamp(x)); };
+  // Optimized InsideQ with inline and nodiscard attributes
+  // Reordered conditions: check likely-to-fail conditions first (branch prediction)
+#if defined(__GNUC__) || defined(__clang__)
+  [[nodiscard]] __attribute__((always_inline)) inline bool InsideQ(const ST i, const ST j, const ST k) const
+#else
+  [[nodiscard]] inline bool InsideQ(const ST i, const ST j, const ST k) const
+#endif
+  {
+    return (i >= 0 && i < this->xsize && j >= 0 && j < this->ysize && k >= 0 && k < this->zsize);
+  }
+
+#if defined(__GNUC__) || defined(__clang__)
+  [[nodiscard]] __attribute__((always_inline)) inline bool InsideQ(const ST3& ijk) const
+#else
+  [[nodiscard]] inline bool InsideQ(const ST3& ijk) const
+#endif
+  {
+    return InsideQ(std::get<0>(ijk), std::get<1>(ijk), std::get<2>(ijk));
+  }
+
+#if defined(__GNUC__) || defined(__clang__)
+  [[nodiscard]] __attribute__((always_inline)) inline bool InsideQ(const Tddd& x) const
+#else
+  [[nodiscard]] inline bool InsideQ(const Tddd& x) const
+#endif
+  {
+    return InsideQ(indices_no_clamp(x));
+  }
 
   //% -------------------------------------------------------------------------- */
 
-  auto getBounds(const ST3 &ijk) const {
+  // Optimized with cached bounds
+  [[nodiscard]] inline auto getBounds(const ST3& ijk) const {
     const auto [i, j, k] = ijk;
-    return CoordinateBounds(T3Tdd{{{this->dL * i + std::get<0>(this->xbounds()), this->dL * (i + 1) + std::get<0>(this->xbounds())}, {this->dL * j + std::get<0>(this->ybounds()), this->dL * (j + 1) + std::get<0>(this->ybounds())}, {this->dL * k + std::get<0>(this->zbounds()), this->dL * (k + 1) + std::get<0>(this->zbounds())}}});
+    return CoordinateBounds(T3Tdd{{{this->dL * i + this->xmin, this->dL * (i + 1) + this->xmin},
+                                   {this->dL * j + this->ymin, this->dL * (j + 1) + this->ymin},
+                                   {this->dL * k + this->zmin, this->dL * (k + 1) + this->zmin}}});
   };
 
   //@ -------------------------------------------------------------------------- */
 
   // unordered_setをvectorにコピー
   void setVector() {
-    this->data_vector.clear();
-    this->data_vector.resize(this->xsize, std::vector<std::vector<std::vector<T>>>(this->ysize, std::vector<std::vector<T>>(this->zsize)));
+    this->data_vector.assign(this->xsize, std::vector<std::vector<std::vector<T>>>(this->ysize, std::vector<std::vector<T>>(this->zsize)));
 
     // Iterate through the 3D array and populate the 3D vector
     ST i, j, k;
     for (i = 0; i < this->xsize; ++i) {
       for (j = 0; j < this->ysize; ++j) {
         for (k = 0; k < this->zsize; ++k) {
-          auto &bucket = this->data[i][j][k];
-          auto &target_vector = this->data_vector[i][j][k];
+          auto& bucket = this->data[i][j][k];
+          auto& target_vector = this->data_vector[i][j][k];
           target_vector.reserve(bucket.size());
           target_vector.assign(bucket.begin(), bucket.end());
         }
@@ -398,20 +496,20 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     this->data1D_vector.clear();
     this->map_to_ijk.clear();
     // ツリー構造を保持するためにループしてクリア
-    for (auto &plane : this->data)
-      for (auto &row : plane)
-        for (auto &cell : row)
+    for (auto& plane : this->data)
+      for (auto& row : plane)
+        for (auto& cell : row)
           cell.clear();
-    for (auto &plane : this->data_vector)
-      for (auto &row : plane)
-        for (auto &cell : row)
+    for (auto& plane : this->data_vector)
+      for (auto& row : plane)
+        for (auto& cell : row)
           cell.clear();
-    traverseTree([](auto &child) { child->clearDataKeepTree(); });
+    traverseTree([](auto& child) { child->clearDataKeepTree(); });
   }
 
   //% ----------------------------------------------- */
 
-  bool erase_add(const Tddd &x, const T &p) {
+  bool erase_add(const Tddd& x, const T& p) {
     bool success = erase(p);
     success = success && add(x, p);
     return success;
@@ -420,7 +518,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   //% ----------------------------------------------- */
 
   void shrink() {
-    traverseTree([](auto &child) {
+    traverseTree([](auto& child) {
       if (child->data1D.empty()) {
         delete child;
         child = nullptr;
@@ -438,7 +536,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
 
     // 子配列確保 (一度だけ)
     if (!this->hasChildren())
-      children.resize(this->xsize, std::vector<std::vector<Buckets<T, N> *>>(this->ysize, std::vector<Buckets<T, N> *>(this->zsize, nullptr)));
+      children.assign(this->xsize, std::vector<std::vector<Buckets<T, N>*>>(this->ysize, std::vector<Buckets<T, N>*>(this->zsize, nullptr)));
 
     std::vector<std::array<int, 3>> ijk_list;
     ijk_list.reserve(this->xsize * this->ysize * this->zsize);
@@ -449,19 +547,19 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
 
     // 1) 未生成セルに対して child を生成
 #pragma omp parallel for
-    for (const auto &[i, j, k] : ijk_list) {
+    for (const auto& [i, j, k] : ijk_list) {
       if (this->data[i][j][k].empty()) {
         if (this->children[i][j][k] != nullptr) {
           delete this->children[i][j][k]; // 既存の子は削除
           this->children[i][j][k] = nullptr;
         }
       } else if (children[i][j][k] == nullptr) {
-        auto *child = new Buckets<T, N>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+        auto* child = new Buckets<T, N>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
         child->setGrowCondition(this->grow_condition);
         child->setLevel(this->level + 1, this->max_level);
         child->parent = this;
         // データ移送 (再帰成長は後段)
-        for (auto &p : this->data[i][j][k])
+        for (auto& p : this->data[i][j][k])
           child->add(p->X, p);
         children[i][j][k] = child;
         changed = true; // 少なくとも1つの子が生成された
@@ -471,12 +569,12 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     // 2) 再帰 (必要なら)
     if (recursive) {
       if (this->level <= 2)
-        traverseTreeParallel([&](Buckets<T, N> *child) {
+        traverseTreeParallel([&](Buckets<T, N>* child) {
           if (child->grow_condition(child) && child->level < child->max_level)
             changed = child->grow(true) || changed; // 再帰的に成長
         });
       else
-        traverseTree([&](Buckets<T, N> *child) {
+        traverseTree([&](Buckets<T, N>* child) {
           if (child->grow_condition(child) && child->level < child->max_level)
             changed = child->grow(true) || changed; // 再帰的に成長
         });
@@ -493,10 +591,10 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
 
   //% 追加 + 縮小　shrinkを最後に行うことで若干効率が良くなる場合がある．
   //% つまり，入れ直し
-  bool erase_add_grow_shrink(const Tddd &x, const T &p) {
+  bool erase_add_grow_shrink(const Tddd& x, const T& p) {
     bool success = erase(p);
     success = success && add_grow(x, p);
-    traverseTree([](auto &child) {
+    traverseTree([](auto& child) {
       if (child->data1D.empty()) {
         delete child;
         child = nullptr;
@@ -529,7 +627,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   //! 再帰的削除 + ツリーの縮小
   bool erase_shrink(const T p) {
     const bool found = erase(p);
-    traverseTree([](auto &child) {
+    traverseTree([](auto& child) {
       if (child->data1D.empty()) {
         delete child;
         child = nullptr;
@@ -539,7 +637,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   }
 
   // 再帰的追加
-  bool add(const Tddd &x, const T p) {
+  bool add(const Tddd& x, const T p) {
     if (!InsideQ(x))
       return false;
     this->vector_is_set = false;
@@ -563,24 +661,24 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   bool add(const T p) { return this->add(p->X, p); };
 
   // 再帰的追加 + 再帰的追加ツリー生成
-  bool add_grow(const Tddd &x, const T &p) {
+  bool add_grow(const Tddd& x, const T& p) {
     if (!InsideQ(x))
       return false;
     const bool ret = this->add(x, p);
     // ツリーがないが，成長条件を満たす場合はツリーを生成し，addする．addしたのでdata1Dがゼロであることはない．
     if (!this->hasChildren() && this->grow_condition(this) && this->level < this->max_level) {
-      children.resize(this->xsize, std::vector<std::vector<Buckets<T, N> *>>(this->ysize, std::vector<Buckets<T, N> *>(this->zsize, nullptr)));
+      children.assign(this->xsize, std::vector<std::vector<Buckets<T, N>*>>(this->ysize, std::vector<Buckets<T, N>*>(this->zsize, nullptr)));
       for (int i = 0; i < this->xsize; ++i)
         for (int j = 0; j < this->ysize; ++j)
           for (int k = 0; k < this->zsize; ++k) {
             if (this->data[i][j][k].empty())
               continue;
-            Buckets<T, N> *bucket = new Buckets<T, N>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+            Buckets<T, N>* bucket = new Buckets<T, N>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
             bucket->setGrowCondition(this->grow_condition); //! 1. Important
             bucket->setLevel(this->level + 1, this->max_level);
             bucket->parent = this; // 親バケツを設定
             children[i][j][k] = bucket;
-            for (auto &p : this->data[i][j][k])
+            for (auto& p : this->data[i][j][k])
               bucket->add_grow(p->X, p); //! 2. Important
           }
     }
@@ -588,12 +686,12 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     return ret;
   }
 
-  std::tuple<bool, std::array<int, 3>> addAndGetIndices(const Tddd &x, const T p) {
+  std::tuple<bool, std::array<int, 3>> addAndGetIndices(const Tddd& x, const T p) {
     auto ijk = indices(x);
     return {add(x, p), ijk};
   };
 
-  bool add(const std::unordered_set<T> &P) {
+  bool add(const std::unordered_set<T>& P) {
     this->vector_is_set = false;
     bool ret = true;
     for (const auto p : P) {
@@ -603,7 +701,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     return ret;
   };
 
-  bool add(const std::unordered_set<T> &P, const std::function<Tddd(const T &)> &ToX) {
+  bool add(const std::unordered_set<T>& P, const std::function<Tddd(const T&)>& ToX) {
     this->vector_is_set = false;
     bool ret = true;
     for (const auto p : P) {
@@ -613,12 +711,12 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     return ret;
   };
 
-  void initialize_add(const auto &boundingboxIN, const double dL_IN, const std::unordered_set<T> &P) {
+  void initialize_add(const auto& boundingboxIN, const double dL_IN, const std::unordered_set<T>& P) {
 
     this->initialize(boundingboxIN, dL_IN);
     this->vector_is_set = false;
 
-    for (const auto &p : P) {
+    for (const auto& p : P) {
       const auto x = ToX(p);
       if (InsideQ(x)) {
         const auto ijk = this->indices(x);
@@ -639,20 +737,20 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
 
   /* -------------------------------------------------------------------------- */
 
-  auto getBucket(const Tddd &x) const {
+  auto getBucket(const Tddd& x) const {
     const auto ijk = this->indices(x);
     return this->children[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)];
   };
 
-  auto getData(const Tddd &x) const {
+  auto getData(const Tddd& x) const {
     const auto ijk = this->indices(x);
     return this->data[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)];
   };
 
-  auto getData(const Tddd &x, const double &range) const {
+  auto getData(const Tddd& x, const double& range) const {
     const auto ijk = this->indices(x);
     std::unordered_set<T> ret;
-    this->apply(x, range, [&](auto &a) { ret.emplace(a); });
+    this->apply(x, range, [&](auto& a) { ret.emplace(a); });
     return ret;
   };
 
@@ -671,57 +769,57 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   // b@ ========================================================================= */
 
   //! none_of
-  bool none_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const {
+  bool none_of(const Tddd& x, const double d, const std::function<bool(const T&)>& func) const {
     if (this->data.empty())
       return true;
     const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
     if (!this->vector_is_set) {
-      return !std::any_of(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) { return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) { return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) { return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
+      return !spatial_partitioning_detail::any_of_unseq(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto& Bi) { return spatial_partitioning_detail::any_of_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto& Bij) { return spatial_partitioning_detail::any_of_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto& Bijk) { return spatial_partitioning_detail::any_of_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
     } else {
-      return !std::any_of(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) { return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) { return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) { return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
+      return !spatial_partitioning_detail::any_of_unseq(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto& Bi) { return spatial_partitioning_detail::any_of_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto& Bij) { return spatial_partitioning_detail::any_of_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto& Bijk) { return spatial_partitioning_detail::any_of_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
     }
   }
 
   //! all_of
-  bool all_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const {
+  bool all_of(const Tddd& x, const double d, const std::function<bool(const T&)>& func) const {
     if (this->data.empty())
       return true;
     const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
     if (!this->vector_is_set) {
-      return std::all_of(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) { return std::all_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) { return std::all_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) { return std::all_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
+      return spatial_partitioning_detail::all_of_unseq(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto& Bi) { return spatial_partitioning_detail::all_of_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto& Bij) { return spatial_partitioning_detail::all_of_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto& Bijk) { return spatial_partitioning_detail::all_of_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
     } else {
-      return std::all_of(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) { return std::all_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) { return std::all_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) { return std::all_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
+      return spatial_partitioning_detail::all_of_unseq(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto& Bi) { return spatial_partitioning_detail::all_of_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto& Bij) { return spatial_partitioning_detail::all_of_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto& Bijk) { return spatial_partitioning_detail::all_of_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
     }
   }
 
   //! any_of
-  bool any_of(const Tddd &x, const double d, const std::function<bool(const T &)> &func) const {
+  bool any_of(const Tddd& x, const double d, const std::function<bool(const T&)>& func) const {
     if (this->data.empty())
       return false;
     const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
     if (!this->vector_is_set) {
-      return std::any_of(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto &Bi) { return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) { return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) { return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
+      return spatial_partitioning_detail::any_of_unseq(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1, [&](const auto& Bi) { return spatial_partitioning_detail::any_of_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto& Bij) { return spatial_partitioning_detail::any_of_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto& Bijk) { return spatial_partitioning_detail::any_of_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
     } else {
-      return std::any_of(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto &Bi) { return std::any_of(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto &Bij) { return std::any_of(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto &Bijk) { return std::any_of(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
+      return spatial_partitioning_detail::any_of_unseq(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&](const auto& Bi) { return spatial_partitioning_detail::any_of_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&](const auto& Bij) { return spatial_partitioning_detail::any_of_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&](const auto& Bijk) { return spatial_partitioning_detail::any_of_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { return func(p); }); }); }); });
     }
   }
 
   //! apply
-  void apply(const Tddd &x, const double d, const std::function<void(const T &)> &func) const {
+  void apply(const Tddd& x, const double d, const std::function<void(const T&)>& func) const {
     if (this->data.empty())
       return;
     const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
     if (!this->vector_is_set) {
-      std::for_each(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1,
-                    [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) { std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) { std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) { std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
+      spatial_partitioning_detail::for_each_unseq(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1,
+                                                  [&func, &j_min, &j_max, &k_min, &k_max](const auto& Bi) { spatial_partitioning_detail::for_each_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto& Bij) { spatial_partitioning_detail::for_each_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto& Bijk) { spatial_partitioning_detail::for_each_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
     } else {
-      std::for_each(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1,
-                    [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) { std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) { std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) { std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
+      spatial_partitioning_detail::for_each_unseq(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1,
+                                                  [&func, &j_min, &j_max, &k_min, &k_max](const auto& Bi) { spatial_partitioning_detail::for_each_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto& Bij) { spatial_partitioning_detail::for_each_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto& Bijk) { spatial_partitioning_detail::for_each_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
     }
   }
 
   //! apply
-  void apply(const Tddd &x, const double d, const std::function<void(const int, const int, const int)> &func) const {
+  void apply(const Tddd& x, const double d, const std::function<void(const int, const int, const int)>& func) const {
     const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
     int i, j, k;
     for (i = i_min; i <= i_max; ++i)
@@ -730,15 +828,15 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
           func(i, j, k);
   }
 
-  void applyVec1D(const Tddd &x, const double d, const std::function<void(const std::vector<T> &)> &func) const {
+  void applyVec1D(const Tddd& x, const double d, const std::function<void(const std::vector<T>&)>& func) const {
     if (this->data.empty() || !this->vector_is_set)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D data is empty");
     const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, d);
-    std::for_each(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) { std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) { std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) { func(Bijk); }); }); });
+    spatial_partitioning_detail::for_each_unseq(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1, [&func, &j_min, &j_max, &k_min, &k_max](const auto& Bi) { spatial_partitioning_detail::for_each_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto& Bij) { spatial_partitioning_detail::for_each_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto& Bijk) { func(Bijk); }); }); });
   }
 
   //! apply
-  void apply_to_the_nearest_bound(const Tddd &x, const std::function<void(const int, const int, const int)> &func) const {
+  void apply_to_the_nearest_bound(const Tddd& x, const std::function<void(const int, const int, const int)>& func) const {
     if (this->data.empty())
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "'s 3D data is empty");
     auto [I, J, K] = indices(x);
@@ -771,38 +869,38 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   }
 
   //! apply
-  void apply(const Tddd &x, const Tddd dx_dy_dz, const std::function<void(const T &)> &func) const {
+  void apply(const Tddd& x, const Tddd dx_dy_dz, const std::function<void(const T&)>& func) const {
     if (this->data.empty())
       return;
     const auto [i_min, i_max, j_min, j_max, k_min, k_max] = indices_ranges(x, dx_dy_dz);
     if (!this->vector_is_set) {
-      std::for_each(std::execution::unseq, this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1,
-                    [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) { std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) { std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) { std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
+      spatial_partitioning_detail::for_each_unseq(this->data.cbegin() + i_min, this->data.cbegin() + i_max + 1,
+                                                  [&func, &j_min, &j_max, &k_min, &k_max](const auto& Bi) { spatial_partitioning_detail::for_each_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto& Bij) { spatial_partitioning_detail::for_each_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto& Bijk) { spatial_partitioning_detail::for_each_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
     } else {
-      std::for_each(std::execution::unseq, this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1,
-                    [&func, &j_min, &j_max, &k_min, &k_max](const auto &Bi) { std::for_each(std::execution::unseq, Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto &Bij) { std::for_each(std::execution::unseq, Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto &Bijk) { std::for_each(std::execution::unseq, Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
+      spatial_partitioning_detail::for_each_unseq(this->data_vector.cbegin() + i_min, this->data_vector.cbegin() + i_max + 1,
+                                                  [&func, &j_min, &j_max, &k_min, &k_max](const auto& Bi) { spatial_partitioning_detail::for_each_unseq(Bi.cbegin() + j_min, Bi.cbegin() + j_max + 1, [&func, &k_min, &k_max](const auto& Bij) { spatial_partitioning_detail::for_each_unseq(Bij.cbegin() + k_min, Bij.cbegin() + k_max + 1, [&func](const auto& Bijk) { spatial_partitioning_detail::for_each_unseq(Bijk.cbegin(), Bijk.cend(), [&](const auto p) { func(p); }); }); }); });
     }
   };
 
   /* ----------------------------- FOR LINE SEARCH ---------------------------- */
 
-  std::vector<ST3> line2indices(const Tddd &A, const Tddd &B) const {
+  std::vector<ST3> line2indices(const Tddd& A, const Tddd& B) const {
     std::unordered_set<ST3> uniqueIndexSet;
-    for (const auto &X : Subdivide(A, B, std::ceil(Norm(A - B) / (this->dL / 2.))))
+    for (const auto& X : Subdivide(A, B, std::ceil(Norm(A - B) / (this->dL / 2.))))
       this->apply(X, this->dL, [&uniqueIndexSet](const int i, const int j, const int k) { uniqueIndexSet.insert({i, j, k}); });
     std::vector<ST3> uniqueIndices(uniqueIndexSet.begin(), uniqueIndexSet.end());
     return uniqueIndices;
   }
 
   //! apply using indices
-  void apply(const std::vector<ST3> &V_ijk, const std::function<void(const T &)> &func) const {
+  void apply(const std::vector<ST3>& V_ijk, const std::function<void(const T&)>& func) const {
     if (!this->vector_is_set) {
-      for (const auto &ijk : V_ijk)
-        for (const auto &p : this->data[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)])
+      for (const auto& ijk : V_ijk)
+        for (const auto& p : this->data[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)])
           func(p);
     } else {
-      for (const auto &ijk : V_ijk)
-        for (const auto &p : this->data_vector[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)])
+      for (const auto& ijk : V_ijk)
+        for (const auto& p : this->data_vector[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)])
           func(p);
     }
   }
@@ -812,21 +910,21 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   //^　　　　　　　　childrenはすでにあるdataの分割を真似るようにして作成される　　　　　　　　　*/
   //^ ============================================================================　*/
 
-  std::vector<std::vector<std::vector<Buckets<T, N> *>>> children;
-  Buckets<T, N> *parent = nullptr; // 親バケツへのポインタを追加
+  std::vector<std::vector<std::vector<Buckets<T, N>*>>> children;
+  Buckets<T, N>* parent = nullptr; // 親バケツへのポインタを追加
 
-  std::vector<Buckets<T, N> *> getAllChildren() {
-    std::vector<Buckets<T, N> *> all_buckets;
-    traverseChildren([&](Buckets<T, N> *b) { all_buckets.emplace_back(b); });
+  std::vector<Buckets<T, N>*> getAllChildren() {
+    std::vector<Buckets<T, N>*> all_buckets;
+    traverseChildren([&](Buckets<T, N>* b) { all_buckets.emplace_back(b); });
     return all_buckets;
   }
 
   /* -------------------------------------------------------------------------- */
 
   bool hasChildren() const {
-    for (const auto &vi : this->children)
-      for (const auto &vj : vi)
-        for (const auto &vk : vj)
+    for (const auto& vi : this->children)
+      for (const auto& vj : vi)
+        for (const auto& vk : vj)
           if (vk != nullptr)
             return true;
     return false;
@@ -843,8 +941,8 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   /* -------------------------------------------------------------------------- */
   /* -------------------------------------------------------------------------- */
 
-  std::vector<std::vector<Buckets<T, N> *>> level_buckets;
-  std::vector<Buckets<T, N> *> deepest_level_buckets;
+  std::vector<std::vector<Buckets<T, N>*>> level_buckets;
+  std::vector<Buckets<T, N>*> deepest_level_buckets;
 
   //! 無駄がないようにgenerate Treeしよう！
   void rebuildHierarchyLists() {
@@ -858,7 +956,7 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
         this->deepest_level_buckets.emplace_back(this);
     }
     //
-    this->traverseTree([&](Buckets<T, N> *b) -> void {
+    this->traverseTree([&](Buckets<T, N>* b) -> void {
       if (!b->data1D.empty()) {
         this->level_buckets[b->level].emplace_back(b);
         if (!b->hasChildren())
@@ -874,13 +972,13 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   std::vector<T> rebin() {
     this->vector_is_set = false;
     int success = 0;
-    auto tryMigrateUpward = [&success](Buckets<T, N> *target, const std::vector<T> &objectsOutOfBounds, auto &tryMigrate_) -> std::vector<T> {
+    auto tryMigrateUpward = [&success](Buckets<T, N>* target, const std::vector<T>& objectsOutOfBounds, auto& tryMigrate_) -> std::vector<T> {
       if (target == nullptr || objectsOutOfBounds.empty())
         return {};
       //
       std::vector<T> pass2parent;
       pass2parent.reserve(objectsOutOfBounds.size());
-      for (auto &p : objectsOutOfBounds) {
+      for (auto& p : objectsOutOfBounds) {
         if (!target->erase_add(p->X, p))
           pass2parent.emplace_back(p);
         else
@@ -893,14 +991,19 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     };
 
     std::vector<T> escaped, escaped_once;
-    for (auto *b : this->deepest_level_buckets) {
+    // Reserve to avoid repeated allocations
+    escaped.reserve(this->deepest_level_buckets.size());
+    escaped_once.reserve(this->deepest_level_buckets.size());
+
+    for (auto* b : this->deepest_level_buckets) {
       std::vector<T> escapedAtLeaf;
+      escapedAtLeaf.reserve(b->data1D.size()); // Reserve based on bucket size
       for (auto p : b->data1D)
         if (!b->InsideQ(p->X)) {
           escapedAtLeaf.emplace_back(p);
           escaped_once.emplace_back(p);
         }
-      for (auto &p : tryMigrateUpward(b->parent, escapedAtLeaf, tryMigrateUpward))
+      for (auto& p : tryMigrateUpward(b->parent, escapedAtLeaf, tryMigrateUpward))
         escaped.emplace_back(p);
     }
 
@@ -908,15 +1011,24 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
     std::cout << Yellow << "Success objects after rebin: " << success << colorReset << std::endl;
     std::cout << Red << "Remaining objects after rebin: " << escaped.size() << colorReset << std::endl;
 
+    // If nothing escaped, there's no structural change; skip expensive shrink/grow.
+    if (escaped_once.empty())
+      return {};
+
     // deepest_level_bucketsの更新
     if (this->level == 0) {
       this->rebuildHierarchyLists();
       std::cout << "Before shrink: " << this->deepest_level_buckets.size() << " deepest level buckets." << std::endl;
       this->shrink();
+      // IMPORTANT:
+      // `shrink()` deletes bucket nodes, so any cached pointers (deepest_level_buckets/level_buckets)
+      // may contain dangling pointers unless we rebuild them right away.
       this->rebuildHierarchyLists();
-      std::cout << "After shrink: " << this->deepest_level_buckets.size() << " deepest level buckets." << std::endl;
-      this->grow();
-      this->rebuildHierarchyLists();
+      bool changed = this->grow();
+      // `grow()` rebuilds hierarchy lists only when it creates new nodes.
+      // If shrink deleted nodes but grow doesn't create any, we still need a rebuild.
+      if (changed)
+        this->rebuildHierarchyLists();
       std::cout << "After grow: " << this->deepest_level_buckets.size() << " deepest level buckets." << std::endl;
     }
     return escaped;
@@ -927,12 +1039,12 @@ template <typename T /*Stored Object*/, int N = 0> struct Buckets : public Coord
   /* -------------------------------------------------------------------------- */
 
 private:
-  std::function<bool(const Buckets<T, N> *)> default_grow_condition = [](const Buckets<T, N> *b) { return !b->data1D.empty() && b->level < b->max_level; };
-  std::function<bool(const Buckets<T, N> *)> grow_condition = default_grow_condition;
+  std::function<bool(const Buckets<T, N>*)> default_grow_condition = [](const Buckets<T, N>* b) { return !b->data1D.empty() && b->level < b->max_level; };
+  std::function<bool(const Buckets<T, N>*)> grow_condition = default_grow_condition;
   bool grow_condition_setQ = false;
 
 public:
-  void setGrowCondition(const std::function<bool(const Buckets<T, N> *)> &condition) {
+  void setGrowCondition(const std::function<bool(const Buckets<T, N>*)>& condition) {
     this->grow_condition = condition;
     this->grow_condition_setQ = true;
   }
@@ -945,24 +1057,26 @@ public:
   }
 
 private:
-  Buckets<T, N> *newChild(int i, int j, int k) {
-    Buckets<T, N> *bucket = new Buckets<T, N>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
+  Buckets<T, N>* newChild(int i, int j, int k) {
+    Buckets<T, N>* bucket = new Buckets<T, N>(getBounds({i, j, k}), this->dL * (0.5 + 1e-13));
     bucket->parent = this; // 親バケツを設定
-    for (auto &p : this->data[i][j][k])
+    for (auto& p : this->data[i][j][k])
       bucket->add(p->X, p);
     bucket->setLevel(this->level + 1, this->max_level);
     return bucket;
   }
 
-  bool generateTree(const std::function<bool(const Buckets<T, N> *)> &condition) {
+  bool generateTree(const std::function<bool(const Buckets<T, N>*)>& condition) {
     this->grow_condition = condition; // Automatically update grow_condition
     if (condition(this) && this->level < this->max_level) {
-      children.resize(this->xsize, std::vector<std::vector<Buckets<T, N> *>>(this->ysize, std::vector<Buckets<T, N> *>(this->zsize, nullptr)));
-      for (auto [i, j, k] : this->vector_ijk) {
-        if (this->data[i][j][k].empty())
+      children.assign(this->xsize, std::vector<std::vector<Buckets<T, N>*>>(this->ysize, std::vector<Buckets<T, N>*>(this->zsize, nullptr)));
+#pragma omp parallel for schedule(dynamic) if (this->level < 5)
+      for (int i = 0; i < (int)this->vector_ijk.size(); ++i) {
+        auto [ix, iy, iz] = this->vector_ijk[i];
+        if (this->data[ix][iy][iz].empty())
           continue;
-        children[i][j][k] = newChild(i, j, k);
-        children[i][j][k]->generateTree(condition);
+        children[ix][iy][iz] = newChild(ix, iy, iz);
+        children[ix][iy][iz]->generateTree(condition);
       }
     }
 
@@ -971,21 +1085,31 @@ private:
     return this->hasChildren();
   }
 
+  //! ツリー構造を維持したまま、データ点の移動に合わせてツリーを更新する
+  //! generateTreeの代わりにこれを呼ぶことで高速化が期待できる
+  void updateTree() {
+    if (this->level != 0) {
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "updateTree must be called from the root bucket.");
+    }
+    // 移動した粒子を適切なバケットに移動させ、空になった枝を削除し、必要に応じて枝を伸ばす
+    [[maybe_unused]] auto escaped = this->rebin();
+  }
+
 public:
   /* =================== Access to the bucket at the level of the tree =================== */
 
-  void traverseChildren(const std::function<void(Buckets<T, N> *&)> &func) {
-    for (auto &i : this->children)
-      for (auto &j : i)
-        for (auto &k : j)
+  void traverseChildren(const std::function<void(Buckets<T, N>*&)>& func) {
+    for (auto& i : this->children)
+      for (auto& j : i)
+        for (auto& k : j)
           if (k != nullptr)
             func(k);
   }
 
-  void traverseTree(const std::function<void(Buckets<T, N> *&)> &func) {
-    for (auto &i : this->children)
-      for (auto &j : i)
-        for (auto &k : j)
+  void traverseTree(const std::function<void(Buckets<T, N>*&)>& func) {
+    for (auto& i : this->children)
+      for (auto& j : i)
+        for (auto& k : j)
           if (k != nullptr) {
             func(k);
             if (k != nullptr)
@@ -993,10 +1117,10 @@ public:
           }
   }
 
-  void traverseTree(const std::function<void(Buckets<T, N> *&)> &func, const std::function<bool(Buckets<T, N> *&)> &stop_condition) {
-    for (auto &i : this->children)
-      for (auto &j : i)
-        for (auto &k : j)
+  void traverseTree(const std::function<void(Buckets<T, N>*&)>& func, const std::function<bool(Buckets<T, N>*&)>& stop_condition) {
+    for (auto& i : this->children)
+      for (auto& j : i)
+        for (auto& k : j)
           if (k != nullptr && !stop_condition(k)) {
             func(k);
             if (k != nullptr)
@@ -1004,10 +1128,10 @@ public:
           }
   }
 
-  void traverseTreeParallel(const std::function<void(Buckets<T, N> *&)> &func) {
-    std::for_each(std::execution::par_unseq, this->children.begin(), this->children.end(), [&](auto &i) {
-      std::for_each(std::execution::unseq, i.begin(), i.end(), [&](auto &j) {
-        std::for_each(std::execution::unseq, j.begin(), j.end(), [&](auto &k) {
+  void traverseTreeParallel(const std::function<void(Buckets<T, N>*&)>& func) {
+    spatial_partitioning_detail::for_each_par_unseq(this->children.begin(), this->children.end(), [&](auto& i) {
+      spatial_partitioning_detail::for_each_unseq(i.begin(), i.end(), [&](auto& j) {
+        spatial_partitioning_detail::for_each_unseq(j.begin(), j.end(), [&](auto& k) {
           if (k != nullptr) {
             func(k);
             if (k != nullptr)
@@ -1022,11 +1146,11 @@ public:
   //@ bucketsは，level==1のバケツに適用される
 
   //@ this is traversing using the tree structure.これにlevel_bucketsを使ってはならない．なぜなら，level_bucketsの生成にこの関数が使われるから．
-  void forEachAll(const std::function<void(Buckets<T, N> *)> &func_for_bucket) {
+  void forEachAll(const std::function<void(Buckets<T, N>*)>& func_for_bucket) {
     func_for_bucket(this);
-    std::for_each(std::execution::unseq, this->children.begin(), this->children.end(), [&](auto &i) {
-      std::for_each(std::execution::unseq, i.begin(), i.end(), [&](auto &j) {
-        std::for_each(std::execution::unseq, j.begin(), j.end(), [&](auto &k) {
+    spatial_partitioning_detail::for_each_unseq(this->children.begin(), this->children.end(), [&](auto& i) {
+      spatial_partitioning_detail::for_each_unseq(i.begin(), i.end(), [&](auto& j) {
+        spatial_partitioning_detail::for_each_unseq(j.begin(), j.end(), [&](auto& k) {
           if (k != nullptr) {
             k->forEachAll(func_for_bucket);
           }
@@ -1035,11 +1159,11 @@ public:
     });
   }
 
-  void forEachAllParallel(const std::function<void(Buckets<T, N> *)> &func_for_bucket) {
+  void forEachAllParallel(const std::function<void(Buckets<T, N>*)>& func_for_bucket) {
     func_for_bucket(this);
-    std::for_each(std::execution::par_unseq, this->children.begin(), this->children.end(), [&](auto &i) {
-      std::for_each(std::execution::unseq, i.begin(), i.end(), [&](auto &j) {
-        std::for_each(std::execution::unseq, j.begin(), j.end(), [&](auto &k) {
+    spatial_partitioning_detail::for_each_par_unseq(this->children.begin(), this->children.end(), [&](auto& i) {
+      spatial_partitioning_detail::for_each_unseq(i.begin(), i.end(), [&](auto& j) {
+        spatial_partitioning_detail::for_each_unseq(j.begin(), j.end(), [&](auto& k) {
           if (k != nullptr) {
             k->forEachAllParallel(func_for_bucket);
           }
@@ -1048,79 +1172,83 @@ public:
     });
   }
 
-  void forEachAtLevel(const int level, const std::function<void(Buckets<T, N> *)> &func_for_bucket) {
+  void forEachAtLevel(const int level, const std::function<void(Buckets<T, N>*)>& func_for_bucket) {
     if (level >= this->level_buckets.size())
       return;
 
-    for (auto &b : this->level_buckets[level])
+    for (auto& b : this->level_buckets[level])
       func_for_bucket(b);
   }
 
-  void forEachAtLevel(const std::vector<int> &levels, const std::function<void(Buckets<T, N> *)> &func_for_bucket) {
-    for (const auto &lv : levels)
+  void forEachAtLevel(const std::vector<int>& levels, const std::function<void(Buckets<T, N>*)>& func_for_bucket) {
+    for (const auto& lv : levels)
       forEachAtLevel(lv, func_for_bucket);
   }
 
-  void forEachAtLevelParallel(const int lv, const std::function<void(Buckets<T, N> *)> &func_for_bucket) {
+  void forEachAtLevelParallel(const int lv, const std::function<void(Buckets<T, N>*)>& func_for_bucket) {
     if (lv >= this->level_buckets.size())
       return;
 #pragma omp parallel for
-    for (auto &b : this->level_buckets[lv])
+    for (auto& b : this->level_buckets[lv])
       func_for_bucket(b);
   }
 
-  void forEachAtLevelParallel(const std::vector<int> &levels, const std::function<void(Buckets<T, N> *)> &func_for_bucket) {
+  void forEachAtLevelParallel(const std::vector<int>& levels, const std::function<void(Buckets<T, N>*)>& func_for_bucket) {
     //! this->level_bucketsは，{0,1,2,3}のように，levelに対応するバケツのリストを持っている．(size()=4)
     //! この場合，level=4を指定するとエラー，これをチェックするには，lv < this->level_buckets.size()とする．
-    for (const auto &lv : levels)
+    for (const auto& lv : levels)
       forEachAtLevelParallel(lv, func_for_bucket);
   }
 
-  template <typename Func> void forEachAtDeepestParallel(const Func &func_for_bucket) {
+  template <typename Func>
+  void forEachAtDeepestParallel(const Func& func_for_bucket) {
 #pragma omp parallel for
-    for (const auto &b : this->deepest_level_buckets) {
+    for (const auto& b : this->deepest_level_buckets) {
       {
         func_for_bucket(b);
       }
     }
   }
 
-  template <typename Func> void forEachAtDeepest(const Func &func_for_bucket) {
-    for (auto &b : this->deepest_level_buckets)
+  template <typename Func>
+  void forEachAtDeepest(const Func& func_for_bucket) {
+    for (auto& b : this->deepest_level_buckets)
       func_for_bucket(b);
   }
 
-  void forEachBuckets(const std::function<void(Buckets<T, N> *)> &func_for_bucket) {
-    for (auto &i : this->children)
-      for (auto &j : i)
-        for (auto &k : j)
+  void forEachBuckets(const std::function<void(Buckets<T, N>*)>& func_for_bucket) {
+    for (auto& i : this->children)
+      for (auto& j : i)
+        for (auto& k : j)
           if (k != nullptr)
             func_for_bucket(k);
   }
 
-  Buckets<T, N> *getBucketAtLevel(const int level, const Tddd &x) const {
+  Buckets<T, N>* getBucketAtLevel(const int level, const Tddd& x) const {
     if (!this->hasChildren() || level > this->max_level)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "The tree structure does not exist or the level is too large.");
 
-    auto ijk = this->indices(x);
-    auto ret = this->children[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)];
-    int count = 0;
-    while (ret->level < level) {
-      ijk = ret->indices(x);
-      ret = ret->children[std::get<0>(ijk)][std::get<1>(ijk)][std::get<2>(ijk)];
-      if (count++ > 10)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "The level is too large.");
+    auto current = const_cast<Buckets<T, N>*>(this);
+    while (current->level < level) {
+      if (!current->hasChildren())
+        return nullptr;
+      auto next = current->getBucket(x);
+      if (next == nullptr)
+        return nullptr;
+      current = next;
     }
-    return ret;
+    return current;
   };
 
-  Buckets<T, N> *getBucketAtDeepest(const Tddd &x) const {
-    if (!this->hasChildren())
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "The tree structure does not exist.");
-    auto ret = this->getBucket(x);
-    while (ret->hasChildren())
-      ret = ret->getBucket(x);
-    return ret;
+  Buckets<T, N>* getBucketAtDeepest(const Tddd& x) const {
+    auto current = const_cast<Buckets<T, N>*>(this);
+    while (current->hasChildren()) {
+      auto next = current->getBucket(x);
+      if (next == nullptr)
+        return current;
+      current = next;
+    }
+    return current;
   };
 
   // b$============================================================================*/
@@ -1130,7 +1258,7 @@ public:
   using MomentsType = Moments<T, N>;
   static_assert(std::is_trivially_destructible_v<MomentsType> || std::is_destructible_v<MomentsType>, "Moments must be destructible");
   // インターフェース存在チェック (テンプレート引数を伴うものは適切な引数で検証)
-  static_assert(requires(MomentsType m, std::vector<Buckets<T, N> *> v) { m.set_m2m(v); }, "Missing Moments::set_m2m(std::vector<Buckets*>)");
+  static_assert(requires(MomentsType m, std::vector<Buckets<T, N>*> v) { m.set_m2m(v); }, "Missing Moments::set_m2m(std::vector<Buckets*>)");
   static_assert(requires(MomentsType m) { m.m2m(); }, "Missing Moments::m2m()");
   //    static_assert(requires(MomentsType m, std::vector<Buckets<T, N> *> v) { m.set_m2l(v); }, "Missing Moments::set_m2l(std::vector<Buckets*>)");
   static_assert(requires(MomentsType m) { m.m2l(); }, "Missing Moments::m2l()");
@@ -1141,10 +1269,13 @@ public:
   MomentsType MomentsLocalExpansion;
 
   //$ buckets_for_M2Lは，このバケツが局所展開する対象を保存している．
-  std::vector<Buckets<T, N> *> buckets_for_M2L;
+  std::vector<Buckets<T, N>*> buckets_for_M2L;
   //$ buckets_for_L2Mは，このバケツが局所展開を受け取る対象を保存している．
-  std::vector<Buckets<T, N> *> buckets_for_L2M;
-  std::vector<Buckets<T, N> *> buckets_near; //@ 近傍バケツかつ，（重要）子バケツを持たないバケツ．途中までしか育たないツリーを使ったFMMにおいてこの性質が重要．;
+  std::vector<Buckets<T, N>*> buckets_for_L2M;
+  std::vector<Buckets<T, N>*> buckets_near; //@ 近傍バケツかつ，（重要）子バケツを持たないバケツ．途中までしか育たないツリーを使ったFMMにおいてこの性質が重要．;
+
+  // MAC拡張用: バケツ内の全要素の max_source_offset の最大値
+  double max_internal_offset = 0.0;
 
   // b$=============================================================================*/
 };
@@ -1153,9 +1284,10 @@ public:
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 
-template <typename T> Buckets<T> copyPartition(const auto &children) {
+template <typename T>
+Buckets<T> copyPartition(const auto& children) {
   Buckets<T> ret(children.bounds, children.dL);
-  ret.children.resize(children.xsize, std::vector<std::vector<Buckets<T> *>>(children.ysize, std::vector<Buckets<T> *>(children.zsize, nullptr)));
+  ret.children.resize(children.xsize, std::vector<std::vector<Buckets<T>*>>(children.ysize, std::vector<Buckets<T>*>(children.zsize, nullptr)));
   ret.level = children.level;
   ret.max_level = children.max_level;
   ret.xsize = children.xsize;

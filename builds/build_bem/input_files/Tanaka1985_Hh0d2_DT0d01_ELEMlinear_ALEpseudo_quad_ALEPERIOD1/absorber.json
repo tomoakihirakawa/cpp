@@ -1,0 +1,7 @@
+{
+    "name": "absorber",
+    "type": "Absorber",
+    "isFixed": true,
+    "solitary_wave_theory": [0.2, 1.0, 0.0, 5.0],
+    "objfile": "/Users/tomoaki/Library/CloudStorage/Dropbox/code/cpp/obj/Tanaka1985/absorber.obj"
+}

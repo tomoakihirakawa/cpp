@@ -35,8 +35,11 @@
 // };
 
 #include <concepts>
+#include <deque>
 #include <execution>
+#include <limits>
 #include <numeric> // for std::transform_reduce
+#include <unordered_map>
 //
 #include "basic_IO.hpp"
 #include "basic_arithmetic_vector_operations.hpp"
@@ -150,10 +153,8 @@ struct ludcmp_parallel {
 
   void inverse(VV_d &ainv) {
     int i, j;
-    ainv.resize(n, V_d(n, 0));
+    ainv.assign(n, V_d(n, 0));
     for (i = 0; i < n; i++) {
-      for (j = 0; j < n; j++)
-        ainv[i][j] = 0.;
       ainv[i][i] = 1.;
     }
     solve(ainv, ainv);
@@ -161,10 +162,7 @@ struct ludcmp_parallel {
 
   VV_d Inverse() {
     VV_d ainv(n, V_d(n, 0));
-    int i, j;
-    for (i = 0; i < n; i++) {
-      for (j = 0; j < n; j++)
-        ainv[i][j] = 0.;
+    for (int i = 0; i < n; i++) {
       ainv[i][i] = 1.;
     }
     solve(ainv, ainv);
@@ -223,8 +221,8 @@ struct lapack_lu {
     }
 
     // Extract L and U matrices
-    L.resize(dim, std::vector<double>(dim, 0.0));
-    U.resize(dim, std::vector<double>(dim, 0.0));
+    L.assign(dim, std::vector<double>(dim, 0.0));
+    U.assign(dim, std::vector<double>(dim, 0.0));
     for (int i = 0; i < dim; ++i) {
       for (int j = 0; j < dim; ++j) {
         if (i > j) {
@@ -471,7 +469,7 @@ struct lapack_lu {
   // }
 };
 
-double Det(const VV_d &M) {
+inline double Det(const VV_d &M) {
   int n = M.size();
 
   // Base case for 2x2 matrix
@@ -835,7 +833,7 @@ struct lapack_svd {
     m = M;
     n = N;
 
-    A.resize(M, std::vector<double>(N));
+    A.assign(M, std::vector<double>(N));
     for (std::size_t i = 0; i < M; ++i)
       for (std::size_t j = 0; j < N; ++j)
         A[i][j] = arrA[i][j];
@@ -1257,7 +1255,7 @@ template <std::size_t N> void lapack_svd_solve(const std::array<std::array<doubl
 
 // lapack_svd_solve for std::vector<double,std::vector<double>>
 
-void lapack_svd_solve(const std::vector<std::vector<double>> &A, std::vector<double> &x, const std::vector<double> &b) {
+inline void lapack_svd_solve(const std::vector<std::vector<double>> &A, std::vector<double> &x, const std::vector<double> &b) {
   // ローカル変数にキャストしてポインタを渡せるようにする
   int m = A.size();
   int n = A[0].size();
@@ -1304,8 +1302,7 @@ void lapack_svd_solve(const std::vector<std::vector<double>> &A, std::vector<dou
   }
 
   // Compute x = V * y
-  for (auto &xi : x)
-    xi = 0.0; // Initialize x to zero
+  x.assign(n, 0.0);
   double factor;
   for (int j = 0; j < m; ++j)
     if (s[j] > 1e-9) {
@@ -1318,7 +1315,7 @@ void lapack_svd_solve(const std::vector<std::vector<double>> &A, std::vector<dou
 
 /* -------------------------------------------------------------------------- */
 
-std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample, std::vector<Tddd> Directions, const std::vector<double> &weights) {
+inline std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample, std::vector<Tddd> Directions, const std::vector<double> &weights) {
   if (Vsample.size() == 1)
     return Vsample[0] * Directions[0];
 
@@ -1367,9 +1364,75 @@ std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample, std::vector<
   return {X[0], X[1], X[2]};
 }
 
-std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample, std::vector<Tddd> Directions) { return optimalVectorSVD(Vsample, Directions, std::vector<double>(Vsample.size(), 1.)); }
+inline std::array<double, 3> optimalVectorSVD(std::vector<double> Vsample, std::vector<Tddd> Directions) { return optimalVectorSVD(Vsample, Directions, std::vector<double>(Vsample.size(), 1.)); }
 
 /* -------------------------------------------------------------------------- */
+
+struct ILU0 {
+  VV_d lu;
+  int n;
+
+  ILU0(const VV_d &A) : n(A.size()) {
+    if (n == 0 || A[0].size() != n) {
+      throw std::invalid_argument("ILU0: Input matrix must be square and non-empty.");
+    }
+    lu = A; // コピーを作成
+
+    for (int k = 0; k < n; ++k) {
+      if (lu[k][k] == 0.0) {
+        // 対角が0だと分解できない。エラーか、小さな値で置き換えるか。
+        // ここではエラーとする。
+        throw std::runtime_error("ILU0: Zero pivot encountered in factorization.");
+      }
+      double pivot_inv = 1.0 / lu[k][k];
+      for (int i = k + 1; i < n; ++i) {
+        if (lu[i][k] != 0.0) {   // スパース性を利用
+          lu[i][k] *= pivot_inv; // Lの要素を計算して格納
+          for (int j = k + 1; j < n; ++j) {
+            if (lu[k][j] != 0.0 && lu[i][j] != 0.0) { // ILU(0) の条件
+              lu[i][j] -= lu[i][k] * lu[k][j];
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 前進代入・後退代入で M^{-1}v を計算する
+  V_d solve(const V_d &b) const {
+    if (b.size() != n)
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "ILU0::solve size mismatch");
+    V_d y = b;
+    V_d x(n, 0.0);
+
+    // Forward substitution: Ly = b
+    // Lの対角要素は1
+    for (int i = 0; i < n; ++i) {
+      double sum = 0.0;
+      for (int j = 0; j < i; ++j) {
+        if (lu[i][j] != 0.0) { // スパース性を利用
+          sum += lu[i][j] * y[j];
+        }
+      }
+      y[i] -= sum;
+    }
+
+    // Backward substitution: Ux = y
+    for (int i = n - 1; i >= 0; --i) {
+      double sum = 0.0;
+      for (int j = i + 1; j < n; ++j) {
+        if (lu[i][j] != 0.0) { // スパース性を利用
+          sum += lu[i][j] * x[j];
+        }
+      }
+      if (lu[i][i] == 0.0) {
+        throw std::runtime_error("ILU0::solve: Zero diagonal in U matrix during backward substitution.");
+      }
+      x[i] = (y[i] - sum) / lu[i][i];
+    }
+    return x;
+  }
+};
 // #endif
 
 struct ludcmp {
@@ -1473,10 +1536,8 @@ struct ludcmp {
 
   void inverse(VV_d &ainv) {
     int i, j;
-    ainv.resize(n, V_d(n, 0));
+    ainv.assign(n, V_d(n, 0));
     for (i = 0; i < n; i++) {
-      for (j = 0; j < n; j++)
-        ainv[i][j] = 0.;
       ainv[i][i] = 1.;
     }
     solve(ainv, ainv);
@@ -1484,10 +1545,7 @@ struct ludcmp {
 
   VV_d Inverse() {
     VV_d ainv(n, V_d(n, 0));
-    int i, j;
-    for (i = 0; i < n; i++) {
-      for (j = 0; j < n; j++)
-        ainv[i][j] = 0.;
+    for (int i = 0; i < n; i++) {
       ainv[i][i] = 1.;
     }
     solve(ainv, ainv);
@@ -1572,7 +1630,7 @@ struct ludcmp {
 //    return b;
 // };
 
-V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
+inline V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
   std::size_t i = 0, j;
   double tmp;
   for (const auto &a : mat) {
@@ -1613,7 +1671,7 @@ V_d forward_substitution(const VV_d &mat, V_d b /*copy*/) {
 //    return b;
 // };
 
-V_d back_substitution(const VV_d &mat, V_d b, const std::size_t row, const std::size_t col) {
+inline V_d back_substitution(const VV_d &mat, V_d b, const std::size_t row, const std::size_t col) {
   double bi;
   int i, j;
   for (i = row - 1; i >= 0; --i) {
@@ -1644,7 +1702,7 @@ V_d back_substitution(const VV_d &mat, V_d b, const std::size_t row, const std::
 //    return b;
 // };
 
-V_d back_substitution(const VV_d &mat, const V_d &b, const std::size_t row_col) {
+inline V_d back_substitution(const VV_d &mat, const V_d &b, const std::size_t row_col) {
   const auto row = row_col;
   const auto col = row_col;
   int i, j;
@@ -2089,9 +2147,9 @@ struct CRS {
 #ifdef GMRES_USING_FLOAT
   float selfDotTmpValue() const {
     if (this->canUseVector) {
-      return std::transform_reduce(std::execution::unseq, this->column_value_vector.cbegin(), this->column_value_vector.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
+      return bem_exec::transform_reduce_unseq(this->column_value_vector.cbegin(), this->column_value_vector.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
     } else {
-      return std::transform_reduce(std::execution::unseq, this->column_value.cbegin(), this->column_value.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
+      return bem_exec::transform_reduce_unseq(this->column_value.cbegin(), this->column_value.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
     }
   };
 #else
@@ -2115,17 +2173,17 @@ struct CRS {
 
   void selfDotTmpValue_Save() {
     if (this->canUseVector) {
-      this->tmp_tmp_value = std::transform_reduce(std::execution::unseq, this->columntmpvalue_value_vector.cbegin(), this->columntmpvalue_value_vector.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * *std::get<0>(c_v); });
+      this->tmp_tmp_value = bem_exec::transform_reduce_unseq(this->columntmpvalue_value_vector.cbegin(), this->columntmpvalue_value_vector.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * *std::get<0>(c_v); });
     } else {
-      this->tmp_tmp_value = std::transform_reduce(std::execution::unseq, this->column_value.cbegin(), this->column_value.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
+      this->tmp_tmp_value = bem_exec::transform_reduce_unseq(this->column_value.cbegin(), this->column_value.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
     }
   }
 
   double selfDotTmpValue() const {
     if (this->canUseVector) {
-      return std::transform_reduce(std::execution::unseq, this->columntmpvalue_value_vector.cbegin(), this->columntmpvalue_value_vector.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * *std::get<0>(c_v); });
+      return bem_exec::transform_reduce_unseq(this->columntmpvalue_value_vector.cbegin(), this->columntmpvalue_value_vector.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * *std::get<0>(c_v); });
     } else {
-      return std::transform_reduce(std::execution::unseq, this->column_value.cbegin(), this->column_value.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
+      return bem_exec::transform_reduce_unseq(this->column_value.cbegin(), this->column_value.cend(), 0.0, std::plus<>(), [](const auto &c_v) { return std::get<1>(c_v) * std::get<0>(c_v)->tmp_value; });
     }
   }
 #endif
@@ -2133,10 +2191,10 @@ struct CRS {
     double ret = 0.;
     if (this->canUseVector) {
       // std::ranges::for_each(this->column_value_vector, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
-      std::for_each(std::execution::unseq, this->column_value_vector.begin(), this->column_value_vector.end(), [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+      bem_exec::for_each_unseq(this->column_value_vector.begin(), this->column_value_vector.end(), [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
     } else {
       // std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
-      std::for_each(std::execution::unseq, this->column_value.begin(), this->column_value.end(), [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
+      bem_exec::for_each_unseq(this->column_value.begin(), this->column_value.end(), [&ret](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
     }
     return ret;
   };
@@ -2149,12 +2207,12 @@ struct CRS {
       //    ret = std::fma(std::get<1>(column_value_vector[i++]), V[std::get<2>(__index)], ret);
       // for (const auto &[crs, v, i] : column_value_vector)
       //    ret = std::fma(v, V[i], ret);
-      std::for_each(std::execution::unseq, this->column_value_vector.begin(), this->column_value_vector.end(), [&ret, &V](const auto &c_v) { ret = std::fma(std::get<1>(c_v), V[std::get<2>(c_v)], ret); });
+      bem_exec::for_each_unseq(this->column_value_vector.begin(), this->column_value_vector.end(), [&ret, &V](const auto &c_v) { ret = std::fma(std::get<1>(c_v), V[std::get<2>(c_v)], ret); });
     } else {
       // std::ranges::for_each(this->column_value, [&](const auto &c_v) { ret = std::fma(std::get<1>(c_v), std::get<0>(c_v)->value, ret); });
       // for (const auto &[crs_local, value] : column_value)
       //    ret = std::fma(value, V[crs_local->__index__], ret);
-      std::for_each(std::execution::unseq, this->column_value.begin(), this->column_value.end(), [&ret, &V](const auto &c_v) { ret = std::fma(std::get<1>(c_v), V[std::get<0>(c_v)->__index__], ret); });
+      bem_exec::for_each_unseq(this->column_value.begin(), this->column_value.end(), [&ret, &V](const auto &c_v) { ret = std::fma(std::get<1>(c_v), V[std::get<0>(c_v)->__index__], ret); });
     }
     return ret;
   };
@@ -2165,14 +2223,14 @@ template <template <typename, typename...> class Container, typename T>
 void DotOutput(const Container<T *> &A, const V_d &V, V_d &w) {
   w.resize(A.size());
   // \label{CRS:parrallel}
-  std::for_each(std::execution::par_unseq, A.begin(), A.end(), [&w, &V](T *crs) { w[crs->__index__] = crs->selfDot(V); });
+  bem_exec::for_each_par_unseq(A.begin(), A.end(), [&w, &V](T *crs) { w[crs->__index__] = crs->selfDot(V); });
 }
 
 template <template <typename, typename...> class Container, typename T>
   requires std::derived_from<T, CRS>
 V_d Dot(const Container<T *> &A, const V_d &V) {
   V_d ret(A.size());
-  std::for_each(std::execution::par_unseq, A.begin(), A.end(), [&ret, &V](T *crs) { ret[crs->__index__] = crs->selfDot(V); });
+  bem_exec::for_each_par_unseq(A.begin(), A.end(), [&ret, &V](T *crs) { ret[crs->__index__] = crs->selfDot(V); });
   return ret;
 };
 
@@ -2180,7 +2238,7 @@ template <template <typename, typename...> class Container, typename T>
   requires std::derived_from<T, CRS>
 VV_d Dot(const Container<T *> &A, const Container<T *> &B) {
   VV_d ret(A.size(), V_d(B.size(), 0.));
-  std::for_each(std::execution::par_unseq, A.begin(), A.end(), [&ret, &B](T *crs_a) { std::for_each(std::execution::par_unseq, B.begin(), B.end(), [&ret, crs_a](T *crs_b) { ret[crs_a->__index__][crs_b->__index__] = crs_a->selfDot(crs_b->column_value); }); });
+  bem_exec::for_each_par_unseq(A.begin(), A.end(), [&ret, &B](T *crs_a) { bem_exec::for_each_par_unseq(B.begin(), B.end(), [&ret, crs_a](T *crs_b) { ret[crs_a->__index__][crs_b->__index__] = crs_a->selfDot(crs_b->column_value); }); });
   return ret;
 };
 
@@ -2188,7 +2246,7 @@ template <typename T>
   requires std::derived_from<T, CRS>
 V_d Dot(const std::vector<T *> &A) {
   V_d ret(A.size(), 0.);
-  std::for_each(std::execution::par_unseq, A.begin(), A.end(), [&ret](T *crs) { ret[crs->__index__] = crs->selfDot(); });
+  bem_exec::for_each_par_unseq(A.begin(), A.end(), [&ret](T *crs) { ret[crs->__index__] = crs->selfDot(); });
   return ret;
 };
 
@@ -2196,14 +2254,14 @@ template <template <typename, typename...> class Container, typename T>
   requires std::derived_from<T, CRS>
 void PreparedDotOutput(const Container<T *> &A, V_d &V) {
 
-  std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+  bem_exec::for_each_par_unseq(A.cbegin(), A.cend(), [&](T *crs) {
     double &value = V[crs->__index__]; // V[crs->__index__]に一度だけアクセス
     crs->tmp_value = value;            // tmp_valueに保存
     crs->value_ptr = &value;           // V[index]のポインタを設定
   });
 
   //! ポインタを使って計算し、Vに直接書き戻す
-  std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+  bem_exec::for_each_par_unseq(A.cbegin(), A.cend(), [&](T *crs) {
     *crs->value_ptr = crs->selfDotTmpValue(); // 計算結果をポインタ経由でVに書き戻す
   });
 }
@@ -2248,13 +2306,13 @@ template <template <typename, typename...> class Container, typename T>
   requires std::derived_from<T, CRS>
 V_d PreparedDot(const Container<T *> &A, V_d V) {
   //! V_dの値を取得しつつポインタを設定
-  std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+  bem_exec::for_each_par_unseq(A.cbegin(), A.cend(), [&](T *crs) {
     double &value = V[crs->__index__]; // V[crs->__index__]に一度だけアクセス
     crs->tmp_value = value;            // tmp_valueに保存
     crs->value_ptr = &value;           // V[index]のポインタを設定
   });
   //! ポインタを使って計算し、Vに直接書き戻す
-  std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+  bem_exec::for_each_par_unseq(A.cbegin(), A.cend(), [&](T *crs) {
     *crs->value_ptr = crs->selfDotTmpValue(); // 計算結果をポインタ経由でVに書き戻す
   });
   return V;
@@ -2264,19 +2322,687 @@ template <template <typename, typename...> class Container, typename T>
   requires std::derived_from<T, CRS>
 V_f PreparedDot(const Container<T *> &A, V_f V) {
   //! V_dの値を取得しつつポインタを設定
-  std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+  bem_exec::for_each_par_unseq(A.cbegin(), A.cend(), [&](T *crs) {
     float &value = V[crs->__index__]; // V[crs->__index__]に一度だけアクセス
     crs->tmp_value = value;           // tmp_valueに保存
     crs->value_ptr_float = &value;    // V[index]のポインタを設定
   });
   //! ポインタを使って計算し、Vに直接書き戻す
-  std::for_each(std::execution::par_unseq, A.cbegin(), A.cend(), [&](T *crs) {
+  bem_exec::for_each_par_unseq(A.cbegin(), A.cend(), [&](T *crs) {
     *crs->value_ptr_float = crs->selfDotTmpValue(); // 計算結果をポインタ経由でVに書き戻す
   });
   return V;
 }
 
-/* -------------------------------------------------------------------------- */
+struct ILU0_CRS {
+  int n = 0;
+  std::vector<double> val;
+  std::vector<int> col_ind;
+  std::vector<int> row_ptr;
+  std::vector<int> diag_ptr; // Index of diagonal element in val/col_ind for each row
+  double pivot_min_used = 1e-20;
+  bool pivot_clamp_used = false;
+  bool pivot_debug_used = false;
+
+  // Level-scheduling data for parallel triangular solves
+  std::vector<std::vector<int>> rows_at_level_L;   // For forward substitution
+  std::vector<std::vector<int>> rows_at_level_U;   // For backward substitution
+  int num_levels_L = 0;
+  int num_levels_U = 0;
+
+  static bool getenv_bool(const char *name, bool default_value = false) {
+    const char *env = std::getenv(name);
+    if (!env)
+      return default_value;
+    std::string s(env);
+    for (auto &c : s)
+      c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    if (s.empty())
+      return true;
+    return !(s == "0" || s == "false" || s == "off" || s == "no");
+  }
+
+  static double getenv_double(const char *name, double default_value) {
+    const char *env = std::getenv(name);
+    if (!env)
+      return default_value;
+    try {
+      const double v = std::stod(env);
+      return std::isfinite(v) ? v : default_value;
+    } catch (...) {
+      return default_value;
+    }
+  }
+
+  // ILU0_CRS optionally supports a "modified ILU(0)" mode (MILU(0)):
+  // - When fill-in updates are dropped (because the entry is not present in the sparsity pattern),
+  //   their contribution is accumulated into the diagonal to preserve the row sum approximately.
+  // - `modified_omega` scales the diagonal compensation (omega=1.0 is the standard MILU(0) choice).
+  explicit ILU0_CRS(const std::vector<CRS *> &A_rows, bool modified = false, double modified_omega = 1.0) {
+    n = (int)A_rows.size();
+    if (n == 0)
+      throw std::invalid_argument("ILU0_CRS: empty matrix");
+    if (!std::isfinite(modified_omega) || modified_omega < 0.0)
+      throw std::invalid_argument("ILU0_CRS: modified_omega must be finite and >= 0");
+    pivot_min_used = std::max(1e-30, getenv_double("BEM_ILU0_PIVOT_MIN", 1e-20));
+    pivot_clamp_used = getenv_bool("BEM_ILU0_CLAMP_PIVOT", false);
+    pivot_debug_used = getenv_bool("BEM_ILU0_DEBUG", false);
+
+    row_ptr.resize(n + 1, 0);
+    diag_ptr.resize(n, -1);
+
+    // 1. Convert to CRS format (sorted columns)
+    std::vector<std::vector<std::pair<int, double>>> sorted_rows(n);
+
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+      if (!A_rows[i])
+        continue;
+      auto &row_vec = sorted_rows[i];
+      row_vec.reserve(A_rows[i]->column_value.size());
+      for (const auto &[colPtr, v] : A_rows[i]->column_value) {
+        if (!colPtr)
+          continue;
+        row_vec.push_back({(int)colPtr->getIndexCRS(), v});
+      }
+      std::sort(row_vec.begin(), row_vec.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+    }
+
+    int nnz = 0;
+    for (int i = 0; i < n; ++i) {
+      row_ptr[i] = nnz;
+      for (const auto &p : sorted_rows[i]) {
+        val.push_back(p.second);
+        col_ind.push_back(p.first);
+        if (p.first == i) {
+          diag_ptr[i] = nnz;
+        }
+        nnz++;
+      }
+    }
+    row_ptr[n] = nnz;
+
+    for (int i = 0; i < n; ++i) {
+      if (diag_ptr[i] == -1)
+        throw std::runtime_error("ILU0_CRS: missing diagonal at row " + std::to_string(i));
+    }
+
+    // 2. Compute dependency levels for L (forward substitution)
+    //    Row i depends on rows k where L_ik != 0 (columns k < i)
+    std::vector<int> level_L(n, 0);
+    for (int i = 0; i < n; ++i) {
+      int max_dep = -1;
+      for (int idx = row_ptr[i]; idx < diag_ptr[i]; ++idx) {
+        int k = col_ind[idx];
+        max_dep = std::max(max_dep, level_L[k]);
+      }
+      level_L[i] = max_dep + 1;
+      num_levels_L = std::max(num_levels_L, level_L[i] + 1);
+    }
+    rows_at_level_L.resize(num_levels_L);
+    for (int i = 0; i < n; ++i) {
+      rows_at_level_L[level_L[i]].push_back(i);
+    }
+
+    // 3. Compute dependency levels for U (backward substitution)
+    //    Row i depends on rows j where U_ij != 0 (columns j > i)
+    std::vector<int> level_U(n, 0);
+    for (int i = n - 1; i >= 0; --i) {
+      int max_dep = -1;
+      for (int idx = diag_ptr[i] + 1; idx < row_ptr[i + 1]; ++idx) {
+        int j = col_ind[idx];
+        max_dep = std::max(max_dep, level_U[j]);
+      }
+      level_U[i] = max_dep + 1;
+      num_levels_U = std::max(num_levels_U, level_U[i] + 1);
+    }
+    rows_at_level_U.resize(num_levels_U);
+    for (int i = 0; i < n; ++i) {
+      rows_at_level_U[level_U[i]].push_back(i);
+    }
+
+    // 4. ILU(0) Factorization (sequential for stability)
+    for (int i = 0; i < n; ++i) {
+      const int diag_idx = diag_ptr[i];
+      const int row_end = row_ptr[i + 1];
+
+      for (int idx_k = row_ptr[i]; idx_k < diag_idx; ++idx_k) {
+        const int k = col_ind[idx_k];
+        double pivot_k = val[diag_ptr[k]];
+        if (!std::isfinite(pivot_k) || std::abs(pivot_k) < pivot_min_used) {
+          if (pivot_clamp_used) {
+            pivot_k = std::signbit(pivot_k) ? -pivot_min_used : pivot_min_used;
+            val[diag_ptr[k]] = pivot_k;
+          } else {
+            throw std::runtime_error("ILU0_CRS: bad pivot at row " + std::to_string(k) +
+                                     " while factoring row " + std::to_string(i) +
+                                     ", value=" + std::to_string(pivot_k) +
+                                     ", pivot_min=" + std::to_string(pivot_min_used));
+          }
+        }
+
+        val[idx_k] /= pivot_k;
+        if (!std::isfinite(val[idx_k])) {
+          throw std::runtime_error("ILU0_CRS: non-finite L entry at row " + std::to_string(i) +
+                                   ", col " + std::to_string(k) +
+                                   ", pivot=" + std::to_string(pivot_k));
+        }
+        const double L_ik = val[idx_k];
+
+        int ptr_i = idx_k + 1;
+        int ptr_k = diag_ptr[k] + 1;
+        const int row_k_end = row_ptr[k + 1];
+
+        while (ptr_i < row_end && ptr_k < row_k_end) {
+          const int col_i = col_ind[ptr_i];
+          const int col_k = col_ind[ptr_k];
+
+          if (col_i == col_k) {
+            val[ptr_i] -= L_ik * val[ptr_k];
+            ++ptr_i;
+            ++ptr_k;
+          } else if (col_i < col_k) {
+            ++ptr_i;
+          } else {
+            if (modified) {
+              val[diag_idx] -= modified_omega * (L_ik * val[ptr_k]);
+            }
+            ++ptr_k;
+          }
+        }
+
+        if (modified) {
+          while (ptr_k < row_k_end) {
+            val[diag_idx] -= modified_omega * (L_ik * val[ptr_k]);
+            ++ptr_k;
+          }
+        }
+      }
+    }
+
+    // 5. Check for zero pivots after factorization
+    double min_abs_diag = std::numeric_limits<double>::max();
+    double max_abs_diag = 0.0;
+    int min_abs_diag_row = -1;
+    int near_zero_count = 0;
+    for (int i = 0; i < n; ++i) {
+      double d = val[diag_ptr[i]];
+      const double ad = std::abs(d);
+      if (ad < min_abs_diag) {
+        min_abs_diag = ad;
+        min_abs_diag_row = i;
+      }
+      max_abs_diag = std::max(max_abs_diag, ad);
+      if (!std::isfinite(d)) {
+        throw std::runtime_error("ILU0_CRS: non-finite pivot at row " + std::to_string(i));
+      }
+      if (ad < pivot_min_used) {
+        if (pivot_clamp_used) {
+          d = std::signbit(d) ? -pivot_min_used : pivot_min_used;
+          val[diag_ptr[i]] = d;
+        } else {
+          throw std::runtime_error("ILU0_CRS: zero/near-zero pivot at row " + std::to_string(i) +
+                                   ", value=" + std::to_string(d) +
+                                   ", pivot_min=" + std::to_string(pivot_min_used));
+        }
+      }
+      if (ad < 10.0 * pivot_min_used)
+        ++near_zero_count;
+    }
+    if (pivot_debug_used) {
+      std::cout << "[ILU0_CRS] n=" << n
+                << " pivot_min=" << pivot_min_used
+                << " clamp=" << (pivot_clamp_used ? 1 : 0)
+                << " min|diag|=" << min_abs_diag
+                << " (row=" << min_abs_diag_row << ")"
+                << " max|diag|=" << max_abs_diag
+                << " near_zero(<10*pivot_min)=" << near_zero_count
+                << std::endl;
+    }
+  }
+
+  // Apply M^{-1} b using sequential triangular solves
+  // Note: Level-scheduled parallel solve has too much overhead for typical BEM problems
+  //       (many levels with few rows each). Sequential is faster.
+  V_d solve(const V_d &b) const {
+    if ((int)b.size() != n)
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "ILU0_CRS::solve size mismatch");
+
+    V_d x = b;
+
+    // Forward substitution: L y = b
+    for (int i = 0; i < n; ++i) {
+      double sum = x[i];
+      for (int idx = row_ptr[i]; idx < diag_ptr[i]; ++idx) {
+        sum -= val[idx] * x[col_ind[idx]];
+      }
+      if (!std::isfinite(sum))
+        throw std::runtime_error("ILU0_CRS::solve forward produced non-finite value at row " + std::to_string(i));
+      x[i] = sum;
+    }
+
+    // Backward substitution: U x = y
+    for (int i = n - 1; i >= 0; --i) {
+      double sum = x[i];
+      for (int idx = diag_ptr[i] + 1; idx < row_ptr[i + 1]; ++idx) {
+        sum -= val[idx] * x[col_ind[idx]];
+      }
+      double diag = val[diag_ptr[i]];
+      if (!std::isfinite(diag) || std::abs(diag) < pivot_min_used) {
+        if (pivot_clamp_used)
+          diag = std::signbit(diag) ? -pivot_min_used : pivot_min_used;
+        else
+          throw std::runtime_error("ILU0_CRS::solve bad pivot at row " + std::to_string(i) +
+                                   ", value=" + std::to_string(diag));
+      }
+      x[i] = sum / diag;
+      if (!std::isfinite(x[i]))
+        throw std::runtime_error("ILU0_CRS::solve backward produced non-finite value at row " + std::to_string(i));
+    }
+
+    return x;
+  }
+};
+
+// ILUT (incomplete LU with threshold dropping).
+// - Allows fill-in, but drops small entries to keep factors sparse.
+// - `drop_tol` controls numeric dropping; `max_entries_per_row` caps fill growth.
+struct ILUT_CRS {
+  int n = 0;
+  double drop_tol = 1e-3;
+  int max_entries_per_row = 50; // per L and U (excluding diagonal)
+  double pivot_min = 1e-12;
+
+  // L has implicit unit diagonal (not stored); stores strictly lower part.
+  std::vector<double> L_val;
+  std::vector<int> L_col_ind;
+  std::vector<int> L_row_ptr;
+
+  // U stores diagonal and strictly upper part.
+  std::vector<double> U_val;
+  std::vector<int> U_col_ind;
+  std::vector<int> U_row_ptr;
+  std::vector<int> U_diag_ptr; // index of diagonal element in U_val/U_col_ind per row
+
+  ILUT_CRS() = default;
+
+  explicit ILUT_CRS(const std::vector<CRS *> &A_rows, double drop_tol_in, int max_entries_per_row_in, double pivot_min_in)
+      : drop_tol(drop_tol_in), max_entries_per_row(max_entries_per_row_in), pivot_min(pivot_min_in) {
+    n = static_cast<int>(A_rows.size());
+    if (n == 0)
+      throw std::invalid_argument("ILUT_CRS: empty matrix");
+    if (max_entries_per_row < 0)
+      throw std::invalid_argument("ILUT_CRS: max_entries_per_row must be >= 0");
+    if (!(drop_tol >= 0.0))
+      throw std::invalid_argument("ILUT_CRS: drop_tol must be >= 0");
+    if (!(pivot_min > 0.0))
+      throw std::invalid_argument("ILUT_CRS: pivot_min must be > 0");
+
+    // Convert A to sorted rows (column-major indices).
+    std::vector<std::vector<std::pair<int, double>>> A_sorted(n);
+#pragma omp parallel for
+    for (int i = 0; i < n; ++i) {
+      if (!A_rows[i])
+        continue;
+      auto &row = A_sorted[i];
+      row.reserve(A_rows[i]->column_value.size());
+      for (const auto &[colPtr, v] : A_rows[i]->column_value) {
+        if (!colPtr)
+          continue;
+        row.push_back({static_cast<int>(colPtr->getIndexCRS()), v});
+      }
+      std::sort(row.begin(), row.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+    }
+
+    std::vector<std::vector<std::pair<int, double>>> L_rows(n), U_rows(n);
+    std::vector<double> U_diag(n, 0.0);
+
+    auto keep_largest = [](std::vector<std::pair<int, double>> &v, int max_keep) {
+      if (max_keep < 0)
+        return;
+      if (static_cast<int>(v.size()) <= max_keep)
+        return;
+      auto mid = v.begin() + max_keep;
+      std::nth_element(v.begin(), mid, v.end(), [](const auto &a, const auto &b) { return std::abs(a.second) > std::abs(b.second); });
+      v.erase(mid, v.end());
+    };
+
+    for (int i = 0; i < n; ++i) {
+      // Working row (keeps columns sorted; insertions do not invalidate iterators).
+      std::map<int, double> w;
+      double row_norm1 = 0.0;
+      for (const auto &[c, v] : A_sorted[i]) {
+        w[c] += v;
+        row_norm1 += std::abs(v);
+      }
+      const double drop_thr = drop_tol * row_norm1;
+
+      // Eliminate lower part using already-built U rows.
+      for (auto it = w.begin(); it != w.end() && it->first < i; ++it) {
+        const int k = it->first;
+        const double wk = it->second;
+        const double pivot = U_diag[k];
+        if (std::abs(pivot) < pivot_min)
+          throw std::runtime_error("ILUT_CRS: zero/near-zero pivot at row " + std::to_string(k));
+        const double lik = wk / pivot;
+        it->second = lik;
+
+        // w_j -= l_ik * U_kj  for j > k (allow fill-in)
+        for (const auto &[j, ukj] : U_rows[k]) {
+          if (j <= k)
+            continue;
+          w[j] -= lik * ukj;
+        }
+      }
+
+      // Split into L/U candidates and apply dropping.
+      std::vector<std::pair<int, double>> Lcand;
+      std::vector<std::pair<int, double>> Ucand;
+      Lcand.reserve(w.size());
+      Ucand.reserve(w.size());
+
+      // Extract diagonal first (and ensure it's present).
+      double diag = 0.0;
+      if (auto itdiag = w.find(i); itdiag != w.end())
+        diag = itdiag->second;
+      if (std::abs(diag) < pivot_min)
+        diag = (diag >= 0.0) ? pivot_min : -pivot_min;
+
+      for (const auto &[c, v] : w) {
+        if (c < i) {
+          if (drop_tol > 0.0 && std::abs(v) < drop_thr)
+            continue;
+          if (v != 0.0)
+            Lcand.emplace_back(c, v);
+        } else if (c > i) {
+          if (drop_tol > 0.0 && std::abs(v) < drop_thr)
+            continue;
+          if (v != 0.0)
+            Ucand.emplace_back(c, v);
+        }
+      }
+
+      keep_largest(Lcand, max_entries_per_row);
+      keep_largest(Ucand, max_entries_per_row);
+
+      std::sort(Lcand.begin(), Lcand.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+      std::sort(Ucand.begin(), Ucand.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+
+      // Always keep diagonal.
+      Ucand.insert(Ucand.begin(), {i, diag});
+
+      L_rows[i] = std::move(Lcand);
+      U_rows[i] = std::move(Ucand);
+      U_diag[i] = diag;
+    }
+
+    // Compress to CRS (L and U separately).
+    L_row_ptr.assign(n + 1, 0);
+    U_row_ptr.assign(n + 1, 0);
+    U_diag_ptr.assign(n, -1);
+
+    int L_nnz = 0, U_nnz = 0;
+    for (int i = 0; i < n; ++i) {
+      L_row_ptr[i] = L_nnz;
+      L_nnz += static_cast<int>(L_rows[i].size());
+      U_row_ptr[i] = U_nnz;
+      U_nnz += static_cast<int>(U_rows[i].size());
+    }
+    L_row_ptr[n] = L_nnz;
+    U_row_ptr[n] = U_nnz;
+
+    L_val.reserve(L_nnz);
+    L_col_ind.reserve(L_nnz);
+    U_val.reserve(U_nnz);
+    U_col_ind.reserve(U_nnz);
+
+    for (int i = 0; i < n; ++i) {
+      for (const auto &[c, v] : L_rows[i]) {
+        L_col_ind.push_back(c);
+        L_val.push_back(v);
+      }
+      for (const auto &[c, v] : U_rows[i]) {
+        if (c == i)
+          U_diag_ptr[i] = static_cast<int>(U_val.size());
+        U_col_ind.push_back(c);
+        U_val.push_back(v);
+      }
+      if (U_diag_ptr[i] < 0)
+        throw std::runtime_error("ILUT_CRS: missing diagonal at row " + std::to_string(i));
+    }
+  }
+
+  // Apply M^{-1} b
+  V_d solve(const V_d &b) const {
+    if (static_cast<int>(b.size()) != n)
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "ILUT_CRS::solve size mismatch");
+
+    V_d x = b;
+
+    // Forward substitution: (I + L) y = b, with unit diagonal.
+    for (int i = 0; i < n; ++i) {
+      double sum = x[i];
+      for (int idx = L_row_ptr[i]; idx < L_row_ptr[i + 1]; ++idx) {
+        sum -= L_val[idx] * x[L_col_ind[idx]];
+      }
+      x[i] = sum;
+    }
+
+    // Backward substitution: U x = y
+    for (int i = n - 1; i >= 0; --i) {
+      double sum = x[i];
+      for (int idx = U_row_ptr[i]; idx < U_row_ptr[i + 1]; ++idx) {
+        const int c = U_col_ind[idx];
+        if (c == i)
+          continue;
+        sum -= U_val[idx] * x[c];
+      }
+      const double diag = U_val[U_diag_ptr[i]];
+      if (std::abs(diag) < pivot_min)
+        throw std::runtime_error("ILUT_CRS::solve zero/near-zero diagonal at row " + std::to_string(i));
+      x[i] = sum / diag;
+    }
+    return x;
+  }
+};
+
+// Additive Schwarz / block-Jacobi preconditioner with dense local solves.
+// - Each block is a small index set S (typically from local k-ring adjacency).
+// - Build: extract A[S,S] from a sparse CRS (pattern + values) and factor with LAPACK LU.
+// - Apply: z = sum_b P_b^T (A_b^{-1} (P_b r)), with simple partition-of-unity scaling by coverage count.
+struct SchwarzAdditive_CRS {
+  struct Block {
+    std::vector<int> indices;               // global indices (size m)
+    std::unique_ptr<lapack_lu> lu = nullptr; // factorized dense block (m x m), row-major -> TRANS='T'
+    std::vector<double> diag_inv;           // fallback diagonal inverse (size m)
+    bool uses_lu = false;
+  };
+
+  int n = 0;
+  std::vector<Block> blocks;
+  std::vector<int> cover_count;
+  std::vector<double> inv_cover;
+
+  // Diagnostics
+  int blocks_count = 0;
+  int min_block_size = 0;
+  int max_block_size = 0;
+  double avg_block_size = 0.0;
+  int num_lu_blocks = 0;
+  int num_fallback_blocks = 0;
+
+  SchwarzAdditive_CRS() = default;
+
+  SchwarzAdditive_CRS(const std::vector<CRS *> &A_rows, const std::vector<std::vector<int>> &block_indices, double pivot_min, double diag_shift) {
+    n = static_cast<int>(A_rows.size());
+    if (n <= 0)
+      throw std::invalid_argument("SchwarzAdditive_CRS: empty matrix");
+    if (pivot_min <= 0.0)
+      throw std::invalid_argument("SchwarzAdditive_CRS: pivot_min must be > 0");
+    if (diag_shift < 0.0)
+      throw std::invalid_argument("SchwarzAdditive_CRS: diag_shift must be >= 0");
+
+    blocks.clear();
+    blocks.reserve(block_indices.size());
+
+    cover_count.assign(n, 0);
+    inv_cover.assign(n, 1.0);
+
+    std::vector<int> local_pos(n, -1);
+    std::vector<int> touched;
+    touched.reserve(4096);
+
+    int total_block_size = 0;
+    min_block_size = std::numeric_limits<int>::max();
+    max_block_size = 0;
+
+    for (const auto &idxs_in : block_indices) {
+      if (idxs_in.empty())
+        continue;
+
+      Block blk;
+      blk.indices = idxs_in;
+
+      const int m = static_cast<int>(blk.indices.size());
+      total_block_size += m;
+      min_block_size = std::min(min_block_size, m);
+      max_block_size = std::max(max_block_size, m);
+
+      // Coverage count for partition-of-unity scaling (computed over the final blocks).
+      for (const int g : blk.indices) {
+        if (g >= 0 && g < n)
+          cover_count[g] += 1;
+      }
+
+      // Build global->local mapping (scratch) for extracting A[S,S]
+      touched.clear();
+      touched.reserve(static_cast<std::size_t>(m));
+      for (int p = 0; p < m; ++p) {
+        const int g = blk.indices[p];
+        if (g < 0 || g >= n)
+          continue;
+        local_pos[g] = p;
+        touched.push_back(g);
+      }
+
+      std::vector<std::vector<double>> A(m, std::vector<double>(m, 0.0));
+
+      for (int ii = 0; ii < m; ++ii) {
+        const int gi = blk.indices[ii];
+        if (gi < 0 || gi >= n)
+          continue;
+        CRS *row = A_rows[gi];
+        if (!row)
+          continue;
+        for (const auto &[col_ptr, v] : row->column_value) {
+          if (!col_ptr)
+            continue;
+          const int gj = static_cast<int>(col_ptr->getIndexCRS());
+          if (gj < 0 || gj >= n)
+            continue;
+          const int jj = local_pos[gj];
+          if (jj >= 0)
+            A[ii][jj] = v;
+        }
+      }
+
+      if (diag_shift > 0.0) {
+        for (int i = 0; i < m; ++i)
+          A[i][i] += diag_shift;
+      }
+
+      // Fallback diagonal inverse (always computed).
+      blk.diag_inv.assign(static_cast<std::size_t>(m), 1.0);
+      for (int i = 0; i < m; ++i) {
+        double d = A[i][i];
+        if (std::abs(d) < pivot_min)
+          d = (d >= 0.0) ? pivot_min : -pivot_min;
+        blk.diag_inv[static_cast<std::size_t>(i)] = 1.0 / d;
+      }
+
+      // Attempt LU factorization.
+      bool lu_ok = false;
+      try {
+        auto lu = std::make_unique<lapack_lu>(A);
+        lu_ok = (lu->info == 0);
+        if (lu_ok)
+          blk.lu = std::move(lu);
+      } catch (...) {
+        lu_ok = false;
+      }
+
+      blk.uses_lu = lu_ok;
+      if (blk.uses_lu)
+        num_lu_blocks += 1;
+      else
+        num_fallback_blocks += 1;
+
+      // Reset scratch mapping
+      for (const int g : touched)
+        local_pos[g] = -1;
+
+      blocks.push_back(std::move(blk));
+    }
+
+    blocks_count = static_cast<int>(blocks.size());
+    avg_block_size = (blocks_count > 0) ? (static_cast<double>(total_block_size) / static_cast<double>(blocks_count)) : 0.0;
+    if (min_block_size == std::numeric_limits<int>::max())
+      min_block_size = 0;
+
+    // Compute inverse cover weights (avoid divide in apply).
+    for (int i = 0; i < n; ++i) {
+      const int c = cover_count[static_cast<std::size_t>(i)];
+      inv_cover[static_cast<std::size_t>(i)] = (c > 0) ? (1.0 / static_cast<double>(c)) : 1.0;
+    }
+  }
+
+  // Apply M^{-1} r (additive Schwarz / block Jacobi).
+  V_d solve(const V_d &rhs) const {
+    if (static_cast<int>(rhs.size()) != n)
+      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "SchwarzAdditive_CRS::solve size mismatch");
+
+    V_d out(static_cast<std::size_t>(n), 0.0);
+
+    std::vector<double> local;
+    local.reserve(static_cast<std::size_t>(max_block_size > 0 ? max_block_size : 256));
+
+    for (const auto &blk : blocks) {
+      const int m = static_cast<int>(blk.indices.size());
+      if (m <= 0)
+        continue;
+
+      local.assign(static_cast<std::size_t>(m), 0.0);
+      for (int i = 0; i < m; ++i) {
+        const int g = blk.indices[i];
+        if (g >= 0 && g < n)
+          local[static_cast<std::size_t>(i)] = rhs[static_cast<std::size_t>(g)];
+      }
+
+      if (blk.uses_lu && blk.lu) {
+        try {
+          blk.lu->solve(local);
+        } catch (...) {
+          // If LAPACK solve fails at runtime, fall back to diagonal scaling.
+          for (int i = 0; i < m; ++i)
+            local[static_cast<std::size_t>(i)] *= blk.diag_inv[static_cast<std::size_t>(i)];
+        }
+      } else {
+        for (int i = 0; i < m; ++i)
+          local[static_cast<std::size_t>(i)] *= blk.diag_inv[static_cast<std::size_t>(i)];
+      }
+
+      for (int i = 0; i < m; ++i) {
+        const int g = blk.indices[i];
+        if (g < 0 || g >= n)
+          continue;
+        out[static_cast<std::size_t>(g)] += local[static_cast<std::size_t>(i)] * inv_cover[static_cast<std::size_t>(g)];
+      }
+    }
+
+    return out;
+  }
+};
+
 struct ILU {
   std::vector<CRS *> LU;
 
@@ -2525,8 +3251,11 @@ struct ArnoldiProcess {
     H.push_back(V_d(n, 0.));
     // orthogonalization
     // std::cout << "orthogonalization" << std::endl;
-    for (i = 0; i < n; ++i)
-      w -= (*H[i].rbegin() = Dot(w, V[i])) * V[i];
+    for (i = 0; i < n; ++i) {
+      const double h = Dot(V[i], w);
+      *H[i].rbegin() = h;
+      FusedMultiplyIncrement(-h, V[i], w);
+    }
     V.push_back(w / (H[n][n - 1] = Norm(w)));
     // std::cout << "done" << std::endl;
   };
@@ -2591,79 +3320,137 @@ ${\tilde H}_n {\bf y}_n = {\bf b}$という問題を解く方が計算量が少�
 */
 
 struct gmres : public ArnoldiProcess {
-
   /* NOTE:
-  r0 = Normalize(b - A.x0)
-  to find {r0,A.r0,A^2.r0,...}
-  Therefore V is an orthonormal basis of the Krylov subspace Km(A,r0)
+     r0 = b - A x0
+     V is an orthonormal basis of the Krylov subspace Km(A, r0)
   */
-  // int n;  // th number of interation
 
-  V_d x, y;
-  QR<VV_d, true> qr;
-  V_d g;
+  V_d x_base;
+  V_d x;
+  V_d y;
+  VV_d R;                 // (n+1) x n upper-triangular after Givens rotations
+  std::vector<double> cs; // cosines for Givens rotations
+  std::vector<double> sn; // sines for Givens rotations
+  V_d g;                  // g = Q^T (beta e1) updated incrementally
   double err;
+
   ~gmres() { std::cout << "destructing gmres" << std::endl; };
-  gmres(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &b, const V_d x0, const std::size_t nIN) : ArnoldiProcess(return_A_dot_v, b - return_A_dot_v(x0), nIN), x(x0), y(b.size()), qr(ArnoldiProcess::H), g(qr.Q.size()), err(0.) {
+
+  gmres(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &b, const V_d x0, const std::size_t nIN) : ArnoldiProcess(return_A_dot_v, b - return_A_dot_v(x0), nIN), x_base(x0), x(x0), y(b.size(), 0.0), R(), cs(), sn(), g(), err(0.) {
     DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
-    if (this->beta /*initial error*/ == static_cast<double>(0.))
-      return;
-    std::size_t i = 0;
-    for (const auto &q : qr.QT)
-      this->g[i++] = q[0] * this->beta;
-    this->err = std::abs(this->g.back()); // 予想される誤差
-    this->g.pop_back();
-    this->y = back_substitution(this->qr.R, this->g, this->g.size());
-    for (auto i = 0; i < this->n; ++i) {
-      FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
-    }
+    this->initializeQRStateFromCurrentH();
+    this->updateFromCurrentQR();
   };
 
   // std::vector<double>からstd::vector<float>への変換コンストラクタ
   std::vector<float> convertToFloat(const std::vector<double> &vec) { return std::vector<float>(vec.begin(), vec.end()); }
-
-  /* -------------------------------------------------------------------------- */
 
   void Restart(const std::function<V_d(const V_d &v)> &return_A_dot_v, const V_d &b, const V_d x0, const int nIN) {
     DebugPrint(Yellow, __FILE__, " ", __PRETTY_FUNCTION__, " ", __LINE__);
     std::cout << "Restart:Restarting" << std::endl;
     this->ArnoldiProcess::Initialize(return_A_dot_v, b - return_A_dot_v(x0), nIN);
     std::cout << "Restart:Initialize done" << std::endl;
+    this->x_base = x0;
     this->x = x0;
-    std::cout << "QR" << std::endl;
-    this->qr.Initialize(this->H);
-    std::cout << "QR done" << std::endl;
-    if (this->beta /*initial error*/ == static_cast<double>(0.))
-      return;
-    this->g = this->qr.Q[0] * this->beta;
-    err = std::abs(g.back()); //! 予想される誤差（g の末尾は QR の影響で残差に対応）
-    g.pop_back();             //! R のサイズに合わせるために末尾を削除
-    this->y = back_substitution(this->qr.R, this->g, this->g.size());
-    for (auto i = 0; i < this->n; ++i)
-      FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
+    this->initializeQRStateFromCurrentH();
+    this->updateFromCurrentQR();
     std::cout << "Restart done" << std::endl;
   }
 
-  /* -------------------------------------------------------------------------- */
+  void UpdateSolution() { this->updateFromCurrentQR(); }
+
   //@今の所このIterateは正しく実装されていない．
   void Iterate(const std::function<V_d(const V_d &v)> &return_A_dot_v) {
     this->AddBasisVector(return_A_dot_v);
-    this->qr = QR<VV_d, true>(this->H);
-    err = 0.;
-    std::fill(this->x.begin(), this->x.end(), 0);
-    if (this->beta /*initial error*/ == static_cast<double>(0.))
-      return;
-    this->g = this->qr.Q[0] * this->beta;
-    err = std::abs(g.back()); //! 予想される誤差（g の末尾は QR の影響で残差に対応）
-    g.pop_back();             //! R のサイズに合わせるために末尾を削除
-    this->y = back_substitution(this->qr.R, g, g.size());
-    for (auto i = 0; i < this->n; ++i)
-      FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
+    this->updateQRStateByLastColumn();
   };
+
+private:
+  static inline void applyGivens(const double c, const double s, double &x, double &y) {
+    const double tmp = std::fma(c, x, s * y);
+    y = std::fma(c, y, -s * x);
+    x = tmp;
+  }
+
+  static inline void computeGivens(const double a, const double b, double &c, double &s) {
+    const double r = std::hypot(a, b);
+    if (r == 0.0) {
+      c = 1.0;
+      s = 0.0;
+      return;
+    }
+    c = a / r;
+    s = b / r;
+  }
+
+  void initializeQRStateFromCurrentH() {
+    this->R = this->H; // keep original H; rotate a copy
+    this->cs.assign(this->n, 0.0);
+    this->sn.assign(this->n, 0.0);
+    this->g.assign(this->n + 1, 0.0);
+    this->g[0] = this->beta;
+
+    for (std::size_t col = 0; col < this->n; ++col) {
+      for (std::size_t i = 0; i < col; ++i)
+        applyGivens(this->cs[i], this->sn[i], this->R[i][col], this->R[i + 1][col]);
+
+      computeGivens(this->R[col][col], this->R[col + 1][col], this->cs[col], this->sn[col]);
+      applyGivens(this->cs[col], this->sn[col], this->R[col][col], this->R[col + 1][col]);
+      applyGivens(this->cs[col], this->sn[col], this->g[col], this->g[col + 1]);
+    }
+    this->err = std::abs(this->g.back());
+  }
+
+  void updateQRStateByLastColumn() {
+    if (this->n == 0)
+      return;
+
+    const std::size_t col = this->n - 1;
+    const std::size_t n_old = col;
+
+    // Expand R to (n+1) x n and populate the new column from H.
+    for (std::size_t row = 0; row < this->R.size(); ++row)
+      this->R[row].push_back(this->H[row][col]);
+    this->R.push_back(V_d(this->n, 0.0));
+    this->R.back()[col] = this->H[col + 1][col];
+
+    // Expand g (length n+1).
+    if (this->g.size() < this->n + 1)
+      this->g.resize(this->n + 1, 0.0);
+
+    // Apply previous rotations to the new column.
+    for (std::size_t i = 0; i < n_old; ++i)
+      applyGivens(this->cs[i], this->sn[i], this->R[i][col], this->R[i + 1][col]);
+
+    // Add and apply the new rotation.
+    double c = 1.0, s = 0.0;
+    computeGivens(this->R[col][col], this->R[col + 1][col], c, s);
+    this->cs.push_back(c);
+    this->sn.push_back(s);
+    applyGivens(c, s, this->R[col][col], this->R[col + 1][col]);
+    applyGivens(c, s, this->g[col], this->g[col + 1]);
+    this->err = std::abs(this->g.back());
+  }
+
+  void updateFromCurrentQR() {
+    this->x = this->x_base;
+    if (this->beta /*initial error*/ == static_cast<double>(0.)) {
+      this->err = 0.0;
+      return;
+    }
+
+    V_d g_trunc = this->g;
+    g_trunc.pop_back();
+    this->y = back_substitution(this->R, g_trunc, g_trunc.size());
+
+    for (std::size_t i = 0; i < this->n; ++i)
+      FusedMultiplyIncrement(this->y[i], this->V[i], this->x);
+    this->err = std::abs(this->g.back());
+  }
 };
 
 /* -------------------------------------------------------------------------- */
-V_d Eigenvalues(const VV_d &A, const double tol = 1e-13, const std::size_t maxIter = 1000) {
+inline V_d Eigenvalues(const VV_d &A, const double tol = 1e-13, const std::size_t maxIter = 1000) {
   VV_d Ak = A, I = A;
   IdentityMatrix(I);
   V_d eigenvalues;
@@ -2679,7 +3466,7 @@ V_d Eigenvalues(const VV_d &A, const double tol = 1e-13, const std::size_t maxIt
   return eigenvalues;
 }
 
-std::pair<V_d, VV_d> Eigensystem(VV_d A, const double tol = 1e-13, const std::size_t maxIter = 1000) {
+inline std::pair<V_d, VV_d> Eigensystem(VV_d A, const double tol = 1e-13, const std::size_t maxIter = 1000) {
   VV_d Ak = A, I = A, Qk = A;
   IdentityMatrix(Qk);
   IdentityMatrix(I);
@@ -2704,7 +3491,7 @@ std::pair<V_d, VV_d> Eigensystem(VV_d A, const double tol = 1e-13, const std::si
   return {eigenvalues, Qk}; // Return both eigenvalues and eigenvectors
 }
 
-std::pair<V_d, VV_d> Eigensystem(VV_d A, VV_d B, const double tol = 1e-13, const std::size_t maxIter = 1000) {
+inline std::pair<V_d, VV_d> Eigensystem(VV_d A, VV_d B, const double tol = 1e-13, const std::size_t maxIter = 1000) {
   // lapack_svd svd(B);
   lapack_svd svd(B);
   // return Eigensystem(Dot(svd.inverse(), A), tol, maxIter);
@@ -2791,7 +3578,7 @@ template <std::size_t N> std::array<std::array<double, N>, N> Inverse(std::array
   return A;
 }
 
-VV_d Inverse(const VV_d &mat) {
+inline VV_d Inverse(const VV_d &mat) {
   lapack_svd svd(mat);
   return svd.inverse();
 }

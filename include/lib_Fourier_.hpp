@@ -11,7 +11,7 @@
 
 /* -------------------------------------------------------------------------- */
 
-std::vector<std::vector<std::complex<double>>> operator*(std::vector<std::vector<std::complex<double>>> a, const std::vector<std::vector<std::complex<double>>> &b) {
+inline std::vector<std::vector<std::complex<double>>> operator*(std::vector<std::vector<std::complex<double>>> a, const std::vector<std::vector<std::complex<double>>> &b) {
   int P = b[0].size();
   for (int i = 0; i < a.size(); ++i)
     for (int j = 0; j < P; ++j)
@@ -685,7 +685,7 @@ template <typename INPUT, typename TREATED, size_t Nk, size_t Mk, size_t Ns, siz
 
 template <typename T> std::vector<std::vector<std::complex<double>>> InverseDFT(const Fourier2D<T> &convolver2Dkernel) { return InverseDFT(convolver2Dkernel.MatrixDFT); }
 
-std::vector<std::vector<double>> Re(const std::vector<std::vector<std::complex<double>>> &matrix2d) {
+inline std::vector<std::vector<double>> Re(const std::vector<std::vector<std::complex<double>>> &matrix2d) {
   std::vector<std::vector<double>> Re_matrix2d(matrix2d.size(), std::vector<double>(matrix2d[0].size(), 0));
   for (std::size_t i = 0; i < matrix2d.size(); ++i)
     for (std::size_t j = 0; j < matrix2d[0].size(); ++j)

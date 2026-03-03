@@ -1,0 +1,15 @@
+{
+    "max_dt": 0.01,
+    "end_time": 50,
+    "end_time_step": 100000,
+    "element": "linear",
+    "ALE": "pseudo_quad",
+    "ALEPERIOD": 1,
+    "WATER_DENSITY": 1000.0,
+    "GRAVITY": 9.81,
+    "input_files": [
+        "tank.json",
+        "water.json",
+        "absorber.json"
+    ]
+}

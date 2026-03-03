@@ -116,7 +116,7 @@ template <> struct NewtonRaphson<T4d> : public NewtonRaphson_Common<T4d> {
 //! v = vx*ex + vy*ey + vz*ezの場合
 //! {vx,vy,vz}, {ex,ey,ez}を与える
 //! ex = {1,0,0}, ey = {0,1,0}, ez = {0,0,1}でなくとも良いが，ほぼ正規直交座標系であることが望ましいだろう
-std::array<double, 3> optimalVector(std::vector<double> Vsample, std::vector<Tddd> Directions, const Tddd &Vinit, std::vector<double> weights, std::array<double, 3> &convergence_info) {
+inline std::array<double, 3> optimalVector(std::vector<double> Vsample, std::vector<Tddd> Directions, const Tddd &Vinit, std::vector<double> weights, std::array<double, 3> &convergence_info) {
 
   if (Vsample.size() == 1)
     return Vsample[0] * Directions[0];
@@ -204,18 +204,18 @@ std::array<double, 3> optimalVector(std::vector<double> Vsample, std::vector<Tdd
   return NR.X;
 }
 
-std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit) {
+inline std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit) {
   std::vector<double> weights(Vsample.size(), 1.);
   std::array<double, 3> convergence_info;
   return optimalVector(Vsample, Directions, Vinit, weights, convergence_info);
 }
 
-std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit, const std::vector<double> &weights) {
+inline std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit, const std::vector<double> &weights) {
   std::array<double, 3> convergence_info;
   return optimalVector(Vsample, Directions, Vinit, weights, convergence_info);
 }
 
-std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit, std::array<double, 3> &convergence_info) {
+inline std::array<double, 3> optimalVector(const std::vector<double> &Vsample, const std::vector<Tddd> &Directions, const Tddd &Vinit, std::array<double, 3> &convergence_info) {
   std::vector<double> weights(Vsample.size(), 1.);
   return optimalVector(Vsample, Directions, Vinit, weights, convergence_info);
 }
@@ -364,7 +364,7 @@ template <std::size_t N> std::array<double, N> optimumVector(const std::vector<s
 //    return result;
 // }
 
-double optimumValue(const std::vector<double> &sample_values, const double init_value, std::vector<double> weights, const double tolerance = 1E-12) {
+inline double optimumValue(const std::vector<double> &sample_values, const double init_value, std::vector<double> weights, const double tolerance = 1E-12) {
   if (weights.size() != sample_values.size())
     throw std::runtime_error("The size of the weights vector must match the size of the sample_vectors vector.");
 
@@ -424,7 +424,7 @@ struct DispersionRelation {
     this->T = 2 * M_PI / this->w;
     this->h = hIN;
     bool found = false;
-    const std::vector<double> init_L = {0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.};
+    const std::vector<double> init_L = {0.5, 1., 2., 5., 10., 20., 50., 100., 200., 500., 1000., 2000.};
     for (const double l : init_L) {
       NewtonRaphson nr(2. * M_PI / l);
       for (auto i = 0; i < 30; i++) {
@@ -495,7 +495,7 @@ struct WaterWaveTheory {
     this->T = 2 * M_PI / this->w;
     this->h = hIN;
     bool found = false;
-    const std::vector<double> init_L = {0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.};
+    const std::vector<double> init_L = {0.5, 1., 2., 5., 10., 20., 50., 100., 200., 500., 1000., 2000.};
     for (const double l : init_L) {
       NewtonRaphson nr(2. * M_PI / l);
       for (auto i = 0; i < 30; i++) {
@@ -652,7 +652,7 @@ public:
     DispersionRelation disp;
     disp.set_T_h(T13, h);
     this->L13 = disp.L;
-    f_min = 0.5 * T13;
+    f_min = 0.5 / T13;
     f_max = 2.0 / T13;
     df = (f_max - f_min) / N;
     for (int i = 0; i < N; i++) {

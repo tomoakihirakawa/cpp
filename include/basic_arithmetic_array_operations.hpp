@@ -7,9 +7,21 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#if defined(__has_include)
+#if __has_include(<stdfloat>)
 #include <stdfloat>
+#endif
+#endif
 #include <type_traits>
 #include <unordered_set>
+
+// `std::float128_t` is not available on all standard library implementations (e.g. Apple libc++).
+// Allow forcing a fallback via build config (e.g. clang++ builds on macOS).
+#if !defined(BEM_DISABLE_FLOAT128) && defined(__has_include) && __has_include(<stdfloat>)
+using bem_float128_t = std::float128_t;
+#else
+using bem_float128_t = long double;
+#endif
 
 /*
    intended behavior:
@@ -345,22 +357,22 @@ template <size_t N, typename T, typename TT, typename Func> constexpr void for_e
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
 /* -------------------------------------------------------------------------- */
-std::vector<Tddd> operator-(std::vector<Tddd> V, const Tddd &u) noexcept {
+inline std::vector<Tddd> operator-(std::vector<Tddd> V, const Tddd &u) noexcept {
   for (auto &v : V)
     v -= u;
   return V;
 };
-std::vector<Tddd> operator+(std::vector<Tddd> V, const Tddd &u) noexcept {
+inline std::vector<Tddd> operator+(std::vector<Tddd> V, const Tddd &u) noexcept {
   for (auto &v : V)
     v += u;
   return V;
 };
-std::vector<Tddd> operator*(std::vector<Tddd> V, const Tddd &u) noexcept {
+inline std::vector<Tddd> operator*(std::vector<Tddd> V, const Tddd &u) noexcept {
   for (auto &v : V)
     v *= u;
   return V;
 };
-std::vector<Tddd> operator/(std::vector<Tddd> V, const Tddd &u) noexcept {
+inline std::vector<Tddd> operator/(std::vector<Tddd> V, const Tddd &u) noexcept {
   for (auto &v : V)
     v /= u;
   return V;
@@ -515,7 +527,7 @@ template <typename T, std::size_t N> constexpr typename std::enable_if<std::is_a
   return ret;
 }
 
-double Dot(const std::array<double, 3> &arr, const std::array<double, 3> &ARR) noexcept { return std::fma(std::get<0>(arr), std::get<0>(ARR), std::fma(std::get<1>(arr), std::get<1>(ARR), std::get<2>(arr) * std::get<2>(ARR))); }
+inline double Dot(const std::array<double, 3> &arr, const std::array<double, 3> &ARR) noexcept { return std::fma(std::get<0>(arr), std::get<0>(ARR), std::fma(std::get<1>(arr), std::get<1>(ARR), std::get<2>(arr) * std::get<2>(ARR))); }
 
 template <typename T, std::size_t N0, std::size_t N1, std::size_t N2> constexpr typename std::enable_if<std::is_arithmetic<T>::value, std::array<std::array<T, N2>, N1>>::type Dot(const std::array<std::array<T, N0>, N1> &arr, const std::array<std::array<T, N2>, N0> &ARR) noexcept {
   std::array<std::array<T, N2>, N1> ret{};
@@ -758,13 +770,13 @@ template <size_t N> constexpr std::array<double, N> Normalize(std::array<double,
   // return arr;
 }
 
-double Norm(const std::array<double, 2> &arr) noexcept { return std::hypot(std::get<0>(arr), std::get<1>(arr)); }
+inline double Norm(const std::array<double, 2> &arr) noexcept { return std::hypot(std::get<0>(arr), std::get<1>(arr)); }
 
-double Norm(const std::array<double, 3> &arr) noexcept { return std::hypot(std::get<0>(arr), std::get<1>(arr), std::get<2>(arr)); }
+inline double Norm(const std::array<double, 3> &arr) noexcept { return std::hypot(std::get<0>(arr), std::get<1>(arr), std::get<2>(arr)); }
 
 constexpr double Norm(const double value) noexcept { return std::abs(value); }
 
-double Distance(const Tddd &A, const Tddd &B) noexcept { return std::hypot(std::get<0>(A) - std::get<0>(B), std::get<1>(A) - std::get<1>(B), std::get<2>(A) - std::get<2>(B)); }
+inline double Distance(const Tddd &A, const Tddd &B) noexcept { return std::hypot(std::get<0>(A) - std::get<0>(B), std::get<1>(A) - std::get<1>(B), std::get<2>(A) - std::get<2>(B)); }
 
 template <size_t M = 0, std::size_t N, typename T> constexpr T RootMeanSquare(const std::array<T, N> &arr) noexcept { return std::sqrt(Dot(arr, arr) / N); }
 
@@ -790,16 +802,72 @@ template <typename T> inline constexpr std::array<T, 3> Cross(const std::array<T
   return {{std::fma(std::get<1>(A), std::get<2>(B), -std::get<2>(A) * std::get<1>(B)), std::fma(std::get<2>(A), std::get<0>(B), -std::get<0>(A) * std::get<2>(B)), std::fma(std::get<0>(A), std::get<1>(B), -std::get<1>(A) * std::get<0>(B))}};
 }
 
-std::array<double, 3> Cross(const std::array<double, 3> &A, const std::array<double, 3> &B) noexcept {
-  std::array<std::float128_t, 3> A128 = {static_cast<std::float128_t>(std::get<0>(A)), static_cast<std::float128_t>(std::get<1>(A)), static_cast<std::float128_t>(std::get<2>(A))};
-  std::array<std::float128_t, 3> B128 = {static_cast<std::float128_t>(std::get<0>(B)), static_cast<std::float128_t>(std::get<1>(B)), static_cast<std::float128_t>(std::get<2>(B))};
-  return {{static_cast<double>(A128[1] * B128[2] - A128[2] * B128[1]), static_cast<double>(A128[2] * B128[0] - A128[0] * B128[2]), static_cast<double>(A128[0] * B128[1] - A128[1] * B128[0])}};
+inline std::array<double, 3> CrossDouble(const std::array<double, 3> &A, const std::array<double, 3> &B) noexcept {
+  const double ax = std::get<0>(A);
+  const double ay = std::get<1>(A);
+  const double az = std::get<2>(A);
+  const double bx = std::get<0>(B);
+  const double by = std::get<1>(B);
+  const double bz = std::get<2>(B);
+  // use fma
+  const double cx = std::fma(ay, bz, -az * by);
+  const double cy = std::fma(az, bx, -ax * bz);
+  const double cz = std::fma(ax, by, -ay * bx);
+  return {cx, cy, cz};
 }
 
-double CrossDot(const std::array<double, 3> &A, const std::array<double, 3> &B, const std::array<double, 3> &C) noexcept {
-  std::array<std::float128_t, 3> A128 = {static_cast<std::float128_t>(std::get<0>(A)), static_cast<std::float128_t>(std::get<1>(A)), static_cast<std::float128_t>(std::get<2>(A))};
-  std::array<std::float128_t, 3> B128 = {static_cast<std::float128_t>(std::get<0>(B)), static_cast<std::float128_t>(std::get<1>(B)), static_cast<std::float128_t>(std::get<2>(B))};
-  return static_cast<double>((A128[1] * B128[2] - A128[2] * B128[1]) * C[0] + (A128[2] * B128[0] - A128[0] * B128[2]) * C[1] + (A128[0] * B128[1] - A128[1] * B128[0]) * C[2]);
+inline std::array<double, 3> Cross(const std::array<double, 3> &A, const std::array<double, 3> &B) noexcept {
+  const bem_float128_t ax = static_cast<bem_float128_t>(std::get<0>(A));
+  const bem_float128_t ay = static_cast<bem_float128_t>(std::get<1>(A));
+  const bem_float128_t az = static_cast<bem_float128_t>(std::get<2>(A));
+  const bem_float128_t bx = static_cast<bem_float128_t>(std::get<0>(B));
+  const bem_float128_t by = static_cast<bem_float128_t>(std::get<1>(B));
+  const bem_float128_t bz = static_cast<bem_float128_t>(std::get<2>(B));
+
+  const bem_float128_t cx = ay * bz - az * by;
+  const bem_float128_t cy = az * bx - ax * bz;
+  const bem_float128_t cz = ax * by - ay * bx;
+
+  return {static_cast<double>(cx), static_cast<double>(cy), static_cast<double>(cz)};
+}
+
+inline double CrossDot(const std::array<double, 3> &A, const std::array<double, 3> &B, const std::array<double, 3> &C) noexcept {
+  const bem_float128_t ax = static_cast<bem_float128_t>(std::get<0>(A));
+  const bem_float128_t ay = static_cast<bem_float128_t>(std::get<1>(A));
+  const bem_float128_t az = static_cast<bem_float128_t>(std::get<2>(A));
+  const bem_float128_t bx = static_cast<bem_float128_t>(std::get<0>(B));
+  const bem_float128_t by = static_cast<bem_float128_t>(std::get<1>(B));
+  const bem_float128_t bz = static_cast<bem_float128_t>(std::get<2>(B));
+  const bem_float128_t cx = ay * bz - az * by;
+  const bem_float128_t cy = az * bx - ax * bz;
+  const bem_float128_t cz = ax * by - ay * bx;
+  const bem_float128_t Cx = static_cast<bem_float128_t>(std::get<0>(C));
+  const bem_float128_t Cy = static_cast<bem_float128_t>(std::get<1>(C));
+  const bem_float128_t Cz = static_cast<bem_float128_t>(std::get<2>(C));
+  return static_cast<double>(cx * Cx + cy * Cy + cz * Cz);
+}
+
+inline std::array<double, 3> CrossCross(const std::array<double, 3> &A, const std::array<double, 3> &B, const std::array<double, 3> &C) noexcept {
+  const bem_float128_t ax = static_cast<bem_float128_t>(std::get<0>(A));
+  const bem_float128_t ay = static_cast<bem_float128_t>(std::get<1>(A));
+  const bem_float128_t az = static_cast<bem_float128_t>(std::get<2>(A));
+  const bem_float128_t bx = static_cast<bem_float128_t>(std::get<0>(B));
+  const bem_float128_t by = static_cast<bem_float128_t>(std::get<1>(B));
+  const bem_float128_t bz = static_cast<bem_float128_t>(std::get<2>(B));
+
+  const bem_float128_t cx = ay * bz - az * by;
+  const bem_float128_t cy = az * bx - ax * bz;
+  const bem_float128_t cz = ax * by - ay * bx;
+
+  const bem_float128_t px = static_cast<bem_float128_t>(std::get<0>(C));
+  const bem_float128_t py = static_cast<bem_float128_t>(std::get<1>(C));
+  const bem_float128_t pz = static_cast<bem_float128_t>(std::get<2>(C));
+
+  const bem_float128_t rx = cy * pz - cz * py;
+  const bem_float128_t ry = cz * px - cx * pz;
+  const bem_float128_t rz = cx * py - cy * px;
+
+  return {static_cast<double>(rx), static_cast<double>(ry), static_cast<double>(rz)};
 }
 
 /* -------------------------------------------------------------------------- */
@@ -816,14 +884,14 @@ template <size_t N> std::array<double, N> FusedMultiplyAdd(const double W, const
   return ret;
 }
 
-std::array<double, 3> FusedMultiplyAdd(const double W, const std::array<double, 3> &ARR, const std::array<double, 3> &ret) noexcept { return {std::fma(W, std::get<0>(ARR), std::get<0>(ret)), std::fma(W, std::get<1>(ARR), std::get<1>(ret)), std::fma(W, std::get<2>(ARR), std::get<2>(ret))}; }
+inline std::array<double, 3> FusedMultiplyAdd(const double W, const std::array<double, 3> &ARR, const std::array<double, 3> &ret) noexcept { return {std::fma(W, std::get<0>(ARR), std::get<0>(ret)), std::fma(W, std::get<1>(ARR), std::get<1>(ret)), std::fma(W, std::get<2>(ARR), std::get<2>(ret))}; }
 
 template <size_t N> void FusedMultiplyIncrement(const double W, const std::array<double, N> &ARR, std::array<double, N> &ret) noexcept {
   for (size_t i = 0; i < N; ++i)
     ret[i] = std::fma(W, ARR[i], ret[i]);
 }
 
-void FusedMultiplyIncrement(const double W, const std::array<double, 3> &ARR, std::array<double, 3> &ret) noexcept {
+inline void FusedMultiplyIncrement(const double W, const std::array<double, 3> &ARR, std::array<double, 3> &ret) noexcept {
   std::get<0>(ret) = std::fma(W, std::get<0>(ARR), std::get<0>(ret));
   std::get<1>(ret) = std::fma(W, std::get<1>(ARR), std::get<1>(ret));
   std::get<2>(ret) = std::fma(W, std::get<2>(ARR), std::get<2>(ret));
@@ -841,11 +909,11 @@ template <std::size_t N, std::size_t N1> void FusedMultiplyIncrement(const doubl
 
 #include <execution>
 
-void FusedMultiplyIncrement(const double W, const std::vector<double> &ARR, std::vector<double> &ret) noexcept {
+inline void FusedMultiplyIncrement(const double W, const std::vector<double> &ARR, std::vector<double> &ret) noexcept {
   std::transform(/*std::execution::unseq,*/ ARR.begin(), ARR.end(), ret.begin(), ret.begin(), [W](const double &a, double &r) { return std::fma(a, W, r); });
 }
 
-void FusedMultiplyIncrement(const double W, const std::vector<float> &ARR, std::vector<float> &ret) noexcept {
+inline void FusedMultiplyIncrement(const double W, const std::vector<float> &ARR, std::vector<float> &ret) noexcept {
   std::transform(/*std::execution::unseq,*/ ARR.begin(), ARR.end(), ret.begin(), ret.begin(), [W](const float &a, float &r) { return std::fma(a, W, r); });
 }
 
@@ -854,23 +922,23 @@ void FusedMultiplyIncrement(const double W, const std::vector<float> &ARR, std::
 //       r = std::fma(W, ARR[i++], r);
 // }
 
-void FusedMultiplyIncrement(const std::vector<double> &ARR, const double W, std::vector<double> &ret) noexcept {
+inline void FusedMultiplyIncrement(const std::vector<double> &ARR, const double W, std::vector<double> &ret) noexcept {
   std::transform(/*std::execution::unseq,*/ ARR.begin(), ARR.end(), ret.begin(), ret.begin(), [W](const double &a, double &r) { return std::fma(a, W, r); });
 }
 
-void FusedMultiplyIncrement(const std::vector<float> &ARR, const float W, std::vector<float> &ret) noexcept {
+inline void FusedMultiplyIncrement(const std::vector<float> &ARR, const float W, std::vector<float> &ret) noexcept {
   std::transform(/*std::execution::unseq,*/ ARR.begin(), ARR.end(), ret.begin(), ret.begin(), [W](const float &a, float &r) { return std::fma(a, W, r); });
 }
 
-void FusedMultiplyIncrement(const std::vector<double> &ARR, const float W, std::vector<float> &ret) noexcept {
+inline void FusedMultiplyIncrement(const std::vector<double> &ARR, const float W, std::vector<float> &ret) noexcept {
   std::transform(/*std::execution::unseq,*/ ARR.begin(), ARR.end(), ret.begin(), ret.begin(), [W](const float &a, float &r) { return std::fma(a, W, r); });
 }
 
-void FusedMultiplyIncrement(const std::vector<double> &ARR, const float W, std::vector<double> &ret) noexcept {
+inline void FusedMultiplyIncrement(const std::vector<double> &ARR, const float W, std::vector<double> &ret) noexcept {
   std::transform(/*std::execution::unseq,*/ ARR.begin(), ARR.end(), ret.begin(), ret.begin(), [W](const double &a, double &r) { return std::fma(a, W, r); });
 }
 
-void FusedMultiplyIncrement(const std::vector<float> &ARR, const float W, std::vector<double> &ret) noexcept {
+inline void FusedMultiplyIncrement(const std::vector<float> &ARR, const float W, std::vector<double> &ret) noexcept {
   std::transform(/*std::execution::unseq,*/ ARR.begin(), ARR.end(), ret.begin(), ret.begin(), [W](const double &a, double &r) { return std::fma(a, W, r); });
 }
 
@@ -887,11 +955,11 @@ template <size_t N> void FusedMultiplyIncrement(const std::array<double, N> &ARR
 //    }
 // }
 
-template <> void FusedMultiplyIncrement<0>(const std::array<double, 0> &, const double, std::array<double, 0> &) noexcept {
+template <> inline void FusedMultiplyIncrement<0>(const std::array<double, 0> &, const double, std::array<double, 0> &) noexcept {
   // Do nothing
 }
 
-void FusedMultiplyIncrement(const double arr, const double ARR, double &ret) noexcept { ret = std::fma(arr, ARR, ret); }
+inline void FusedMultiplyIncrement(const double arr, const double ARR, double &ret) noexcept { ret = std::fma(arr, ARR, ret); }
 
 /* -------------------------------------------------------------------------- */
 
@@ -904,14 +972,14 @@ void FusedMultiplyIncrement(const double arr, const double ARR, double &ret) noe
 //           std::get<0>(std::get<0>(M)) * std::get<1>(std::get<1>(M)) * std::get<2>(std::get<2>(M));
 // };
 
-double Det(const T3Tddd &M) {
+inline double Det(const T3Tddd &M) {
   double term1 = std::fma(M[1][1], M[2][2], -M[1][2] * M[2][1]);
   double term2 = std::fma(M[1][0], M[2][2], -M[1][2] * M[2][0]);
   double term3 = std::fma(M[1][0], M[2][1], -M[1][1] * M[2][0]);
   return std::fma(M[0][0], term1, std::fma(-M[0][1], term2, M[0][2] * term3));
 }
 
-double Det(const T2Tdd &M) { return std::fma(M[0][0], M[1][1], -M[0][1] * M[1][0]); }
+inline double Det(const T2Tdd &M) { return std::fma(M[0][0], M[1][1], -M[0][1] * M[1][0]); }
 
 /* -------------------------------------------------------------------------- */
 
@@ -927,68 +995,77 @@ template <std::size_t N> constexpr std::array<double, N + 1> Subdivide(const dou
 };
 
 /* -------------------------------------------------------------------------- */
+/*
+ * 参照三角形 {(0,0),(1,0),(0,1)} 上のパラメトリック座標生成関数群
+ *
+ * 参照三角形:
+ *   t1
+ *   1 (0,1)
+ *     |\
+ *     | \
+ *     |  \
+ *     |   \
+ *   0 +----+ t0
+ *   (0,0) (1,0)
+ *
+ * 条件: t0 >= 0, t1 >= 0, t0 + t1 <= 1
+ *
+ * TriShape<3>(t0,t1) / TriShape<6>(t0,t1) の入力として直接使える．
+ */
+/* -------------------------------------------------------------------------- */
 
-// struct SubdivideDomainIntoTriangles {
-//    const int division;
-//    const double max;
-//    const double min;
-//    std::vector<std::array<int, 3>> parameterOnTriangle_index, parameterOnSquare_index;
-//    std::vector<std::array<std::array<double, 2>, 3>> parameterOnTriangle, parameterOnSquare;
-//    SubdivideDomainIntoTriangles(const int division, const double min = 0., const double max = 1.) : division(division), max(max), min(min) {
-//       if (division < 1)
-//          throw std::invalid_argument("The number of divisions must be a positive integer.");
+/*
+ * UniformPointsOnTriangle_00_10_01(N)
+ *
+ * 参照三角形上に均等な格子点（個々の点）を生成する．
+ * 返り値: std::vector<Tdd>  （各要素は1つの点 {t0, t1}）
+ *
+ * N=3 の場合 (10点):
+ *   t1
+ *   1 *
+ *     * *
+ *  1/3 * * *
+ *     * * * *
+ *   0 *--*--*--*  t0
+ *     0 1/3 2/3 1
+ *
+ * 点数: (N+1)(N+2)/2
+ *   N=4 -> 15点,  N=6 -> 28点,  N=8 -> 45点
+ */
+template <int N>
+constexpr auto UniformPointsOnTriangle_00_10_01() {
+  constexpr int num_points = (N + 1) * (N + 2) / 2;
+  std::array<Tdd, num_points> points{};
+  int idx = 0;
+  for (int i = 0; i <= N; ++i)
+    for (int j = 0; j <= N - i; ++j)
+      points[idx++] = {(double)i / N, (double)j / N};
+  return points;
+}
 
-//       if (min >= max)
-//          throw std::invalid_argument("The minimum value must be less than the maximum value.");
-//       //
-//       std::vector<double> vec(division + 1);
-//       const double dx = (max - min) / (double)division;
-//       for (auto i = 0; i < division + 1; i++)
-//          vec[i] = i * dx + min;
-//       double dt = 1. / (double)division / 2.;
-//       //
-//       std::vector<std::array<std::array<int, 2>, 3>> tmp_index;
-//       int index = 0;
-//       for (auto i = 0; i < vec.size() - 1; ++i)
-//          for (auto j = 0; j < vec.size(); ++j) {
-//             parameterOnTriangle.push_back({{{vec[i], vec[j]}, {vec[i + 1], vec[j]}, {vec[i], vec[j + 1]}}});
-//             tmp_index.push_back({{{i, j}, {i + 1, j}, {i, j + 1}}});
-//             if (std::abs(1 - vec[i + 1] - vec[j]) < dt && std::abs(1 - vec[i] - vec[j + 1]) < dt)
-//                break;
-//             parameterOnTriangle.push_back({{{vec[i], vec[j + 1]}, {vec[i + 1], vec[j]}, {vec[i + 1], vec[j + 1]}}});
-//             tmp_index.push_back({{{i, j + 1}, {i + 1, j}, {i + 1, j + 1}}});
-//          }
-
-//       auto convert = [&](Tii ij) { return ij[0] + (division + 1) * ij[1]; };
-
-//       for (auto i = 0; i < tmp_index.size(); ++i) {
-//          auto [ij0, ij1, ij2] = tmp_index[i];
-//          parameterOnTriangle_index.push_back({convert(ij0), convert(ij1), convert(ij2)});
-//       }
-
-//       tmp_index.clear();
-//       for (auto i = 0; i < vec.size() - 1; ++i)
-//          for (auto j = 0; j < vec.size() - 1; ++j) {
-//             parameterOnSquare.push_back({{{vec[i], vec[j]}, {vec[i + 1], vec[j]}, {vec[i], vec[j + 1]}}});
-//             tmp_index.push_back({{{i, j}, {i + 1, j}, {i, j + 1}}});
-//             parameterOnSquare.push_back({{{vec[i], vec[j + 1]}, {vec[i + 1], vec[j]}, {vec[i + 1], vec[j + 1]}}});
-//             tmp_index.push_back({{{i, j + 1}, {i + 1, j}, {i + 1, j + 1}}});
-//          }
-
-//       for (auto i = 0; i < tmp_index.size(); ++i) {
-//          auto [ij0, ij1, ij2] = tmp_index[i];
-//          parameterOnSquare_index.push_back({convert(ij0), convert(ij1), convert(ij2)});
-//       }
-
-//       std::cout << "parameterOnTriangle.size() = " << parameterOnTriangle.size() << std::endl;
-//       std::cout << "parameterOnTriangle_index.size() = " << parameterOnTriangle_index.size() << std::endl;
-//       std::cout << "parameterOnSquare.size() = " << parameterOnSquare.size() << std::endl;
-//       std::cout << "parameterOnSquare_index.size() = " << parameterOnSquare_index.size() << std::endl;
-//    };
-// };
-
-// std::vector<std::array<std::array<double, 2>, 3>> SubdivideTriangleIntoTriangles(const int divide) {
-std::vector<std::array<std::array<double, 2>, 3>> SymmetricSubdivisionOfTriangle_00_10_01(const int divide) {
+/*
+ * SymmetricSubdivisionOfTriangle_00_10_01(N)
+ *
+ * 参照三角形をサブ三角形に分割する．
+ * 返り値: std::vector<T3Tdd>  （各要素はサブ三角形の3頂点 {{t0,t1}, {t0,t1}, {t0,t1}}）
+ *
+ * N=3 の場合 (9個のサブ三角形):
+ *   t1
+ *   1 |\
+ *     | \
+ *  2/3 +--+\
+ *     |\ | \ \
+ *  1/3 +--+--+\
+ *     |\ |\ |  \
+ *   0 +--+--+--+  t0
+ *     0 1/3 2/3 1
+ *
+ * サブ三角形数: N^2
+ *
+ * 注意: 個々の点が必要な場合は UniformPointsOnTriangle_00_10_01() を使うこと．
+ *       サブ三角形の頂点には重複がある．
+ */
+inline std::vector<std::array<std::array<double, 2>, 3>> SymmetricSubdivisionOfTriangle_00_10_01(const int divide) {
   std::vector<double> vec(divide + 1);
   const double max = 1., min = 0.;
   const double dt = (max - min) / (double)divide;
@@ -1014,7 +1091,15 @@ std::vector<std::array<std::array<double, 2>, 3>> SymmetricSubdivisionOfTriangle
   return t0t1_triangles;
 };
 
-std::vector<T3Tddd> SymmetricSubdivisionOfTriangle(const T3Tddd &ABC, const int divide) {
+/*
+ * SymmetricSubdivisionOfTriangle(ABC, N)
+ *
+ * 任意の三角形ABCをサブ三角形に分割する．
+ * 内部で SymmetricSubdivisionOfTriangle_00_10_01 のパラメトリック座標を
+ * P = t0*A + t1*B + (1-t0-t1)*C で実座標に変換する．
+ * 返り値: std::vector<T3Tddd> (3D) または std::vector<T3Tdd> (2D)
+ */
+inline std::vector<T3Tddd> SymmetricSubdivisionOfTriangle(const T3Tddd &ABC, const int divide) {
   auto parametersOnTriangle = SymmetricSubdivisionOfTriangle_00_10_01(divide);
   std::vector<T3Tddd> triangle_vertices(parametersOnTriangle.size());
   auto convert = [&](const Tdd &t0t1) -> Tddd { return std::get<0>(t0t1) * std::get<0>(ABC) + std::get<1>(t0t1) * std::get<1>(ABC) + (1. - std::get<0>(t0t1) - std::get<1>(t0t1)) * std::get<2>(ABC); };
@@ -1024,7 +1109,7 @@ std::vector<T3Tddd> SymmetricSubdivisionOfTriangle(const T3Tddd &ABC, const int 
   return triangle_vertices;
 };
 
-std::vector<T3Tdd> SymmetricSubdivisionOfTriangle(const T3Tdd &ABC, const int divide) {
+inline std::vector<T3Tdd> SymmetricSubdivisionOfTriangle(const T3Tdd &ABC, const int divide) {
   auto parametersOnTriangle = SymmetricSubdivisionOfTriangle_00_10_01(divide);
   std::vector<T3Tdd> triangle_vertices(parametersOnTriangle.size());
   auto convert = [&](const Tdd &t0t1) -> Tdd { return std::get<0>(t0t1) * std::get<0>(ABC) + std::get<1>(t0t1) * std::get<1>(ABC) + (1. - std::get<0>(t0t1) - std::get<1>(t0t1)) * std::get<2>(ABC); };
@@ -1034,7 +1119,7 @@ std::vector<T3Tdd> SymmetricSubdivisionOfTriangle(const T3Tdd &ABC, const int di
   return triangle_vertices;
 };
 
-std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(const int x_divide, const int y_divide) {
+inline std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(const int x_divide, const int y_divide) {
   std::vector<double> vec_x(x_divide + 1);
   std::vector<double> vec_y(y_divide + 1);
   const double xmax = 1., xmin = 0.;
@@ -1058,7 +1143,7 @@ std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(c
   return t0t1_triangles;
 };
 
-std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(const int divide) { return SubdivideSquareIntoTriangles(divide, divide); };
+inline std::vector<std::array<std::array<double, 2>, 3>> SubdivideSquareIntoTriangles(const int divide) { return SubdivideSquareIntoTriangles(divide, divide); };
 
 /* -------------------------------------------------------------------------- */
 template <size_t N, typename T> constexpr std::array<T, N> Reverse(const std::array<T, N> &vecs) {
@@ -1095,11 +1180,27 @@ template <size_t N0, std::size_t N1, typename T> constexpr std::array<T, N0 + N1
 }
 /* -------------------------------------------------------------------------- */
 
-template <typename T, std::size_t N> std::array<T, N> RotateLeft(std::array<T, N> arr, int n = 1) {
+template <typename T, std::size_t N> constexpr std::array<T, N> RotateLeft(std::array<T, N> arr, int n = 1) {
   if (N == 0 || n == 0)
     return arr;
   n = (n % static_cast<int>(N) + N) % N; // 正の回転数に補正
   std::ranges::rotate(arr, arr.begin() + n);
+  return arr;
+}
+
+template <typename T> constexpr std::array<T, 3> RotateLeft(std::array<T, 3> arr, int n = 1) {
+  const int n_mod = n % 3;
+  if (n_mod == 1 || n_mod == -2) {
+    T temp = arr[0];
+    arr[0] = arr[1];
+    arr[1] = arr[2];
+    arr[2] = temp;
+  } else if (n_mod == 2 || n_mod == -1) {
+    T temp = arr[2];
+    arr[2] = arr[1];
+    arr[1] = arr[0];
+    arr[0] = temp;
+  }
   return arr;
 }
 

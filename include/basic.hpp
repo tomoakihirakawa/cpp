@@ -37,7 +37,7 @@ using Var_SID = std::variant<std::string, int, std::size_t, double, std::vector<
 using V_Var_SID = std::vector<Var_SID>;
 using VV_Var_SID = std::vector<std::vector<Var_SID>>;
 
-std::string GridVector(const std::vector<int> &V, const int i = 20) {
+inline std::string GridVector(const std::vector<int> &V, const int i = 20) {
   std::stringstream ss;
   for (const auto &v : V) {
     ss << std::setw(i) << std::right;
@@ -45,7 +45,7 @@ std::string GridVector(const std::vector<int> &V, const int i = 20) {
   }
   return ss.str();
 };
-std::string GridVector(const std::vector<double> &V, const int i = 20) {
+inline std::string GridVector(const std::vector<double> &V, const int i = 20) {
   std::stringstream ss;
   for (const auto &v : V) {
     ss << std::setw(i) << std::right;
@@ -54,7 +54,7 @@ std::string GridVector(const std::vector<double> &V, const int i = 20) {
   return ss.str();
 };
 
-std::string Grid(const V_Var_SID &V, const int i = 20) {
+inline std::string Grid(const V_Var_SID &V, const int i = 20) {
   std::stringstream ss;
   for (const auto &var : V) {
     ss << std::setw(i) << std::right;
@@ -119,7 +119,7 @@ std::string Grid(const V_Var_SID &V, const int i = 20) {
   return ss.str();
 };
 
-std::string GridGrid(const VV_Var_SID &VV, const int i = 10) {
+inline std::string GridGrid(const VV_Var_SID &VV, const int i = 10) {
   std::stringstream ss;
   for (const auto &V : VV) {
     ss << Grid(V, i);
@@ -160,33 +160,39 @@ template <typename T, typename U> std::vector<std::vector<U>> TakeSecond(const s
 
 ///////////////////////////////////////////////////////
 // 20200526
-V_i stoi(const V_s &vec) {
+inline V_i stoi(const V_s &vec) {
   V_i ret(vec.size());
   std::transform(vec.begin(), vec.end(), ret.begin(), [](const std::string &str) { return std::stoi(str); });
   return ret;
 };
-VV_i stoi(const std::vector<V_s> &vec) {
+inline VV_i stoi(const std::vector<V_s> &vec) {
   VV_i ret(0);
   for (const auto &v : vec)
     ret.emplace_back(stoi(v));
   return ret;
 };
-VVV_i stoi(const std::vector<std::vector<V_s>> &vec) {
+inline VVV_i stoi(const std::vector<std::vector<V_s>> &vec) {
   VVV_i ret(0);
   for (const auto &v : vec)
     ret.emplace_back(stoi(v));
   return ret;
 };
-std::vector<bool> stob(const V_s &vec) {
+inline std::vector<bool> stob(const V_s &vec) {
   std::vector<bool> ret(vec.size());
   std::transform(vec.begin(), vec.end(), ret.begin(), [](const std::string &str) {
-    bool b;
+    // Handle both "true"/"false" and "0"/"1" formats
+    if (str == "true" || str == "1")
+      return true;
+    if (str == "false" || str == "0")
+      return false;
+    // Fallback: try boolalpha parsing
+    bool b = false;
     std::istringstream(str) >> std::boolalpha >> b;
     return b;
   });
   return ret;
 };
-V_d stod(const V_s &vec) {
+inline V_d stod(const V_s &vec) {
   V_d ret;
   ret.reserve(vec.size());
   for (const auto &str : vec) {
@@ -195,21 +201,21 @@ V_d stod(const V_s &vec) {
   return ret;
 }
 
-VV_d stod(const std::vector<V_s> &vec) {
+inline VV_d stod(const std::vector<V_s> &vec) {
   VV_d ret(0);
   for (const auto &v : vec)
     ret.emplace_back(stod(v));
   return ret;
 };
-VVV_d stod(const std::vector<std::vector<V_s>> &vec) {
+inline VVV_d stod(const std::vector<std::vector<V_s>> &vec) {
   VVV_d ret(0);
   for (const auto &v : vec)
     ret.emplace_back(stod(v));
   return ret;
 };
 ///////////////////////////////////////////////////////
-int InverseQuotientMod(const V_i &row_col, const int b) { return row_col[0] * b + row_col[1]; };
-V_i QuotientMod(const int a, const int b) { return {(int)a / b, a % b}; };
+inline int InverseQuotientMod(const V_i &row_col, const int b) { return row_col[0] * b + row_col[1]; };
+inline V_i QuotientMod(const int a, const int b) { return {(int)a / b, a % b}; };
 //==========================================================
 
 template <class T> std::vector<T> Take(const std::vector<T> &vec, const std::array<int, 3> &range = {0, -1, 1}) {
@@ -233,7 +239,7 @@ template <class T> std::vector<T> Take(const std::vector<T> &vec, const std::arr
 }
 
 //==========================================================
-VV_d Import(const std::string &fname) {
+inline VV_d Import(const std::string &fname) {
   std::ifstream fin(fname);
   VV_d mat;
   std::string str;
@@ -308,7 +314,7 @@ template <class T> bool AllTrue(const std::vector<T> &vec) {
   return true;
 }
 
-bool AllTrue(const T8b &v) { return std::get<0>(v) && std::get<1>(v) && std::get<2>(v) && std::get<3>(v) && std::get<4>(v) && std::get<5>(v) && std::get<6>(v) && std::get<7>(v); }
+inline bool AllTrue(const T8b &v) { return std::get<0>(v) && std::get<1>(v) && std::get<2>(v) && std::get<3>(v) && std::get<4>(v) && std::get<5>(v) && std::get<6>(v) && std::get<7>(v); }
 /* -------------------------------------------------------------------------- */
 template <typename T> std::vector<T> TakeExcept(const std::vector<T> &list, const T &form) {
   std::vector<T> ret;
@@ -380,8 +386,8 @@ template <class T> bool AllMemberQ(const std::vector<T> &list, const std::vector
 // double Sum(const V_d &v) { return std::reduce(v.cbegin(), v.cend(), 0.); };
 // double Total(const V_d &v) { return std::reduce(v.cbegin(), v.cend(), 0.); };
 
-double Sum(const V_d::iterator first, const V_d::iterator second) { return std::accumulate(first, second, 0.); };
-double Sum(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
+inline double Sum(const V_d::iterator first, const V_d::iterator second) { return std::accumulate(first, second, 0.); };
+inline double Sum(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
 // double Total(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
 
 #include "basic_arithmetic_vector_operations.hpp"
@@ -395,7 +401,7 @@ double Sum(const V_d &v) { return std::accumulate(v.cbegin(), v.cend(), 0.); };
 //       return std::accumulate(v.cbegin(), v.cend(), 0.) / v.size();
 // };
 
-V_d Sum(const VV_d &v) {
+inline V_d Sum(const VV_d &v) {
   if (v.empty())
     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "An empty vector is passed");
   else if (v.size() == 1)
@@ -407,7 +413,7 @@ V_d Sum(const VV_d &v) {
   return ret;
 };
 
-V_d Total(const VV_d &v) {
+inline V_d Total(const VV_d &v) {
   if (v.empty())
     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "An empty vector is passed");
   else if (v.size() == 1)
@@ -419,7 +425,7 @@ V_d Total(const VV_d &v) {
   return ret;
 };
 
-double RMS(const V_d &v) {
+inline double RMS(const V_d &v) {
   double ret(0);
   for (const auto &u : v)
     ret += u * u;
@@ -487,7 +493,7 @@ template <typename V> V RandomSample(V ret) {
 // };
 #include "lib_measurement.hpp"
 //==========================================================
-double sgn(const double x) { return (x > 0.) ? 1. : (x < 0. ? -1. : 0.); };
+inline double sgn(const double x) { return (x > 0.) ? 1. : (x < 0. ? -1. : 0.); };
 //==========================================================
 // template <class T>
 // double Mean(const std::vector<T> &v)
@@ -518,35 +524,35 @@ double sgn(const double x) { return (x > 0.) ? 1. : (x < 0. ? -1. : 0.); };
 //   return ret / N - std::pow(Mean(v), 2.);
 // };
 //==========================================================
-double SgLog(const double u, const double hsig, const double maxmin) { return hsig + sgn(u) * std::exp(maxmin * (std::abs(u) - 1.)); };
-double InvSgLog(const double h, const double hsig, const double maxmin) { return sgn(h - hsig) * std::log(std::abs(h - hsig)) / maxmin + 1.; };
-V_d SgLog(const V_d &h, const double hsig, const double maxmin) {
+inline double SgLog(const double u, const double hsig, const double maxmin) { return hsig + sgn(u) * std::exp(maxmin * (std::abs(u) - 1.)); };
+inline double InvSgLog(const double h, const double hsig, const double maxmin) { return sgn(h - hsig) * std::log(std::abs(h - hsig)) / maxmin + 1.; };
+inline V_d SgLog(const V_d &h, const double hsig, const double maxmin) {
   V_d ret;
   std::transform(h.cbegin(), h.cend(), std::back_inserter(ret), [hsig, maxmin](double tmp) { return SgLog(tmp, hsig, maxmin); });
   return ret;
 };
-double DSgLog(const double u, const double hsig, const double maxmin) { return maxmin * sgn(u) * std::exp(maxmin * (std::abs(u) - 1.)); }; // 単調増加
-V_d DSgLog(const V_d &h, const double hsig, const double maxmin) {
+inline double DSgLog(const double u, const double hsig, const double maxmin) { return maxmin * sgn(u) * std::exp(maxmin * (std::abs(u) - 1.)); }; // 単調増加
+inline V_d DSgLog(const V_d &h, const double hsig, const double maxmin) {
   V_d ret;
   std::transform(h.cbegin(), h.cend(), std::back_inserter(ret), [hsig, maxmin](double tmp) { return DSgLog(tmp, hsig, maxmin); });
   return ret;
 };
 //============================================================
-double Sg(const double h, const double h_sig, const double beta) { return sgn(h) * std::pow(std::abs(h), beta) + h_sig; };
-double InvSg(const double h, const double h_sig, const double beta) { return sgn(h - h_sig) * std::pow(std::abs(h - h_sig), 1. / beta); };
-V_d Sg(const V_d &h, const double h_sig, const double beta) {
+inline double Sg(const double h, const double h_sig, const double beta) { return sgn(h) * std::pow(std::abs(h), beta) + h_sig; };
+inline double InvSg(const double h, const double h_sig, const double beta) { return sgn(h - h_sig) * std::pow(std::abs(h - h_sig), 1. / beta); };
+inline V_d Sg(const V_d &h, const double h_sig, const double beta) {
   V_d ret;
   std::transform(h.cbegin(), h.cend(), std::back_inserter(ret), [h_sig, beta](double tmp) { return Sg(tmp, h_sig, beta); });
   return ret;
 };
-double DSg(const double h, const double h_sig, const double beta) { return beta * std::pow(std::abs(h), beta - 1.); }; // 単調増加
-V_d DSg(const V_d &h, const double h_sig, const double beta) {
+inline double DSg(const double h, const double h_sig, const double beta) { return beta * std::pow(std::abs(h), beta - 1.); }; // 単調増加
+inline V_d DSg(const V_d &h, const double h_sig, const double beta) {
   V_d ret;
   std::transform(h.cbegin(), h.cend(), std::back_inserter(ret), [h_sig, beta](double tmp) { return DSg(tmp, h_sig, beta); });
   return ret;
 };
 //==========================================================
-double linspace(const V_d &v, int size, int i) {
+inline double linspace(const V_d &v, int size, int i) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
@@ -556,14 +562,14 @@ double linspace(const V_d &v, int size, int i) {
 /*   cout << "max = " << v[1] << ", min = " << v[0] << ", d = " << v[1]-v[0] << endl; */
 /*   return Sg( v[0] + (v[1] - v[0]) * i/(double)(size - 1.), c, beta);; */
 /* }; */
-double linspace(const V_d &v, int size, int i, double c, double beta) {
+inline double linspace(const V_d &v, int size, int i, double c, double beta) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
   V_d w{InvSg(v[0], c, beta), InvSg(v[1], c, beta)};
   return Sg(w[0] + (w[1] - w[0]) * i / (double)(size - 1.), c, beta);
 };
-void linspace(const V_d &v, int size, V_d &O_X) {
+inline void linspace(const V_d &v, int size, V_d &O_X) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
@@ -571,7 +577,7 @@ void linspace(const V_d &v, int size, V_d &O_X) {
   for (int i = 0; i < size; i++)
     O_X[i] = v[0] + (v[1] - v[0]) * i / ((double)size - 1.);
 };
-void linspace(const V_d &v, int size, V_d &O_X, double c, double beta) {
+inline void linspace(const V_d &v, int size, V_d &O_X, double c, double beta) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
@@ -580,7 +586,7 @@ void linspace(const V_d &v, int size, V_d &O_X, double c, double beta) {
   for (int i = 0; i < size; i++)
     O_X[i] = Sg(w[0] + (w[1] - w[0]) * i / (double)(size - 1.), c, beta);
 };
-V_d linspace(const V_d &v, int size) {
+inline V_d linspace(const V_d &v, int size) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
@@ -589,7 +595,7 @@ V_d linspace(const V_d &v, int size) {
     O_X[i] = v[0] + (v[1] - v[0]) * i / (double)(size - 1.);
   return O_X;
 };
-V_d linspace(const V_d &v, int size, double c, double beta) {
+inline V_d linspace(const V_d &v, int size, double c, double beta) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
@@ -599,7 +605,7 @@ V_d linspace(const V_d &v, int size, double c, double beta) {
     O_X[i] = Sg(w[0] + (w[1] - w[0]) * i / (double)(size - 1.), c, beta);
   return O_X;
 };
-void linspace(const std::vector<V_d> &mat, const V_i size, V_d &O_X) {
+inline void linspace(const std::vector<V_d> &mat, const V_i size, V_d &O_X) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
@@ -663,7 +669,7 @@ template <typename T, std::size_t N> std::array<T, N + 1> Append(std::array<T, N
   return ret;
 };
 //==========================================================
-std::vector<std::tuple<double, double>> GaussianQuadratureWeightsTuple(const int n, const double x1, const double x2) {
+inline std::vector<std::tuple<double, double>> GaussianQuadratureWeightsTuple(const int n, const double x1, const double x2) {
   double EPS = 1E-14;
   std::tuple<double, double> zeros = {0., 0.};
   std::vector<std::tuple<double, double>> XW(n, zeros);
@@ -693,7 +699,7 @@ std::vector<std::tuple<double, double>> GaussianQuadratureWeightsTuple(const int
   return XW;
 };
 /* ------------------------------------------------------ */
-VV_d GaussianQuadratureWeights(const int n, const double x1, const double x2) {
+inline VV_d GaussianQuadratureWeights(const int n, const double x1, const double x2) {
   double EPS = 1E-14;
   VV_d XW(n, V_d(2, 0));
   double z1, z, xm, xl, pp, p3, p2, p1;
@@ -722,13 +728,13 @@ VV_d GaussianQuadratureWeights(const int n, const double x1, const double x2) {
   return XW;
 };
 
-VV_d SingularGaussianQuadratureWeights(const int n, const double x1, const double x2, const double xi_sing, const double b /*magnitude of singularity*/) {
+inline VV_d SingularGaussianQuadratureWeights(const int n, const double x1, const double x2, const double xi_sing, const double b /*magnitude of singularity*/) {
   VV_d gw_T = Transpose(GaussianQuadratureWeights(n, InvSg(x1, xi_sing, b), InvSg(x2, xi_sing, b)));
 
   return Transpose(VV_d{Sg(gw_T[0], xi_sing, b), gw_T[1] * DSg(gw_T[0], xi_sing, b)});
 };
 //==========================================================
-void gauleg(const double x1, const double x2, V_d &x, V_d &w) {
+inline void gauleg(const double x1, const double x2, V_d &x, V_d &w) {
 #if defined FULL_DEBUG
   std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
 #endif
@@ -762,7 +768,7 @@ void gauleg(const double x1, const double x2, V_d &x, V_d &w) {
 // iはNコのデータがある場合，0<=i<=N-1となる
 // i=N-1の場合，q[N-1]=1.なのでh=1.はq[N-1]=1.<= h && h < q[N]
 // \label{interpolation:Bspline}
-double Bspline(const double h, const V_d &q, const int i, const int K) {
+inline double Bspline(const double h, const V_d &q, const int i, const int K) {
   switch (K) {
   case 1:
     return (q[i] <= h && h < q[i + 1]) ? 1. : 0.;
@@ -775,7 +781,7 @@ double Bspline(const double h, const V_d &q, const int i, const int K) {
   };
 };
 
-V_d Bspline(const V_d &h, const V_d &q, const int i, const int K) {
+inline V_d Bspline(const V_d &h, const V_d &q, const int i, const int K) {
   // {B_0(x),B_1(x),B_2(x),B_3(x),.......}
   V_d ret(h.size());
   for (auto k = 0; k < h.size(); k++)
@@ -783,7 +789,7 @@ V_d Bspline(const V_d &h, const V_d &q, const int i, const int K) {
   return ret;
 };
 
-V_d Bspline(const double h, const V_d &q, const int K) {
+inline V_d Bspline(const double h, const V_d &q, const int K) {
   // {B_0(h),B_1(h),B_2(h),B_3(h),.......}
   V_d ret(q.size() - K);
   for (auto i = 0; i < q.size() - K; i++)
@@ -791,7 +797,7 @@ V_d Bspline(const double h, const V_d &q, const int K) {
   return ret;
 };
 
-VV_d Bspline(const V_d &H, const V_d &q, const int K) {
+inline VV_d Bspline(const V_d &H, const V_d &q, const int K) {
   // {{B_0(x0),B_1(x0),B_2(x0),B_3(x0),.......},
   //  {B_0(x1),B_1(x1),B_2(x1),B_3(x1),.......},
   //  {B_0(x2),B_1(x2),B_2(x2),B_3(x2),.......}}
@@ -800,12 +806,12 @@ VV_d Bspline(const V_d &H, const V_d &q, const int K) {
   return ret;
 };
 
-double D_Bspline(const double h, const V_d &q, const int i, const int K) {
+inline double D_Bspline(const double h, const V_d &q, const int i, const int K) {
   // return (K - 1.) * (1. / (q[i + K - 1] - q[i]) * Bspline(h, q, i, K - 1) - 1. / (q[i + K] - q[i + 1]) * Bspline(h, q, i + 1, K - 1));
   return (K - 1.) * (Bspline(h, q, i, K - 1) / (q[i + K - 1] - q[i]) - Bspline(h, q, i + 1, K - 1) / (q[i + K] - q[i + 1]));
 };
 
-double D_Bspline(const double h, const V_d &q, const int i, const int K, const int n) {
+inline double D_Bspline(const double h, const V_d &q, const int i, const int K, const int n) {
   if (K == 1 && n > 0) {
     return 0.;
   } else {
@@ -818,7 +824,7 @@ double D_Bspline(const double h, const V_d &q, const int i, const int K, const i
   };
 };
 
-V_d D_Bspline(const double h, const V_d &q, const int K) {
+inline V_d D_Bspline(const double h, const V_d &q, const int K) {
   // {B_0(h),B_1(h),B_2(h),B_3(h),.......}
   V_d ret(q.size() - K);
   for (auto i = 0; i < q.size() - K; i++)
@@ -841,14 +847,14 @@ V_d D_Bspline(const double h, const V_d &q, const int K) {
 //   return q;
 // };
 // センサー値の微分を計算する方法として使えないか9月25日(土)
-V_d UniformKnots(V_d h, const int K) {
+inline V_d UniformKnots(V_d h, const int K) {
   double scale = *h.rbegin() - *h.begin();
   *h.begin() -= scale * 1E-14;
   *h.rbegin() += scale * 1E-14;
   return Subdivide(*h.begin(), *h.rbegin(), h.size() + K - 1);
 };
-V_d UniformKnots(const int size, const int K) { return UniformKnots(Subdivide(double(-1), double(1), size - 1), K); };
-V_d OpenUniformKnots(V_d h, const int K) {
+inline V_d UniformKnots(const int size, const int K) { return UniformKnots(Subdivide(double(-1), double(1), size - 1), K); };
+inline V_d OpenUniformKnots(V_d h, const int K) {
   int s(h.size());
   V_d q(s + K);
   const double EPS = 1E-14;
@@ -866,9 +872,9 @@ V_d OpenUniformKnots(V_d h, const int K) {
   return q;
 };
 
-V_d OpenUniformKnots(const int size, const int K) { return OpenUniformKnots(Subdivide(double(-1), double(1), size - 1), K); };
+inline V_d OpenUniformKnots(const int size, const int K) { return OpenUniformKnots(Subdivide(double(-1), double(1), size - 1), K); };
 
-V_d PeriodicUniformKnots(const V_d &h, const int K) {
+inline V_d PeriodicUniformKnots(const V_d &h, const int K) {
   // 2021/09/25
   int s(h.size());
   V_d q(s + K);
@@ -881,7 +887,7 @@ V_d PeriodicUniformKnots(const V_d &h, const int K) {
   return q;
 };
 
-V_d Bspline_knot(const int size, const int K) {
+inline V_d Bspline_knot(const int size, const int K) {
   V_d h = Subdivide(double(-1), double(1), size - 1), q(size + K);
   double EPS = 1.E-15;
   for (auto i = 0; i < K; i++)
@@ -900,7 +906,7 @@ V_d Bspline_knot(const int size, const int K) {
   return q;
 };
 
-V_d Bspline_knot_periodic(const int size, const int K) {
+inline V_d Bspline_knot_periodic(const int size, const int K) {
   V_d h = Subdivide(double(-1), double(1), size - 1), q(size + 4 * K - 2);
   for (auto i = 0; i < size; i++)
     q[i] = h[i];
@@ -911,7 +917,7 @@ V_d Bspline_knot_periodic(const int size, const int K) {
   return q;
 };
 
-V_d Bspline_knot(const V_d &h, const int K) {
+inline V_d Bspline_knot(const V_d &h, const int K) {
   int s(h.size());
   V_d q(s + K);
   double EPS = 1E-15;
@@ -923,13 +929,13 @@ V_d Bspline_knot(const V_d &h, const int K) {
     q[i] = *h.rbegin() + EPS * (i - s);
   return q;
 };
-VV_d Bspline_knot(const VV_d &h, const int K) {
+inline VV_d Bspline_knot(const VV_d &h, const int K) {
   VV_d q(h.size());
   for (size_t i = 0; i < h.size(); i++)
     q[i] = Bspline_knot(h[i], K);
   return q;
 };
-V_d Bspline_vector(const double h, const int s, const int K) {
+inline V_d Bspline_vector(const double h, const int s, const int K) {
   //  --------------  s --------------->
   // {B0(h0),B1(h0),B2(h0),B3(h0),B4(h0)}
   V_d ret(s, 0.), q = OpenUniformKnots(s, K);
@@ -937,13 +943,13 @@ V_d Bspline_vector(const double h, const int s, const int K) {
     ret[j] = Bspline(h, q, j, K);
   return ret;
 }; // parametric -1 to 1
-V_d Bspline_vector(const double h, const int s, const int K, const V_d &q) {
+inline V_d Bspline_vector(const double h, const int s, const int K, const V_d &q) {
   V_d ret(s, 0.);
   for (auto j = 0; j < s; j++)
     ret[j] = Bspline(h, q, j, K);
   return ret;
 };
-V_d D_Bspline_vector(const double h, const int s, const int K, int n) {
+inline V_d D_Bspline_vector(const double h, const int s, const int K, int n) {
   //  --------------  s --------------->
   // {B0(h0),B1(h0),B2(h0),B3(h0),B4(h0)}
   V_d ret(s, 0.), q = OpenUniformKnots(s, K);
@@ -951,7 +957,7 @@ V_d D_Bspline_vector(const double h, const int s, const int K, int n) {
     ret[j] = D_Bspline(h, q, j, K, n);
   return ret;
 };
-V_d D_Bspline_vector(const double h, const int s, const int K, int n, const V_d &q) {
+inline V_d D_Bspline_vector(const double h, const int s, const int K, int n, const V_d &q) {
   V_d ret(s, 0.);
   for (auto j = 0; j < s; j++)
     ret[j] = D_Bspline(h, q, j, K, n);
@@ -967,39 +973,39 @@ V_d D_Bspline_vector(const double h, const int s, const int K, int n, const V_d 
 // |        {B0(h5),B1(h5),B2(h5),B3(h5),B4(h5)},
 // |        {B0(h6),B1(h6),B2(h6),B3(h6),B4(h6)},
 // V        }
-VV_d Bspline_matrix(const V_d &h, const int s, const int K) {
+inline VV_d Bspline_matrix(const V_d &h, const int s, const int K) {
   VV_d ret(h.size(), V_d(s, 0.));
   for (size_t i = 0; i < h.size(); i++)
     ret[i] = Bspline_vector(h[i], s, K);
   return ret;
 };
-VV_d Bspline_matrix(const V_d &h, const int s, const int K, const V_d &q) {
+inline VV_d Bspline_matrix(const V_d &h, const int s, const int K, const V_d &q) {
   VV_d ret(h.size(), V_d(s, 0.));
   for (size_t i = 0; i < h.size(); i++)
     ret[i] = Bspline_vector(h[i], s, K, q);
   return ret;
 };
-VV_d Bspline_matrix(const VV_d &h, const int s, const int K, const VV_d &q) {
+inline VV_d Bspline_matrix(const VV_d &h, const int s, const int K, const VV_d &q) {
   VV_d ret(h.size(), V_d(s, 0.));
   for (size_t i = 0; i < h.size(); i++)
     for (auto j = 0; j < s; j++)
       ret[i][j] = Bspline(h[i][j], q[i], s, K);
   return ret;
 };
-VV_d Bspline_matrix(const VV_d &h, const int s, const int K, const V_d &q) {
+inline VV_d Bspline_matrix(const VV_d &h, const int s, const int K, const V_d &q) {
   VV_d ret(h.size(), V_d(s, 0.));
   for (size_t i = 0; i < h.size(); i++)
     for (auto j = 0; j < s; j++)
       ret[i][j] = Bspline(h[i][j], q, i, K);
   return ret;
 };
-VV_d D_Bspline_matrix(const V_d &h, const int s, const int K, const int n) {
+inline VV_d D_Bspline_matrix(const V_d &h, const int s, const int K, const int n) {
   VV_d ret(h.size(), V_d(s, 0.));
   for (size_t i = 0; i < h.size(); i++)
     ret[i] = D_Bspline_vector(h[i], s, K, n);
   return ret;
 };
-VV_d D_Bspline_matrix(const V_d &h, const int s, const int K, const int n, const V_d &q) {
+inline VV_d D_Bspline_matrix(const V_d &h, const int s, const int K, const int n, const V_d &q) {
   VV_d ret(h.size(), V_d(s, 0.));
   for (size_t i = 0; i < h.size(); i++)
     ret[i] = D_Bspline_vector(h[i], s, K, n, q);
@@ -1013,8 +1019,8 @@ VV_d D_Bspline_matrix(const V_d &h, const int s, const int K, const int n, const
 // | {B0(h3),B1(h3),B2(h3),B3(h3),B4(h3)},
 // | {B0(h4),B1(h4),B2(h4),B3(h4),B4(h4)}
 // V }
-VV_d Bspline_matrix(const int s, const int K) { return Bspline_matrix(Subdivide(-1., 1., s - 1) /*h*/, s, K); };
-VV_d D_Bspline_matrix(const int s, const int K, const int n) { return D_Bspline_matrix(Subdivide(-1., 1., s - 1) /*h*/, s, K, n); };
+inline VV_d Bspline_matrix(const int s, const int K) { return Bspline_matrix(Subdivide(-1., 1., s - 1) /*h*/, s, K); };
+inline VV_d D_Bspline_matrix(const int s, const int K, const int n) { return D_Bspline_matrix(Subdivide(-1., 1., s - 1) /*h*/, s, K, n); };
 ///////////////////////////////////////////////////////////
 struct ParametricInterpolation {
 public:
@@ -1594,7 +1600,7 @@ template <class Ttype> void load(std::ifstream &in, std::vector<std::vector<Ttyp
 //=================== Mathematica output loader =======================
 //=====================================================================
 
-V_s StringSplit(const std::string &strIN, const V_s &SEP) {
+inline V_s StringSplit(const std::string &strIN, const V_s &SEP) {
   std::string str(strIN), foundFirstSep;
   V_s ret, tmp;
   size_t foundFirst;
@@ -1693,33 +1699,33 @@ V_s StringSplit(const std::string &strIN, const V_s &SEP) {
 //    return tmp;
 // };
 
-std::string StringTrim(const std::string &strIN, const V_s &SEP) {
+inline std::string StringTrim(const std::string &strIN, const V_s &SEP) {
   V_s str = StringSplit(strIN, SEP);
   std::string ret;
   for (const auto &s : str)
     ret += s;
   return ret;
 };
-V_s StringTrim(const V_s &strIN, const V_s &SEP) {
+inline V_s StringTrim(const V_s &strIN, const V_s &SEP) {
   V_s strOUT(strIN.size());
   for (size_t i = 0; i < strOUT.size(); i++)
     strOUT[i] = StringTrim(strIN[i], SEP);
   return strOUT;
 };
-std::string StringJoin(const V_s &strIN, const std::string sep = "") {
+inline std::string StringJoin(const V_s &strIN, const std::string sep = "") {
   std::string ret(*strIN.begin());
   for (size_t i = 1; i < strIN.size(); i++)
     ret += sep + strIN[i];
   return ret;
 };
-std::string Directory(const std::string &f) {
+inline std::string Directory(const std::string &f) {
   auto dir = StringSplit(f, {"/"});
   dir.pop_back();
   return "/" + StringJoin(dir, "/") + "/";
 };
 ////////////////////////////////////////////////////////////////////////
 // 2021/03/31導入
-std::map<std::string, std::vector<std::string>> parseJSON(const std::string &str_IN) {
+inline std::map<std::string, std::vector<std::string>> parseJSON(const std::string &str_IN) {
   enum class ParserState { Init, InKey, InValue, InArray };
 
   std::map<std::string, std::vector<std::string>> map_S_S;
@@ -2052,7 +2058,7 @@ struct JSON {
 };
 
 /* ------------------------------------------------------ */
-std::string ToString(const JSON &json) {
+inline std::string ToString(const JSON &json) {
   auto map_S_S = json.map_S_S;
   std::stringstream stream;
   stream << "{\n";
@@ -2084,7 +2090,7 @@ std::string ToString(const JSON &json) {
   return stream.str();
 }
 
-std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
+inline std::ofstream &operator<<(std::ofstream &stream, const JSON &json) {
   stream << ToString(json);
   return stream;
 };
@@ -2313,7 +2319,7 @@ struct JSONoutput {
 //   return mat;
 // };
 //////////////////////////////
-void Load(const std::string &filename, std::vector<V_s> &ret_mat, const V_s &SEP) {
+inline void Load(const std::string &filename, std::vector<V_s> &ret_mat, const V_s &SEP) {
   ret_mat.clear();
   std::ifstream strm(filename, std::ios::in);
   if (!strm) {
@@ -2337,13 +2343,13 @@ void Load(const std::string &filename, std::vector<V_s> &ret_mat, const V_s &SEP
   std::cout << Blue << filename << " is closed" << colorReset << std::endl;
 };
 
-std::vector<V_s> Load(const std::string &filename, const V_s &SEP) {
+inline std::vector<V_s> Load(const std::string &filename, const V_s &SEP) {
   std::vector<V_s> ret;
   Load(filename, ret, SEP);
   return ret;
 };
 ////////////////////////////////
-V_d string_to_vector_double(const std::string &strIN, const V_s &SEP) {
+inline V_d string_to_vector_double(const std::string &strIN, const V_s &SEP) {
   V_s str = StringSplit(strIN, SEP);
   V_d ret;
   for (size_t i = 0; i < str.size(); i++)
@@ -2382,7 +2388,7 @@ V_d string_to_vector_double(const std::string &strIN, const V_s &SEP) {
   // return ret;
 };
 ///////////////
-V_s to_cell(const std::string &strIN) {
+inline V_s to_cell(const std::string &strIN) {
   std::string str(strIN); /* expexting "{1,2,3,4,5} {1,2,3,4,5} {1,2,3,4,5}"*/
   V_s ret(0);
   std::size_t right, left;
@@ -2403,7 +2409,7 @@ V_s to_cell(const std::string &strIN) {
 };
 ///////////////////////////
 
-void Load(const std::string &filename, VVV_d &vvv) {
+inline void Load(const std::string &filename, VVV_d &vvv) {
   std::ifstream strm(filename, std::ios::in);
   if (!strm) {
     std::stringstream ss;
@@ -2500,7 +2506,7 @@ template <typename T> std::vector<T> Drop(std::vector<T> ret /*copy*/, std::vect
   return ret;
 };
 
-int Position(std::vector<int> vecIN, const int n) { // 2020/03/22
+inline int Position(std::vector<int> vecIN, const int n) { // 2020/03/22
   std::vector<int>::iterator it = std::find(vecIN.begin(), vecIN.end(), n);
   if (it == vecIN.end())
     std::cout << Red << __FILE__ << "  " << __FUNCTION__ << "  " << __LINE__ << colorReset << std::endl;
@@ -2561,7 +2567,7 @@ template <class T> std::vector<T> Reverse(std::vector<T> vec) {
   return vec;
 };
 
-double Subtract(const Tdd &ab) { return std::get<0>(ab) - std::get<1>(ab); };
+inline double Subtract(const Tdd &ab) { return std::get<0>(ab) - std::get<1>(ab); };
 
 //===========================================================
 #include "basic_geometry.hpp"
@@ -2586,7 +2592,7 @@ double Subtract(const Tdd &ab) { return std::get<0>(ab) - std::get<1>(ab); };
 
 /* -------------------------------------------------------------------------- */
 // b% ------------------- タプルからparticlize ------------------ */
-std::vector<std::tuple<Tddd /*実際の座標*/, Tdd /*パラメタt0t1*/>> triangleIntoPoints(const T3Tddd &X0X1X2, const double dx) {
+inline std::vector<std::tuple<Tddd /*実際の座標*/, Tdd /*パラメタt0t1*/>> triangleIntoPoints(const T3Tddd &X0X1X2, const double dx) {
   /*
   |-o--o--o--o-| n = 4
   x,yはパラメタ
@@ -2620,7 +2626,7 @@ std::vector<std::tuple<Tddd /*実際の座標*/, Tdd /*パラメタt0t1*/>> tria
   return ret;
 };
 
-std::vector<std::tuple<Tddd, Tdd>> particlize(const T3Tddd &X0X1X2, const double dx) { return triangleIntoPoints(X0X1X2, dx); };
+inline std::vector<std::tuple<Tddd, Tdd>> particlize(const T3Tddd &X0X1X2, const double dx) { return triangleIntoPoints(X0X1X2, dx); };
 
 #include "lib_spatial_partitioning.hpp"
 
@@ -2950,7 +2956,7 @@ struct Load3DFile {
     return JSON();
   };
 };
-std::string obj2json(const std::string &filename) {
+inline std::string obj2json(const std::string &filename) {
   Load3DFile loaded(filename);
   return loaded.JSON();
 };
@@ -2974,7 +2980,7 @@ template <class T> std::vector<T> BarycentriCoordinate(const std::vector<std::ve
 //   return ret;
 // };
 
-std::vector<int> removePositiveMinArea(const V_d &area, VV_d &vertices, std::vector<int> &indices) {
+inline std::vector<int> removePositiveMinArea(const V_d &area, VV_d &vertices, std::vector<int> &indices) {
   V_d min_area;
   std::vector<int> min_ind, k_at_min;
   for (size_t k = 0; k < indices.size(); k++) {
@@ -3013,7 +3019,7 @@ std::vector<int> removePositiveMinArea(const V_d &area, VV_d &vertices, std::vec
   return ret;
 };
 
-std::vector<int> removeMinArea(const V_d &area, VV_d &vertices, std::vector<int> &indices) {
+inline std::vector<int> removeMinArea(const V_d &area, VV_d &vertices, std::vector<int> &indices) {
   V_d min_area;
   std::vector<int> min_ind, k_at_min;
   for (size_t k = 0; k < indices.size(); k++) {
@@ -3129,7 +3135,7 @@ template <typename T> T Product(const std::vector<T> &vec) {
   return ret;
 };
 /* -------------------------------------------------------------------------- */
-VV_d nearestPointsOfLines(const VV_d &a0a1, const VV_d &b0b1) {
+inline VV_d nearestPointsOfLines(const VV_d &a0a1, const VV_d &b0b1) {
   V_d a1 = a0a1[1], a0 = a0a1[0];
   V_d b1 = b0b1[1], b0 = b0b1[0];
   V_d va = a1 - a0;
@@ -3138,13 +3144,13 @@ VV_d nearestPointsOfLines(const VV_d &a0a1, const VV_d &b0b1) {
   V_d n = Cross(va, vb), n1 = Cross(va, n), n2 = Cross(vb, n);
   return {a0 + va * Dot(a0Tob0, n2) / Dot(va, n2), b0 + vb * Dot(-(a0Tob0), n1) / Dot(vb, n1)};
 };
-V_d midPointOfLines(const VV_d &a0a1, const VV_d &b0b1) {
+inline V_d midPointOfLines(const VV_d &a0a1, const VV_d &b0b1) {
   VV_d points = nearestPointsOfLines(a0a1, b0b1);
   return (points[0] + points[1]) / 2.;
 };
 //=============
 // 20200817
-V_d midPointOfLines(const VVV_d &vecs) {
+inline V_d midPointOfLines(const VVV_d &vecs) {
   // vecs is {{a0,a1},{b0,b1},{c0,c1},...}
   int n = vecs.size() - 1;
   VV_d A(vecs.size(), V_d(3));

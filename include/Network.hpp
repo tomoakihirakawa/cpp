@@ -12,6 +12,8 @@
 #include <functional>
 #include <typeinfo>
 #include <unordered_set>
+#include "integrationOfODE.hpp"
+
 class networkLine;
 class networkTetra;
 class networkFace;
@@ -20,66 +22,198 @@ class Network;
 
 using netP = networkPoint;
 using netF = networkFace;
-using netPp = networkPoint *;
-using netFp = networkFace *;
-using netTp = networkTetra *;
+using netPp = networkPoint*;
+using netFp = networkFace*;
+using netTp = networkTetra*;
 using netL = networkLine;
-using netLp = networkLine *;
-using V_netLp = std::vector<networkLine *>;
-using V_netPp = std::vector<networkPoint *>;
-using VV_netPp = std::vector<std::vector<networkPoint *>>;
-using V_netFp = std::vector<networkFace *>;
-using VV_netFp = std::vector<std::vector<networkFace *>>;
-using V_Netp = std::vector<Network *>;
+using netLp = networkLine*;
+using V_netLp = std::vector<networkLine*>;
+using V_netPp = std::vector<networkPoint*>;
+using VV_netPp = std::vector<std::vector<networkPoint*>>;
+using V_netFp = std::vector<networkFace*>;
+using VV_netFp = std::vector<std::vector<networkFace*>>;
+using V_Netp = std::vector<Network*>;
 //
-using T_LL = std::array<networkLine *, 2>;
-using T_LLL = std::array<networkLine *, 3>;
-using T_3L = std::array<networkLine *, 3>;
-using T_LLLL = std::array<networkLine *, 4>;
-using T_4L = std::array<networkLine *, 4>;
-using T_5L = std::array<networkLine *, 5>;
-using T_6L = std::array<networkLine *, 6>;
+using T_LL = std::array<networkLine*, 2>;
+using T_LLL = std::array<networkLine*, 3>;
+using T_3L = std::array<networkLine*, 3>;
+using T_LLLL = std::array<networkLine*, 4>;
+using T_4L = std::array<networkLine*, 4>;
+using T_5L = std::array<networkLine*, 5>;
+using T_6L = std::array<networkLine*, 6>;
 //
-using T_PP = std::array<networkPoint *, 2>;
-using T_2P = std::array<networkPoint *, 2>;
-using T_PPP = std::array<networkPoint *, 3>;
-using T_3P = std::array<networkPoint *, 3>;
-using T_4P = std::array<networkPoint *, 4>;
-using T_5P = std::array<networkPoint *, 5>;
-using T_6P = std::array<networkPoint *, 6>;
+using T_PP = std::array<networkPoint*, 2>;
+using T_2P = std::array<networkPoint*, 2>;
+using T_PPP = std::array<networkPoint*, 3>;
+using T_3P = std::array<networkPoint*, 3>;
+using T_4P = std::array<networkPoint*, 4>;
+using T_5P = std::array<networkPoint*, 5>;
+using T_6P = std::array<networkPoint*, 6>;
 using T4TPPP = std::array<T_PPP, 4>;
 using T4T3P = std::array<T_PPP, 4>;
 //
-using T_FF = std::array<networkFace *, 2>;
-using T_FFF = std::array<networkFace *, 3>;
-using T_3F = std::array<networkFace *, 3>;
-using T_4F = std::array<networkFace *, 4>;
-using T_TT = std::array<networkTetra *, 2>;
+using T_FF = std::array<networkFace*, 2>;
+using T_FFF = std::array<networkFace*, 3>;
+using T_3F = std::array<networkFace*, 3>;
+using T_4F = std::array<networkFace*, 4>;
+using T_TT = std::array<networkTetra*, 2>;
 
 /* ------------------------------------------------------ */
 
-template <class T> V_netFp extractFaces(const std::vector<T *> &Ls) {
-  std::unordered_set<networkFace *> ret;
-  for (const auto &l : Ls)
-    for (const auto &f : l->getPoints())
+// 前方宣言を追加
+bool isInContact(const networkPoint* p, const T3Tddd& f_target);
+std::pair<bool, Tddd> isInContact_(const networkPoint* p, const T3Tddd& f_target);
+bool isInContact(const networkPoint* p, const Tddd& pX, const T3Tddd& f_target);
+bool isInContact(const Tddd& X /*base*/, const Tddd& n /*base*/, const T3Tddd& f_target, const double contact_range);
+bool isInContact(const networkPoint* p, const networkFace* f_normal, const networkFace* f_target);
+bool isInContact(const networkPoint* p, const networkFace* f_target);
+bool isInContact(const networkPoint* p, const networkFace* f_normal, const std::unordered_set<networkFace*>& faces_target);
+
+/* ------------------------------------------------------ */
+
+template <class T>
+V_netFp extractFaces(const std::vector<T*>& Ls) {
+  std::unordered_set<networkFace*> ret;
+  for (const auto& l : Ls)
+    for (const auto& f : l->getPoints())
       ret.emplace(f);
   return V_netFp(ret.begin(), ret.end());
 };
 
-template <class T> V_netPp extractPoints(const std::vector<T *> &Ls) {
-  std::unordered_set<networkPoint *> ret;
-  for (const auto &l : Ls)
-    for (const auto &p : l->getPoints())
+template <class T>
+V_netPp extractPoints(const std::vector<T*>& Ls) {
+  std::unordered_set<networkPoint*> ret;
+  for (const auto& l : Ls)
+    for (const auto& p : l->getPoints())
       ret.emplace(p);
   return V_netPp(ret.begin(), ret.end());
 };
 
-template <class T> V_netLp extractLines(const std::vector<T *> &points) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &p : points)
-    for (const auto &l : p->getLines())
+template <class T>
+V_netLp extractLines(const std::vector<T*>& points) {
+  std::unordered_set<networkLine*> ret;
+  for (const auto& p : points)
+    for (const auto& l : p->getLines())
       ret.emplace(l);
   return V_netLp(ret.begin(), ret.end());
+};
+
+/* ------------------------------------------------------ */
+/*                  ContactDetectable                     */
+/* ------------------------------------------------------ */
+
+class ContactDetectable {
+public:
+  double contact_range = 0.;
+  Network* penetratedBody = nullptr;
+  std::unordered_map<networkFace*, std::tuple<networkFace*, Tddd, double>> f_nearestContactFaces;
+  std::vector<std::tuple<networkFace*, Tddd, double>> ContactFaces;
+
+  virtual ~ContactDetectable() = default;
+
+  // --- pure virtual ---
+  virtual const Tddd& getPosition() const = 0;
+  virtual std::vector<networkFace*> getBoundaryFaces() const = 0;
+  virtual Network* getNetwork() const = 0;
+
+  // Override to extend faces used for isFacing check (e.g., CORNER lines include endpoint vertex faces)
+  virtual std::vector<networkFace*> getFacesForContactCheck() const { return getBoundaryFaces(); }
+
+  // Unified contact face detection for both networkPoint and networkLine
+  void addContactFaces(const std::vector<Network*>&, bool);
+
+  // --- accessors ---
+  std::vector<networkFace*> getContactFaces() const noexcept {
+    std::vector<networkFace*> ret;
+    ret.reserve(this->ContactFaces.size());
+    for (const auto& f : this->ContactFaces)
+      ret.emplace_back(std::get<0>(f));
+    return ret;
+  };
+  const std::tuple<networkFace*, Tddd, double> getNearestContactFace() const noexcept {
+    if (this->ContactFaces.size() > 0)
+      return this->ContactFaces[0];
+    else
+      return {nullptr, Tddd{0., 0., 0.}, 0.};
+  };
+  const std::unordered_map<networkFace*, std::tuple<networkFace*, Tddd, double>>& getNearestContactFaces() const noexcept { return this->f_nearestContactFaces; };
+
+  const std::tuple<networkFace*, Tddd, double> getNearestContactFace_(const networkFace* const f) const noexcept {
+    auto it = this->f_nearestContactFaces.find(const_cast<networkFace*>(f));
+    if (it != this->f_nearestContactFaces.end())
+      return it->second;
+    else
+      return std::tuple<networkFace*, Tddd, double>{nullptr, {0., 0., 0.}, 0.};
+  };
+  networkFace* getNearestContactFace(const networkFace* const f) const noexcept { return std::get<0>(getNearestContactFace_(f)); };
+
+  void clearContactFaces() {
+    this->f_nearestContactFaces.clear();
+    this->ContactFaces.clear();
+  };
+};
+
+/* ------------------------------------------------------ */
+/*              BEM_DOF_Base                               */
+/*  Shared BEM degree-of-freedom state for both           */
+/*  networkPoint (vertex DOF) and networkLine (midpoint)  */
+/* ------------------------------------------------------ */
+
+struct BEM_DOF_Base : public ContactDetectable {
+#if defined(BEM)
+  // --- BIE unknown / solution ---
+  Tdd phiphin = {0., 0.};      // {phi, phin}
+  Tdd phiphin_t = {0., 0.};    // {phi_t, phin_t} (time derivative)
+  double diag_coeff_BEM = 0.;   // diagonal coefficient (alpha)
+  double phi_tmp = 0.;
+  double phi_Dirichlet = 0.;
+
+  // --- multi-node DOF indices ---
+  bool isMultipleNode = false;
+  std::unordered_map<networkFace*, int> f2Index;
+
+  // --- per-face phi/phin (BIE solver) ---
+  std::unordered_map<networkFace*, double> phiOnFace, phinOnFace;
+  std::unordered_map<networkFace*, double> phiOnFace_FMM, phinOnFace_FMM;
+  std::unordered_map<networkFace*, double> phitOnFace, phintOnFace;
+
+  // --- velocity fields ---
+  Tddd u_potential_BEM = {0., 0., 0.};
+  Tddd u_omega_VPM = {0., 0., 0.};
+  Tddd u_total = {0., 0., 0.};
+  Tddd u_node = {0., 0., 0.};
+
+  // --- node relocation / surface ---
+  Tddd vecToSurface = {0., 0., 0.};
+  Tddd clungSurface = {0., 0., 0.};
+  networkFace* relocation_face = nullptr;
+  Tdd relocation_param = {0., 0.};
+
+  // --- absorption ---
+  Tddd U_absorbed = {0., 0., 0.};
+  Network* absorbedBy = nullptr;
+
+  // --- debug counters ---
+  int debug_direction_info_count = 0;
+  int debug_contact_faces_count = 0;
+  int debug_body_vertices_count = 0;
+  int debug_isInContact_pass_count = 0;
+
+  // --- material derivative of phi ---
+  // Uses virtual getPosition() (Line→X_mid, Point→X)
+  double DphiDt(const Tddd& U_modified, const double pressure, const Tddd& offset = {0., 0., 0.}, const Tddd& g_center = {0., 0., -1E+20}) const noexcept {
+    const auto& pos = this->getPosition();
+    double h = (offset[0] == 0. && offset[1] == 0. && offset[2] == 0. && g_center[0] == 0. && g_center[1] == 0. && g_center[2] == -1E+20)
+                   ? std::get<2>(pos)
+                   : Dot(pos - offset, Normalize(pos - g_center));
+    return -0.5 * Dot(this->u_potential_BEM, this->u_potential_BEM) - _GRAVITY_ * h - pressure / _WATER_DENSITY_ + Dot(U_modified, this->u_potential_BEM);
+  }
+
+  double DphiDt_damped(const std::array<double, 2> gamma_phi, const Tddd& U_modified, const double pressure, const Tddd& offset = {0., 0., 0.}, const Tddd& g_center = {0., 0., -1E+20}) const noexcept {
+    auto [gamma, reference_phi] = gamma_phi;
+    return -gamma * (std::get<0>(this->phiphin) - reference_phi) + DphiDt(U_modified, pressure, offset, g_center);
+  }
+#endif
 };
 
 /* ------------------------------------------------------ */
@@ -90,7 +224,7 @@ template <class T> V_netLp extractLines(const std::vector<T *> &points) {
 /*     *                                                  */
 /* ------------------------------------------------------ */
 
-class networkLine : public CoordinateBounds {
+class networkLine : public target4FMM, public CoordinateBounds, public BEM_DOF_Base {
 
 public:
   // std::array<double, 3> X_on_curve;
@@ -118,14 +252,25 @@ public:
   bool CORNER;
   bool Dirichlet;
   bool Neumann;
+  Tddd corner_midpoint_offset = {0., 0., 0.}; // quadratic correction from linear midpoint for CORNER edges
   bool isIntxn();
 #if defined(BEM)
   V_d interpoltedX;
+  int midpoint_index = -1; // DOF index for BIE system (-1 = not assigned)
+  Tddd X_mid = {0., 0., 0.}; // absolute midpoint position
+  double signed_distance = 0.; // signed distance for absorption zone
+  RungeKutta<double> RK_phi;   // RK4 integrator for phi at midpoint
+  RungeKutta<Tddd> RK_X;       // RK4 integrator for X_mid
+
+  void setXSingle(const Tddd& xyz_IN) {
+    this->X_mid = xyz_IN;
+    this->Xtarget = xyz_IN;
+  }
 #endif
 public:
   //---------------------------------
-  Network *network;
-  Network *getNetwork() const { return this->network; };
+  Network* network;
+  Network* getNetwork() const override { return this->network; };
 
   // bool status;
 
@@ -134,25 +279,25 @@ public:
   // bool isStatus(const bool TorF) const noexcept { return this->status ==
   // TorF; };
 
-  std::vector<networkTetra *> Tetras;
+  std::vector<networkTetra*> Tetras;
 
   V_netFp Faces;
 
-  networkPoint *Point_A;
-  networkPoint *Point_B;
+  networkPoint* Point_A;
+  networkPoint* Point_B;
   // なぜこの型なのか？　いつかうunordered_setに変更する．
 
 protected:
-  bool SurfaceQ() const;
+  bool BoundaryQ() const;
 
   //---------------------------------
 public:
-  networkLine(Network *network_IN, netP *sPoint_IN, netP *ePoint_IN);
+  networkLine(Network* network_IN, netP* sPoint_IN, netP* ePoint_IN);
   // コピーコンストラクタ
-  networkLine(const networkLine *l) : CoordinateBounds(l->getBounds()), Point_A(nullptr), Point_B(nullptr) {
+  networkLine(const networkLine* l) : CoordinateBounds(l->getBounds()), Point_A(nullptr), Point_B(nullptr) {
     std::cout << "copying networkLine ...";
     this->network = l->getNetwork();
-    this->Faces = l->getSurfaces();
+    this->Faces = l->getBoundaryFaces();
 
     this->Dirichlet = l->Dirichlet;
     this->Neumann = l->Neumann;
@@ -169,16 +314,16 @@ public:
   // bool setBounds();
   void setBoundsSingle();
   //---------------------------------
-  void set(networkPoint *const sPoint_IN, networkPoint *const ePoint_IN) {
+  void set(networkPoint* const sPoint_IN, networkPoint* const ePoint_IN) {
     this->Point_A = sPoint_IN;
     this->Point_B = ePoint_IN;
   };
-  void set(networkFace *const Face0_IN, networkFace *const Face1_IN) { this->Faces = {Face0_IN, Face1_IN}; };
-  void set(networkFace *const Face0_IN) { this->Faces = {Face0_IN}; };
+  void set(networkFace* const Face0_IN, networkFace* const Face1_IN) { this->Faces = {Face0_IN, Face1_IN}; };
+  void set(networkFace* const Face0_IN) { this->Faces = {Face0_IN}; };
   //---------------------------------
-  netPp divide(const Tddd &midX = {1E+80, 1E+80, 1E+80});
+  netPp Split(const Tddd& midX = {1E+80, 1E+80, 1E+80});
   bool canFlip(const double) const;
-  bool flip(bool);
+  bool Flip(bool);
   bool checkTopology() const;
   bool flipIfIllegal();
   bool flipIfBetter(const double min_degree_to_flat = M_PI / 180., const double min_inner_angle = M_PI / 180., const int min_n = 5);
@@ -204,11 +349,12 @@ public:
     return true;
   };
   bool isMergeable() const;
-  netPp merge();            // deleteしていない方のpointを返す
+  netPp Collapse();         // deleteしていない方のpointを返す
   netPp mergeIfMergeable(); // deleteしていない方のpointを返す
   //---------------------------------
   //  netP* operator()(netP* a){return this->Point2Point[a];};
-  template <class T> T *getTheOther(const std::vector<T *> &PorF, const T *const a) const noexcept {
+  template <class T>
+  T* getTheOther(const std::vector<T*>& PorF, const T* const a) const noexcept {
     if (PorF.size() < 2)
       return nullptr;
     else if (a == PorF[0])
@@ -219,7 +365,7 @@ public:
       return nullptr;
   };
 
-  netP *operator()(const netP *const a) const noexcept {
+  netP* operator()(const netP* const a) const noexcept {
     if (this->Point_A == a)
       return this->Point_B;
     else if (this->Point_B == a)
@@ -228,7 +374,7 @@ public:
       return nullptr;
   };
 
-  netF *operator()(const netF *const a) const noexcept {
+  netF* operator()(const netF* const a) const noexcept {
     if (this->Faces.size() < 2)
       return nullptr;
     else if (a == this->Faces[0])
@@ -249,7 +395,7 @@ public:
   double length() const;
   //------------------
   // V_netPp getPoints() const { return {this->Point_A, this->Point_B}; };
-  T_PP getPoints(const networkPoint *const p) const noexcept {
+  T_PP getPoints(const networkPoint* const p) const noexcept {
     if (p == this->Point_A)
       return {this->Point_A, this->Point_B};
     else
@@ -257,17 +403,21 @@ public:
   };
   T_PP getPoints() const noexcept { return {this->Point_A, this->Point_B}; };
   T_PP getPointsTuple() const noexcept { return {this->Point_A, this->Point_B}; };
-  const V_netFp &getFaces() const noexcept { return this->Faces; };
-  V_netFp getSurfaces(networkFace *const f_excluded = nullptr) const;
+  const V_netFp& getFaces() const noexcept { return this->Faces; };
+  V_netFp getBoundaryFaces(networkFace* const f_excluded) const;
+  std::vector<networkFace*> getBoundaryFaces() const override { return getBoundaryFaces(nullptr); }
+  const Tddd& getPosition() const override { return this->X_mid; }
+  std::vector<networkFace*> getFacesForContactCheck() const override;
+  void setContactRange();
 
   V_netFp getFacesExcept(const netFp f) const noexcept { return TakeExcept(this->Faces, f); };
-  V_netFp getFacesExcept(const V_netFp &fs) const noexcept { return TakeExcept(this->Faces, fs); };
+  V_netFp getFacesExcept(const V_netFp& fs) const noexcept { return TakeExcept(this->Faces, fs); };
   V_netFp getFaces(const bool TorF) const;
   //------------------
   // 派生クラスのクラス名で，選ばれる関数
   // int Find(netP *p_IN) const { return network::find(this->getPoints(), p_IN);
   // };
-  bool replace(const netP *oldP, netP *newP) {
+  bool replace(const netP* oldP, netP* newP) {
     if (this->Point_A == oldP) {
       this->Point_A = newP;
       return true;
@@ -277,13 +427,13 @@ public:
     } else
       return false;
   };
-  bool erase(const netP *p_IN) { return replace(p_IN, nullptr); };
-  bool Replace(netP *oldP, netP *newP);
+  bool erase(const netP* p_IN) { return replace(p_IN, nullptr); };
+  bool Replace(netP* oldP, netP* newP);
   //------------------
-  int Find(netF *f_IN) const noexcept { return network::find(this->Faces, f_IN); };
-  bool erase(netF *const f_IN) { return ::erase_element(this->Faces, f_IN); };
-  bool add(netF *f_IN) { return ::add_element(this->Faces, f_IN); };
-  bool replace(netF *oldF, netF *newF) {
+  int Find(netF* f_IN) const noexcept { return network::find(this->Faces, f_IN); };
+  bool erase(netF* const f_IN) { return ::erase_element(this->Faces, f_IN); };
+  bool add(netF* f_IN) { return ::add_element(this->Faces, f_IN); };
+  bool replace(netF* oldF, netF* newF) {
     auto ret = network::myswitch(this->Faces, oldF, newF);
     this->Faces = DeleteDuplicates(this->Faces); // 重複を削除する
     return ret;
@@ -297,14 +447,13 @@ public:
 /*    \ /                                                 */
 /*   --@--                                                */
 /*    / \                                                 */
-/* ------------------------------------------------------- */
+/* ------------------------------------------------------ */
 
 #include "integrationOfODE.hpp"
 
-class networkPoint : public target4FMM, public CoordinateBounds, public CRS {
+class networkPoint : public target4FMM, public CoordinateBounds, public CRS, public BEM_DOF_Base {
 
-  /* ------------------------------ MOORING LINE ------------------------------
-   */
+  /* ------------------------------ MOORING LINE ------------------------------*/
   /*
      例えば，端部には速度が与えられたとしても，内部の節点の速度は，運動方程式に従って，隣の節点との間の張力や重力，抗力そして相対速度に依存する減衰力によって決まる．
      * RK_X_sub
@@ -314,8 +463,8 @@ class networkPoint : public target4FMM, public CoordinateBounds, public CRS {
 
 public:
   int index;
-  double contact_range = 0.;
-  void setContactRange(const std::vector<Network *> &nets);
+  // contact_range is now in ContactDetectable base class
+  void setContactRange(const std::vector<Network*>& nets);
 
   std::array<double, 3> getGravitationalForce() { return this->mass * _GRAVITY3_; }
 
@@ -323,7 +472,7 @@ public:
     std::array<double, 3> force, v, relative_velocity;
     force.fill(0);
     double disp, strain;
-    for (const auto &l : this->getLines()) {
+    for (const auto& l : this->getLines()) {
       v = (*l)(this)->RK_X_sub.getX() - this->RK_X_sub.getX();
       disp = Norm(v) - l->natural_length;
       strain = disp / l->natural_length;
@@ -340,7 +489,7 @@ public:
     drag_force.fill(0);
     fluid_velocity.fill(0);
     double A;
-    for (const auto &l : this->getLines()) {
+    for (const auto& l : this->getLines()) {
       // mean_v = 0.5 * ((*l)(this)->RK_velocity_sub.getX() +
       // this->RK_velocity_sub.getX());
       mean_v = this->RK_velocity_sub.getX();
@@ -372,7 +521,7 @@ public:
   std::array<std::array<double, 3>, 3> deformationGradient() {
     std::array<std::array<double, 3>, 3> F;
     F.fill({0., 0., 0.});
-    for (const auto &l : this->getLines()) {
+    for (const auto& l : this->getLines()) {
       auto [p, q] = l->getPoints();
       auto X = p->RK_X_sub.getX() - this->RK_X_sub.getX();
       auto Y = q->RK_X_sub.getX() - this->RK_X_sub.getX();
@@ -392,23 +541,23 @@ public:
   std::array<double, 3> X_last;
   netPp tmpPoint;
   V_netLp Lines;
-  std::vector<networkFace *> Faces;
-  std::vector<networkTetra *> Tetras;
+  std::vector<networkFace*> Faces;
+  std::vector<networkTetra*> Tetras;
 
-  bool MemberQ(const networkFace *f_IN) const noexcept { return std::find(Faces.begin(), Faces.end(), f_IN) != Faces.end(); };
+  bool MemberQ(const networkFace* f_IN) const noexcept { return std::find(Faces.begin(), Faces.end(), f_IN) != Faces.end(); };
 
-  Network *network;
-  Network *getNetwork() const noexcept { return this->network; };
+  Network* network;
+  Network* getNetwork() const override { return this->network; };
   // Network *getStorage() const { return this->storage; };
 
-  const V_netLp &getLines() const noexcept { return this->Lines; };
+  const V_netLp& getLines() const noexcept { return this->Lines; };
 
-  int Find(netL *l_IN) { return network::find(this->Lines, l_IN); };
+  int Find(netL* l_IN) { return network::find(this->Lines, l_IN); };
 
-  bool erase(networkLine *l) { return ::erase_element(this->Lines, l); };
-  bool add(networkLine *l) { return ::add_element(this->Lines, l); };
-  bool erase(networkFace *f) { return ::erase_element(this->Faces, f); };
-  bool add(networkFace *f) { return ::add_element(this->Faces, f); };
+  bool erase(networkLine* l) { return ::erase_element(this->Lines, l); };
+  bool add(networkLine* l) { return ::add_element(this->Lines, l); };
+  bool erase(networkFace* f) { return ::erase_element(this->Faces, f); };
+  bool add(networkFace* f) { return ::add_element(this->Faces, f); };
 
 public:
   // 今のところBEMのためのもの
@@ -444,7 +593,7 @@ public:
   V_netLp getLinesCORNER() const noexcept {
     V_netLp ret;
     ret.reserve(this->Lines.size());
-    for (const auto &l : this->Lines)
+    for (const auto& l : this->Lines)
       if (l->CORNER)
         ret.emplace_back(l);
     return ret;
@@ -452,7 +601,7 @@ public:
   V_netLp getLinesNeumann() const noexcept {
     V_netLp ret;
     ret.reserve(this->Lines.size());
-    for (const auto &l : this->Lines)
+    for (const auto& l : this->Lines)
       if (l->Neumann)
         ret.emplace_back(l);
     return ret;
@@ -460,15 +609,15 @@ public:
   V_netLp getLinesDirichlet() const noexcept {
     V_netLp ret;
     ret.reserve(this->Lines.size());
-    for (const auto &l : this->Lines)
+    for (const auto& l : this->Lines)
       if (l->Dirichlet)
         ret.emplace_back(l);
     return ret;
   };
 
-  bool replace(const netL *oldL, netL *newL) {
+  bool replace(const netL* oldL, netL* newL) {
     bool ret = false;
-    for (auto &l : this->Lines)
+    for (auto& l : this->Lines)
       if (l == oldL) {
         l = newL;
         ret = true;
@@ -477,9 +626,9 @@ public:
     return ret;
   };
 
-  bool replace(netF *oldF, netF *newF) {
+  bool replace(netF* oldF, netF* newF) {
     bool ret = false;
-    for (auto &f : this->Faces)
+    for (auto& f : this->Faces)
       if (f == oldF) {
         f = newF;
         ret = true;
@@ -510,14 +659,14 @@ public:
   Tddd accelTranslational() const noexcept { return {acceleration[0], acceleration[1], acceleration[2]}; };
   Tddd accelRotational() const noexcept { return {acceleration[3], acceleration[4], acceleration[5]}; };
   /* ------------------------------------------------------ */
-  T6d &F = this->force;
-  T6d &I = this->inertia;
-  T6d &A = this->acceleration;
-  T6d &V = this->velocity;
+  T6d& F = this->force;
+  T6d& I = this->inertia;
+  T6d& A = this->acceleration;
+  T6d& V = this->velocity;
   /* ------------------------------------------------------ */
   double density = 0, density_ = 0;
-  double &rho = this->density;
-  double &rho_ = this->density_;
+  double& rho = this->density;
+  double& rho_ = this->density_;
   double volume = 0., volume_ = 0.;
   double radius = 0.;
   double pressure = 0.;
@@ -532,7 +681,7 @@ public:
   double signed_distance;
 
   //! SPH
-  std::vector<networkPoint *> points_in_SML;
+  std::vector<networkPoint*> points_in_SML;
 
 #ifdef DEM
 public:
@@ -547,9 +696,9 @@ public:
 
   // 2023/05/16
   //\label{SPH:auxiliaryPoints}
-  std::array<networkPoint *, 0> auxiliaryPoints;
-  networkPoint *surfacePoint = nullptr;
-  networkPoint *auxPoint = nullptr;
+  std::array<networkPoint*, 0> auxiliaryPoints;
+  networkPoint* surfacePoint = nullptr;
+  networkPoint* auxPoint = nullptr;
   double W;
   /////////////////////////
   // 物性
@@ -558,7 +707,7 @@ public:
   double dt_CFL;
   double total_weight, total_weight_, total_weight__, total_N;
   Tddd normal_SPH, v_to_surface_SPH;
-  networkFace *mirroring_face;
+  networkFace* mirroring_face;
   double d_empty_center;
   double pn_SPH;
   bool pn_is_set = false;
@@ -585,16 +734,16 @@ public:
   double SML_grad() const { return 1.2 * C_SML * this->particle_spacing; };
   double SML_grad_next() const { return 1.2 * C_SML_next * this->particle_spacing; };
 
-  networkPoint *nearest_wall_p_next = nullptr;
-  networkPoint *nearest_wall_p = nullptr;
+  networkPoint* nearest_wall_p_next = nullptr;
+  networkPoint* nearest_wall_p = nullptr;
   double C_SML, C_SML_next;
   double number_density_SPH;
   double density_interpolated_SPH;
   double pressure_SPH, pressure_SPH_, pressure_SPH__;
   int pressure_equation_index = 99;
-  double &p_SPH = this->pressure_SPH;
-  double &p_SPH_ = this->pressure_SPH_;
-  double &p_SPH__ = this->pressure_SPH__;
+  double& p_SPH = this->pressure_SPH;
+  double& p_SPH_ = this->pressure_SPH_;
+  double& p_SPH__ = this->pressure_SPH__;
   double p_SPH_smoothed = 0.;
   double p_EISPH = 0, p_SPH_last = 0;
   double dp_SPH, dp_SPH_;
@@ -622,34 +771,36 @@ public:
   /////////////////////////
   T3Tddd tensorproduct_grad_Uij, tensorproduct_grad_Uij_next;
   Tddd lap_U = {0., 0., 0.};
-  T3Tddd grad_U = {{ {0., 0., 0.}, {0., 0., 0.}, {0., 0., 0.} }};
+  T3Tddd grad_U = {{ {0., 0., 0.},
+                     {0., 0., 0.},
+                     {0., 0., 0.} }};
   T3Tddd Mat1, Mat2, Mat3, Mat_B;
-  std::unordered_map<networkPoint *, double> map_p_grad;
-  std::vector<std::tuple<networkPoint *, double>> vector_p_grad;
+  std::unordered_map<networkPoint*, double> map_p_grad;
+  std::vector<std::tuple<networkPoint*, double>> vector_p_grad;
   // std::unordered_map<networkPoint *, double> extra_storage;
   // std::vector<std::tuple<networkPoint *, double>> extra_storage_vector;
   // void setLapU(const V_d &lap_U_IN) { this->lap_U = lap_U_IN; };
-  void setLapU(const Tddd &lap_U_IN) { this->lap_U = lap_U_IN; };
-  void setDensityVolume(const double &den, const double &v) {
+  void setLapU(const Tddd& lap_U_IN) { this->lap_U = lap_U_IN; };
+  void setDensityVolume(const double& den, const double& v) {
     // 質量は保存
     this->density = den;
     this->volume = v;
     this->mass = v * den;
     this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
   };
-  void setDensity(const double &den) {
+  void setDensity(const double& den) {
     // 質量は保存
     this->density = den;
     this->volume = this->mass / this->density;
     this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
   };
-  void setDensity_ConstantVolume(const double &den) {
+  void setDensity_ConstantVolume(const double& den) {
     // 質量は保存
     this->density = den;
     this->mass = this->volume * this->density;
     this->radius = std::pow(this->volume / (4. * M_PI / 3.), 1 / 3.);
   };
-  void setVolume(const double &v) {
+  void setVolume(const double& v) {
     // 質量は保存
     this->volume = v;
     this->density = this->mass / this->volume;
@@ -659,8 +810,8 @@ public:
   Tddd grad_div_U = {0., 0., 0.}, grad_div_U_ = {0., 0., 0.};
   Tddd gradP_SPH = {0., 0., 0.}, gradP_SPH_ = {0., 0., 0.};
   Tddd gradP_W_SPH = {0., 0., 0.}, Integral_gradP_W_SPH = {0., 0., 0.};
-  std::unordered_map<networkPoint *, Tddd> grad_coeff;
-  std::unordered_map<networkPoint *, Tddd> grad_coeff_next;
+  std::unordered_map<networkPoint*, Tddd> grad_coeff;
+  std::unordered_map<networkPoint*, Tddd> grad_coeff_next;
   //////////////////////////
   netFp face_org;
   double a_viscosity;
@@ -668,8 +819,8 @@ public:
   Tddd U_SPH = {0., 0., 0.}, U_SPH_ = {0., 0., 0.}, marker_X = {0., 0., 0.}, marker_U = {0., 0., 0.};
   T3Tddd nabla_otimes_U;
   Tddd U_XSPH = {0., 0., 0.}, U_XSPH_next = {0., 0., 0.}, U_next = {0., 0., 0.};
-  InterpolationLagrange<std::array<double, 3>> *interp_U_lag = nullptr;
-  InterpolationBspline<std::array<double, 3>> *interp_U_Bspline = nullptr;
+  InterpolationLagrange<std::array<double, 3>>* interp_U_lag = nullptr;
+  InterpolationBspline<std::array<double, 3>>* interp_U_Bspline = nullptr;
   std::vector<double> vec_time_SPH;
   std::vector<Tddd> vec_U_SPH;
   double tmp_density;
@@ -727,7 +878,7 @@ public:
 
   /* --------------------------------------------------------------------------
    */
-  std::tuple<networkFace * /*補間に使った三角形の頂点*/, T_PPP, /*補間に使った三角形の頂点*/
+  std::tuple<networkFace* /*補間に使った三角形の頂点*/, T_PPP, /*補間に使った三角形の頂点*/
              Tdd /*パラメタt0,t1*/, double /*深さ方向距離*/, double /*粒子間隔*/>
       particlize_info;
   /* ------------------------ 境界条件 ------------------------ */
@@ -735,7 +886,6 @@ public:
   double b_diff_RHS_FMM = 0; //! FMMのため
   double b_RHS_Direct = 0;   //! FMMのため
   double b_RHS_FMM = 0;      //! FMMのため
-  bool isMultipleNode = false;
   bool CORNER = false;
   bool Dirichlet = false;
   bool Neumann = false;
@@ -743,7 +893,7 @@ public:
   /* --------------------------------------------------------------------------
    */
 
-  std::map<Network *, int> net_depth;
+  std::map<Network*, int> net_depth;
   int minDepthFromCORNER, minDepthFromCORNER_;             // remeshのために導入
   int minDepthFromMultipleNode, minDepthFromMultipleNode_; // remeshのために導入
   //
@@ -776,116 +926,37 @@ public:
   void unsetN() { this->unsetNeumann(); };
 
 #ifdef BEM
+  /* ----------------------------------- BEM ---------------------------------- */
 public:
-  std::array<double, 2> igign = {0., 0.}, wGPhin_wGnPhi_FMM = {0., 0.}; // spherical harmonics のチェックに利用2024/07/03
+  std::array<double, 2> wGPhin_wGnPhi_FMM = {0., 0.}; // spherical harmonics のチェックに利用2024/07/03
   std::array<double, 2> wGPhin_wGnPhi_near = {0., 0.}, wGPhin_wGnPhi_far = {0., 0.};
-  // double phi_n();
-  using T_PBF = std::tuple<netP *, bool, netF *>;
+  using T_PBF = std::tuple<netP*, bool, netF*>;
   std::unordered_map<T_PBF, std::unordered_map<T_PBF, Tdd>> IGIGn;
-  Tdd phiphin = {0., 0.};
-  Tdd phiphin_t = {0., 0.};
   double almost_solid_angle = 0.;
-  double solid_angle = 0.;
-  Tddd U_absorbed = {0., 0., 0.};
-  Network *absorbedBy = nullptr;
-  double phi_tmp = 0;
-  double phin_tmp = 0;
-  T2T6d phiphin_t_a6; // 加速度による微分
-  double phi_Dirichlet = 0;
   double phin_Dirichlet = 0;
-  double dpda = 0;
 
-  std::unordered_map<networkFace *, int> f2Index;
-  std::array<double, 2> diagIgIgn = {0., 0.};
-  std::unordered_map<networkFace *, double> phiOnFace, phinOnFace;
-  std::unordered_map<networkFace *, double> phiOnFace_copy, phinOnFace_copy;
-  std::unordered_map<networkFace *, double> phitOnFace, phintOnFace;
+  std::unordered_map<networkFace*, double> phiOnFace_copy, phinOnFace_copy;
+  std::unordered_map<networkFace*, double> phitOnFace_copy, phintOnFace_copy;
 
-  double meanPhiOnFace() const noexcept {
-    double sum = 0.;
-    for (const auto &f : this->phiOnFace)
-      sum += f.second;
-    return sum / phiOnFace.size();
-  };
-
-  //* ------------------------------------------------- */
-  Tddd vecToSurface = {0., 0., 0.};
-  double shift_coeff = 0;
   Tddd vecToSurface_BUFFER = {0., 0., 0.}, vecToSurface_BUFFER_BUFFER = {0., 0., 0.};
-  Tddd whereToGo = {0., 0., 0.};
-  Tddd whereToGo_to_check = {0., 0., 0.};
-  //* ------------------------------------------------- */
-  std::unordered_map<networkFace *, Tdd> multiple_phiphin;
-  V_d nabla_phi() const;
-
-  Tddd grad_phi_BEM = {0., 0., 0.};
-  Tddd U_BEM = {0., 0., 0.};
-  Tddd grid_tension = {0., 0., 0.}, grid_tension_ = {0., 0., 0.}, grid_tension__ = {0., 0., 0.};
-  Tddd clungSurface = {0., 0., 0.};
-  /* ------------------------------------------------------ */
-  Tddd U_update_BEM = {0., 0., 0.};
-  Tddd U_cling_to_Neumann = {0., 0., 0.}, U_cling_to_Neumann_ = {0., 0., 0.};
-  Tddd U_tangential_BEM = {0., 0., 0.};
-  Tddd U_normal_BEM = {0., 0., 0.};
-  Tddd laplacian_U_BEM = {0., 0., 0.};
-  Tddd normal_BEM = {0., 0., 0.};
-  Tddd normal_Dir_BEM = {0., 0., 0.};
-  Tddd normal_Neu_BEM = {0., 0., 0.};
   double pressure_BEM = 0.;
-  double kappa_BEM = 0.;
-  // double DphiDt;
-  //
-  // Tddd normalDirichletFace() const;
-  // Tddd normalNeumannFace() const;
-  // Tddd normalContanctSurface(const double pw0, const double pw1) const;
 
-  double height(const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
-    // 重力中心から，この点までの方向を高さ方向として，offsetから測った高さを返す
-    // return Dot(this->X - offset, Normalize(this->X - g_center));
+  double height(const Tddd& offset = {0., 0., 0.}, const Tddd& g_center = {0., 0., -1E+20}) const noexcept {
     if (offset[0] == 0. && offset[1] == 0. && offset[2] == 0. && g_center[0] == 0. && g_center[1] == 0. && g_center[2] == -1E+20)
       return std::get<2>(this->X);
     else
       return Dot(this->X - offset, Normalize(this->X - g_center));
   };
 
-  double aphiat(const double pressure /*zero if on atmosfere*/, const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
-    // double g = 9.81;	// [m/s2]
-    // double rho = 1000.; // [kg/m3]
+  double aphiat(const double pressure, const Tddd& offset = {0., 0., 0.}, const Tddd& g_center = {0., 0., -1E+20}) const noexcept {
     if (offset[0] == 0. && offset[1] == 0. && offset[2] == 0. && g_center[0] == 0. && g_center[1] == 0. && g_center[2] == -1E+20)
-      return -0.5 * Dot(this->U_BEM, this->U_BEM) - _GRAVITY_ * std::get<2>(this->X) - pressure / _WATER_DENSITY_;
+      return -0.5 * Dot(this->u_potential_BEM, this->u_potential_BEM) - _GRAVITY_ * std::get<2>(this->X) - pressure / _WATER_DENSITY_;
     else
-      return -0.5 * Dot(this->U_BEM, this->U_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
+      return -0.5 * Dot(this->u_potential_BEM, this->u_potential_BEM) - _GRAVITY_ * height(offset, g_center) - pressure / _WATER_DENSITY_;
   };
 
-  double DphiDt(const Tddd &U_modified, const double pressure /*zero if on atmosfere*/, const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
-    // [1] C. Wang, B. C. Khoo, and K. S. Yeo, “Elastic mesh technique for 3D
-    // BIM simulation with an application to underwater explosion bubble
-    // dynamics,” Comput. Fluids, vol. 32, no. 9, pp. 1195–1212, Nov. 2003.
-    // equaiton (11) return this->DphiDt(pressure, offset, g_center) +
-    // Dot(U_modified - this->U_BEM, this->U_BEM);
-    return aphiat(pressure, offset, g_center) + Dot(U_modified,
-                                                    this->U_BEM); // 以下はと同じ：
-                                                                  // return Dot(U_modified - 0.5 * this->U_BEM,
-                                                                  // this->U_BEM) - _GRAVITY_ * height(offset,
-                                                                  // g_center) - pressure / _WATER_DENSITY_;
-                                                                  //
-  };
-
-  double DphiDt_damped(const std::array<double, 2> gamma_phi, const Tddd &U_modified, const double pressure /*zero if on atmosfere*/, const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept {
-    // [1] C. Wang, B. C. Khoo, and K. S. Yeo, “Elastic mesh technique for 3D
-    // BIM simulation with an application to underwater explosion bubble
-    // dynamics,” Comput. Fluids, vol. 32, no. 9, pp. 1195–1212, Nov. 2003.
-    // equaiton (11) return this->DphiDt(pressure, offset, g_center) +
-    // Dot(U_modified - this->U_BEM, this->U_BEM);
-    auto [gamma, reference_phi] = gamma_phi;
-    return -gamma * (std::get<0>(this->phiphin) - reference_phi) + DphiDt(U_modified, pressure, offset,
-                                                                          g_center); // 以下はと同じ：
-                                                                                     // return Dot(U_modified - 0.5 * this->U_BEM,
-                                                                                     // this->U_BEM) - _GRAVITY_ * height(offset,
-                                                                                     // g_center) - pressure / _WATER_DENSITY_;
-  };
-
-  double DphiDt(const double pressure /*zero if on atmosfere*/, const Tddd &offset = {0., 0., 0.}, const Tddd &g_center = {0., 0., -1E+20}) const noexcept { return DphiDt(this->U_BEM, pressure, offset, g_center); };
+  using BEM_DOF_Base::DphiDt;
+  double DphiDt(const double pressure, const Tddd& offset = {0., 0., 0.}, const Tddd& g_center = {0., 0., -1E+20}) const noexcept { return DphiDt(this->u_potential_BEM, pressure, offset, g_center); };
 #endif
 
   // メッシュの衝突を対し噛める際に使用2022/03/10
@@ -896,86 +967,40 @@ private:
   // b% ------------------------------------------------------ */
   // b%       面に対する鏡像位置の粒子．一つの面に対して一点決まる　        */
   // b% ------------------------------------------------------ */
-  std::unordered_map<networkFace *, networkPoint *> map_Face_MirrorPoint;
+  std::unordered_map<networkFace*, networkPoint*> map_Face_MirrorPoint;
 
 public:
-  void makeMirroredPoints(const Buckets<networkFace *> &B_face, const double mirroring_distance);
+  void makeMirroredPoints(const Buckets<networkFace*>& B_face, const double mirroring_distance);
   void clearMirroredPoints() {
-    for (const auto &[f, p] : this->map_Face_MirrorPoint)
+    for (const auto& [f, p] : this->map_Face_MirrorPoint)
       delete p;
     this->map_Face_MirrorPoint.clear();
   };
   //% ------------------------------------------------------ */
   //%                      接触の判別用　                      */
   //% ------------------------------------------------------ */
+  // f_nearestContactFaces, ContactFaces, contact_range, penetratedBody,
+  // getContactFaces, getNearestContactFace(s), clearContactFaces
+  // are now in ContactDetectable base class.
 
 public:
-  // std::tuple<networkFace *, Tddd> nearestContactFace;
-  // std::unordered_set<networkFace *> ContactFaces;
-  std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd, double>> f_nearestContactFaces;
-  std::vector<std::tuple<networkFace *, Tddd, double>> ContactFaces;
-  std::unordered_set<networkPoint *> ContactPoints;
-  std::unordered_map<Network *, std::unordered_set<networkPoint *>> map_Net_ContactPoints;
+  const Tddd& getPosition() const override { return this->X; }
+  std::vector<networkFace*> getBoundaryFaces() const override;
 
-  //% ------------------------------------------------------ */
-  //%                          接触の判別                      */
-  //% ------------------------------------------------------ */
-  /*DOC_EXTRACT networkPoint::getContactFaces()
+  std::unordered_set<networkPoint*> ContactPoints;
+  std::unordered_map<Network*, std::unordered_set<networkPoint*>> map_Net_ContactPoints;
 
-  * `getContactFaces()`で`ContactFaces`呼び出せる．
-  * `getNearestContactFace()`で`nearestContactFace`呼び出せる．
-  * `getNearestContactFace(face)`で`f_nearestContactFaces`呼び出せる．
-
-  */
-
-  std::vector<networkFace *> getContactFaces() const noexcept {
-    std::vector<networkFace *> ret;
-    ret.reserve(this->ContactFaces.size());
-    for (const auto &f : this->ContactFaces)
-      ret.emplace_back(std::get<0>(f));
-    return ret;
-  };
-  const std::tuple<networkFace *, Tddd, double> getNearestContactFace() const noexcept {
-    if (this->ContactFaces.size() > 0)
-      return this->ContactFaces[0];
-    else
-      return {nullptr, Tddd{0., 0., 0.}, 0.};
-  };
-  const std::unordered_map<networkFace *, std::tuple<networkFace *, Tddd, double>> &getNearestContactFaces() const noexcept { return this->f_nearestContactFaces; };
-
-  const std::tuple<networkFace *, Tddd, double> getNearestContactFace_(const networkFace *const f) const noexcept {
-    auto it = this->f_nearestContactFaces.find(const_cast<networkFace *>(f));
-    if (it != this->f_nearestContactFaces.end())
-      return it->second;
-    else
-      return std::tuple<networkFace *, Tddd, double>{nullptr, {0., 0., 0.}, 0.};
-  };
-  networkFace *getNearestContactFace(const networkFace *const f) const noexcept { return std::get<0>(getNearestContactFace_(f)); };
-
-  void clearContactFaces() {
-    // this->nearestContactFace = {nullptr, {0., 0., 0.}};
-    this->f_nearestContactFaces.clear();
-    this->ContactFaces.clear();
-  };
-
-  /* ----------------------------------------------------------- */
-
-  std::vector<std::tuple<networkFace *, Tddd>> getContactFacesX() const;
-  std::vector<std::tuple<networkFace *, Tddd>> getContactFacesXCloser() const;
-  void addContactFaces(const std::vector<Network *> &objects,
-                       bool); // 自身と同じfaceを含まない
-
-  const std::unordered_set<networkPoint *> &getContactPoints() const noexcept { return this->ContactPoints; };
-  const std::unordered_set<networkPoint *> &getContactPoints(Network *const net) const noexcept {
+  const std::unordered_set<networkPoint*>& getContactPoints() const noexcept { return this->ContactPoints; };
+  const std::unordered_set<networkPoint*>& getContactPoints(Network* const net) const noexcept {
     auto it = this->map_Net_ContactPoints.find(net);
     if (it != this->map_Net_ContactPoints.end())
       return it->second;
     else
       return this->map_Net_ContactPoints.at(nullptr);
   };
-  std::unordered_set<networkPoint *> getContactPoints(const std::vector<Network *> &net) const noexcept {
-    std::unordered_set<networkPoint *> ret;
-    for (const auto &n : net) {
+  std::unordered_set<networkPoint*> getContactPoints(const std::vector<Network*>& net) const noexcept {
+    std::unordered_set<networkPoint*> ret;
+    for (const auto& n : net) {
       auto tmp = this->getContactPoints(n);
       ret.insert(tmp.begin(), tmp.end());
     }
@@ -986,7 +1011,7 @@ public:
     this->map_Net_ContactPoints.clear();
     this->map_Net_ContactPoints[nullptr] = {};
   };
-  networkPoint(Network *network_IN, const Tddd &xyz_IN, networkLine *xline_IN = nullptr, networkFace *xface_IN = nullptr);
+  networkPoint(Network* network_IN, const Tddd& xyz_IN, networkLine* xline_IN = nullptr, networkFace* xface_IN = nullptr);
   ~networkPoint();
   /* --------------------------------------------------------------------------
    */
@@ -994,15 +1019,15 @@ public:
   /* --------------------------------------------------------------------------
    */
   V_d getFaceAreas() const;
-  std::unordered_set<networkLine *> getLinesAround() const;
-  std::unordered_set<networkLine *> getLinesOppsoite() const;
+  std::unordered_set<networkLine*> getLinesAround() const;
+  std::unordered_set<networkLine*> getLinesOppsoite() const;
 
   /*for a cross point*/
   //--------------
   // void set(const V_d& xyz_IN){object3D::setBounds(xyz_IN);};
-  void setX(const V_d &xyz_IN);
-  void setX(const Tddd &xyz_IN);
-  void setXSingle(const Tddd &xyz_IN) {
+  void setX(const V_d& xyz_IN);
+  void setX(const Tddd& xyz_IN);
+  void setXSingle(const Tddd& xyz_IN) {
     // this->pre_X = this->X;
     this->CoordinateBounds::setBounds(xyz_IN);
     this->Xtarget = xyz_IN;
@@ -1015,34 +1040,34 @@ public:
   V_netPp getNeighbors() const noexcept {
     V_netPp ret(this->Lines.size());
     int i = 0;
-    for (const auto &l : this->Lines)
+    for (const auto& l : this->Lines)
       ret[i++] = (*l)(this);
     return ret;
   };
 
-  int Find(const netP *lookforobj) const noexcept {
+  int Find(const netP* lookforobj) const noexcept {
     for (int i = 0; i < this->Lines.size(); i++)
       if ((*(this->Lines[i]))(this) == lookforobj)
         return i;
     return -1;
   };
 
-  netL *getLineBetween(const netP *const p) const noexcept {
-    for (const auto &l : this->Lines)
+  netL* getLineBetween(const netP* const p) const noexcept {
+    for (const auto& l : this->Lines)
       if (p == (*l)(this))
         return l;
     return nullptr;
   };
 
   bool isOpen() const noexcept {
-    for (const auto &l : this->Lines)
-      if (l->getSurfaces().size() < 2)
+    for (const auto& l : this->Lines)
+      if (l->getBoundaryFaces().size() < 2)
         return true;
     return false;
   };
   bool isClosed() const noexcept {
-    for (const auto &l : this->Lines)
-      if (l->getSurfaces().size() < 2)
+    for (const auto& l : this->Lines)
+      if (l->getBoundaryFaces().size() < 2)
         return false;
     return true;
   };
@@ -1051,10 +1076,10 @@ public:
   V_netPp getNeighborsSort2() const;
   V_netPp getNeighborsSort(bool TorF);
 
-  V_netFp getFaces(networkLine *line) const;
+  V_netFp getFaces(networkLine* line) const;
 
   V_d getAngles() const;
-  V_d getAngles(networkLine *const base_line) const;
+  V_d getAngles(networkLine* const base_line) const;
 
   Tddd normal_to_be_preserved = {0., 0., 0.};
 
@@ -1067,50 +1092,43 @@ public:
   /* --------------------------------- SURFACE --------------------------------
    */
 
-  bool SurfaceQ() const noexcept {
-    return std::any_of(this->Faces.begin(), this->Faces.end(), [](const auto &f) { return f->SurfaceQ(); });
-  };
+  bool BoundaryQ() const noexcept;
 
-  std::vector<networkFace *> getSurfaces() const;
-  std::vector<networkLine *> getLinesOnSurfaces() const;
-  std::vector<networkPoint *> getNeighborPointsOnSurfaces() const;
+  // getBoundaryFaces() is declared above as override of ContactDetectable
+  std::vector<networkLine*> getBoundaryLines() const;
+  std::vector<networkPoint*> getNeighborPointsOnSurfaces() const;
 
   /* --------------------------------------------------------------------------
    */
 
-  const std::vector<networkFace *> &getFaces() const noexcept { return this->Faces; };
-
-  std::vector<networkTetra *> getTetras() const noexcept;
-
-  std::vector<networkFace *> setFaces(const V_netLp &this_lines);
-
-  std::vector<networkFace *> setFaces();
-
-  std::unordered_set<networkFace *> getFacesFromLines() const noexcept {
-    std::unordered_set<networkFace *> ret;
-    for (const auto &l : this->Lines)
-      for (const auto &f : l->getSurfaces())
+  const std::vector<networkFace*>& getFaces() const noexcept { return this->Faces; };
+  std::vector<networkTetra*> getTetras() const noexcept;
+  std::vector<networkFace*> setFaces(const V_netLp& this_lines);
+  std::vector<networkFace*> setFaces();
+  std::unordered_set<networkFace*> getFacesFromLines() const noexcept {
+    std::unordered_set<networkFace*> ret;
+    for (const auto& l : this->Lines)
+      for (const auto& f : l->getBoundaryFaces())
         ret.emplace(f);
     return ret;
   };
-
-  std::unordered_set<networkFace *> getFaces0() const noexcept {
-    std::unordered_set<networkFace *> ret;
-    for (const auto &l : this->Lines)
-      for (const auto &f : l->getSurfaces())
+  std::unordered_set<networkFace*> getFaces0() const noexcept {
+    std::unordered_set<networkFace*> ret;
+    for (const auto& l : this->Lines)
+      for (const auto& f : l->getBoundaryFaces())
         ret.emplace(f);
     return ret;
   };
-  std::unordered_set<networkFace *> getFaces1() const noexcept {
-    std::unordered_set<networkFace *> ret;
-    for (const auto &p : this->getNeighbors())
+  std::unordered_set<networkFace*> getFaces1() const noexcept {
+    std::unordered_set<networkFace*> ret;
+    for (const auto& p : this->getNeighbors())
       ret.merge(p->getFaces0());
     return ret;
   };
   V_netFp getFacesNeumann() const;
   V_netFp getFacesDirichlet() const;
 
-  V_netFp getFacesSort(networkLine *const l) const;
+  V_netFp getFacesSort(networkLine* const l) const;
   V_netFp getFacesSort() const;
 
   // V_d getNormal() const override;
@@ -1177,62 +1195,75 @@ public:
   /*SolidAngle_detail_code*/
 };
 
-bool isEdge(const networkPoint *p) {
-  return p->getLines().empty() || std::ranges::any_of(p->getLines(), [&](const auto &l) { return (!l || l->getFaces().size() <= 1); });
+inline bool isEdge(const networkPoint* p) {
+  return p->getLines().empty() || std::ranges::any_of(p->getLines(), [&](const auto& l) { return (!l || l->getFaces().size() <= 1); });
 };
 
-template <> double windingNumber(const Tddd &X, const std::vector<networkPoint *> &V_Points) { return 1.; };
+template <>
+inline double windingNumber(const Tddd& X, const std::vector<networkPoint*>& V_Points) { return 1.; };
 
-template <std::size_t N> std::array<Tddd, N> ToX(const std::array<networkPoint *, N> &ps) {
+template <std::size_t N>
+std::array<Tddd, N> ToX(const std::array<networkPoint*, N>& ps) {
   std::array<Tddd, N> ret;
   for (int i = 0; i < N; i++)
     ret[i] = ps[i]->X;
   return ret;
 };
 
-T2Tddd ToX(const networkLine *const l) { return l->getLocationsTuple(); };
-const Tddd &ToX(const networkPoint *const p) { return p->X; };
+inline T2Tddd ToX(const networkLine* const l) { return l->getLocationsTuple(); };
+inline const Tddd& ToX(const networkPoint* const p) { return p->X; };
 
-template <typename T> std::vector<Tddd> ToX(const std::unordered_set<T> &ps) {
+// Representative position for ALE/contact template unification.
+// networkPoint: vertex position (X).  networkLine: quadratic midpoint position (X_mid).
+inline const Tddd& getPosition(const networkPoint* const p) { return p->X; }
+inline const Tddd& getPosition(const networkLine* const l) { return l->X_mid; }
+
+template <typename T>
+std::vector<Tddd> ToX(const std::unordered_set<T>& ps) {
   std::vector<Tddd> ret(ps.size());
   int i = 0;
-  for (const auto &p : ps)
+  for (const auto& p : ps)
     ret[i++] = ToX(p);
   return ret;
 };
 
-template <typename T, std::size_t N> std::vector<std::array<Tddd, N>> ToX(const std::unordered_set<std::array<T, N>> &ps) {
+template <typename T, std::size_t N>
+std::vector<std::array<Tddd, N>> ToX(const std::unordered_set<std::array<T, N>>& ps) {
   std::vector<std::array<Tddd, N>> ret(ps.size());
   int i = 0;
-  for (const auto &p : ps)
+  for (const auto& p : ps)
     ret[i++] = ToX(p);
   return ret;
 };
 
-template <typename T, std::size_t N> std::vector<std::array<Tddd, N>> ToX(const std::vector<std::array<T, N>> &ps) {
+template <typename T, std::size_t N>
+std::vector<std::array<Tddd, N>> ToX(const std::vector<std::array<T, N>>& ps) {
   std::vector<std::array<Tddd, N>> ret(ps.size());
   int i = 0;
-  for (const auto &p : ps)
+  for (const auto& p : ps)
     ret[i++] = ToX(p);
   return ret;
 };
 
-template <typename T> std::vector<Tddd> ToX(const std::vector<T> &ps) {
+template <typename T>
+std::vector<Tddd> ToX(const std::vector<T>& ps) {
   std::vector<Tddd> ret(ps.size());
   int i = 0;
-  for (const auto &p : ps)
+  for (const auto& p : ps)
     ret[i++] = ToX(p);
   return ret;
 };
 
-template <std::size_t N> std::array<double, N> ToPhi(const std::array<networkPoint *, N> &ps) {
+template <std::size_t N>
+std::array<double, N> ToPhi(const std::array<networkPoint*, N>& ps) {
   std::array<double, N> ret;
   for (int i = 0; i < N; i++)
     ret[i] = std::get<0>(ps[i]->phiphin);
   return ret;
 };
 
-template <std::size_t N> std::array<double, N> ToPhin(const std::array<networkPoint *, N> &ps) {
+template <std::size_t N>
+std::array<double, N> ToPhin(const std::array<networkPoint*, N>& ps) {
   std::array<double, N> ret;
   for (int i = 0; i < N; i++)
     ret[i] = std::get<0>(ps[i]->phiphin);
@@ -1244,16 +1275,16 @@ template <std::size_t N> std::array<double, N> ToPhin(const std::array<networkPo
 // std::unordered_set<networkFace *> extFaces_(const V_netPp &ps) {
 //    std::unordered_set<networkFace *> ret;
 //    for (const auto &p : ps)
-//       for (const auto &f : p->getSurfaces())
+//       for (const auto &f : p->getBoundaryFaces())
 //          ret.emplace(f);
 //    return ret;
 // };
 
 // 注意：unordered_setからデータを取る場合．順番は保障されない
-std::vector<Tddd> extX(const V_netPp &ps) {
+inline std::vector<Tddd> extX(const V_netPp& ps) {
   std::vector<Tddd> ret;
   ret.reserve(ps.size());
-  for (const auto &p : ps)
+  for (const auto& p : ps)
     ret.emplace_back(p->X);
   return ret;
 };
@@ -1326,7 +1357,7 @@ std::vector<Tddd> extX(const V_netPp &ps) {
 
 /* -------------------------------------------------------------------------- */
 
-netP *Point(const netL *const l0, const netL *const l1) {
+inline netP* Point(const netL* const l0, const netL* const l1) {
   auto [a, b] = l0->getPoints();
   auto [p, q] = l1->getPoints();
   if (a && (a == p || a == q))
@@ -1336,17 +1367,17 @@ netP *Point(const netL *const l0, const netL *const l1) {
   else
     return nullptr;
 };
-T_3P Points(const netL *const l0, const netL *const l1, const netL *const l2) { return {Point(l2, l0), Point(l0, l1), Point(l1, l2)}; };
+inline T_3P Points(const netL* const l0, const netL* const l1, const netL* const l2) { return {Point(l2, l0), Point(l0, l1), Point(l1, l2)}; };
 
-netL *Line(const netP *const p0, const netP *const p1) {
-  for (const auto &l : p0->Lines)
+inline netL* Line(const netP* const p0, const netP* const p1) {
+  for (const auto& l : p0->Lines)
     if (p1 == (*l)(p0))
       return l;
   return nullptr;
 };
-T_3L Lines(const netP *const p0, const netP *const p1, const netP *const p2) { return {Line(p0, p1), Line(p1, p2), Line(p2, p0)}; };
+inline T_3L Lines(const netP* const p0, const netP* const p1, const netP* const p2) { return {Line(p0, p1), Line(p1, p2), Line(p2, p0)}; };
 /* -------------------------------------------------------------------------- */
-netL *link(netP *const p0, netP *const p1, Network *const net) {
+inline netL* link(netP* const p0, netP* const p1, Network* const net) {
   // 2022/09/05
   // もし，点が既に繋がっていた場合，それをつなげる線を返す
   // もし，繋がっていない場合，新たな線を生成し，そのポインターを返す．
@@ -1378,13 +1409,13 @@ netL *link(netP *const p0, netP *const p1, Network *const net) {
       // << std::endl;
       return new networkLine(net, p0, p1);
     }
-  } catch (std::exception &e) {
+  } catch (std::exception& e) {
     std::cerr << e.what() << colorReset << std::endl;
     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
   };
 };
-std::array<netL *, 3> link(netP *const p0, netP *const p1, netP *const p2, Network *const net) { return {link(p0, p1, net), link(p1, p2, net), link(p2, p0, net)}; };
-netL *link(netP *const p0, netP *const p1) { return link(p0, p1, p0->getNetwork()); };
+inline std::array<netL*, 3> link(netP* const p0, netP* const p1, netP* const p2, Network* const net) { return {link(p0, p1, net), link(p1, p2, net), link(p2, p0, net)}; };
+inline netL* link(netP* const p0, netP* const p1) { return link(p0, p1, p0->getNetwork()); };
 
 /* -------------------------------------------------------------------------- */
 class pathInfo {
@@ -1393,7 +1424,7 @@ public:
   T3Tddd xyz; /* {start_xyz, cwp_xyz, crosspoint_xyz} */
   double incidentAngle;
   double r;
-  pathInfo(V_netFp face_IN, const T3Tddd &xyz_IN, const double incidentAngle_IN, const double r_IN) : face(face_IN), xyz(xyz_IN), incidentAngle(incidentAngle_IN), r(r_IN) {};
+  pathInfo(V_netFp face_IN, const T3Tddd& xyz_IN, const double incidentAngle_IN, const double r_IN) : face(face_IN), xyz(xyz_IN), incidentAngle(incidentAngle_IN), r(r_IN) {};
   ~pathInfo() {
     //    std::cout << Red << "destructed" << colorReset << std::endl;
   }
@@ -1432,7 +1463,7 @@ public:
   /* --------------------------------------------------------------------------
    */
 
-  std::array<double, 3> gradP1(const std::function<double(networkPoint *)> &func) {
+  std::array<double, 3> gradP1(const std::function<double(networkPoint*)>& func) {
     std::array<double, 3> V012 = {func(this->Points[0]), func(this->Points[1]), func(this->Points[2])};
     std::array<std::array<double, 3>, 3> X012 = {this->Points[0]->X, this->Points[1]->X, this->Points[2]->X};
     return ::gradP1(X012, V012);
@@ -1445,20 +1476,20 @@ public:
   T_LLL Lines = {nullptr, nullptr, nullptr}; // 2月28日(月)導入
   T_TT Tetras = {nullptr, nullptr};
 
-  Network *network;
-  Network *getNetwork() const noexcept { return this->network; };
+  Network* network;
+  Network* getNetwork() const noexcept { return this->network; };
 
-  void setLines(const T_LLL &ls) { this->Lines = ls; };
+  void setLines(const T_LLL& ls) { this->Lines = ls; };
 
 public:
-  bool MemberQ(const networkLine *const l) const noexcept { return MemberQ_(this->Lines, l) && MemberQ_(this->Lines, l) && MemberQ_(this->Lines, l); };
-  bool MemberQ(const networkPoint *const p) const noexcept { return MemberQ_(this->Points, p); };
-  bool AllMemberQ(const T_3P &points) const noexcept { return MemberQ_(this->Points, std::get<0>(points)) && MemberQ_(this->Points, std::get<1>(points)) && MemberQ_(this->Points, std::get<2>(points)); };
-  bool AnyMemberQ(const T_3P &points) const noexcept { return MemberQ_(this->Points, std::get<0>(points)) || MemberQ_(this->Points, std::get<1>(points)) || MemberQ_(this->Points, std::get<2>(points)); };
+  bool MemberQ(const networkLine* const l) const noexcept { return MemberQ_(this->Lines, l) && MemberQ_(this->Lines, l) && MemberQ_(this->Lines, l); };
+  bool MemberQ(const networkPoint* const p) const noexcept { return MemberQ_(this->Points, p); };
+  bool AllMemberQ(const T_3P& points) const noexcept { return MemberQ_(this->Points, std::get<0>(points)) && MemberQ_(this->Points, std::get<1>(points)) && MemberQ_(this->Points, std::get<2>(points)); };
+  bool AnyMemberQ(const T_3P& points) const noexcept { return MemberQ_(this->Points, std::get<0>(points)) || MemberQ_(this->Points, std::get<1>(points)) || MemberQ_(this->Points, std::get<2>(points)); };
   // Tdd grid_pull_factor;
   int grid_pull_depth;
 
-  Tddd normalVelocityRigidBody(const Tddd &X) const;
+  Tddd normalVelocityRigidBody(const Tddd& X) const;
   //% ==================================================================
   //%                        接続情報の事前計算
   //% ==================================================================
@@ -1466,91 +1497,157 @@ public:
   std::array<std::shared_ptr<DodecaPoints>, 3> dodecaPoints;
   void setDodecaPoints();
 
-  //@ ==================================================================
-  //@                               BEM
-  //@ ==================================================================
+  // # ==================================================================
+  // #                               BEM
+  // # ==================================================================
 
   bool Dirichlet;
   bool Neumann;
   bool isDirichlet() const noexcept { return this->Dirichlet; };
   bool isNeumann() const noexcept { return this->Neumann; };
   int minDepthToCORNER;
+  Network* penetratedBody = nullptr;
 
-  //@ ------------------------------------------------------------------
-  //@ BEMの積分を効率的に行うためにあらかじめ積分情報を作成しておく
-  //@ ------------------------------------------------------------------
+  // # ------------------------------------------------------------------
+  // # BEMの積分を効率的に行うためにあらかじめ積分情報を作成しておく
+  // # ------------------------------------------------------------------
 
-  using linear_triangle_integration_info = std::tuple<Tdd /*0: 2D parameter {[0,1], [0,1]} (integration variables)*/, double /*1: gaussian weight (integration weight)*/, Tddd /*2: 3D parameter {xi0=[0,1], xi1=[0,1-xi0]} to move on a
-                                                                                                                                                                                  triangle and assscociated with the 2D parameter*/
-                                                      ,
-                                                      Tddd /*3: 3d position vector using {xi0,xi1,xi2}*/, Tddd /*4: cross product dX/dxi0 x dX/dxi1 at the point*/, double /*5: the norm of the cross product*/>;
-
+  using linear_triangle_integration_info = std::tuple<Tdd /*0: 2D parameter {[0,1], [0,1]} (integration variables)*/, double /*1: gaussian weight (integration weight)*/, Tddd /*2: 3D parameter {xi0=[0,1], xi1=[0,1-xi0]} to move on a triangle and assscociated with the 2D parameter*/, Tddd /*3: 3d position vector using {xi0,xi1,xi2}*/, Tddd /*4: cross product dX/dxi0 x dX/dxi1 at the point*/, double /*5: the norm of the cross product*/>;
   using pseudo_quadratic_triangle_integration_info = std::tuple<Tdd /*0: 2D parameter {[0,1], [0,1]} (integration variables)*/, double /*1: gaussian weight (integration weight)*/, std::array<T6d, 4> /*3: shape function for the quadratic element*/, Tddd /*4: 3d position vector using {xi0,xi1,xi2}*/, Tddd /*5: cross product dX/dxi0 x dX/dxi1 at the point*/, double /*6: the norm of the cross product*/>;
 
-  std::vector<std::unordered_map<networkPoint *, std::vector<linear_triangle_integration_info>>> map_Point_LinearIntegrationInfo_vector;
-  std::vector<std::unordered_map<networkPoint *, std::vector<pseudo_quadratic_triangle_integration_info>>> map_Point_PseudoQuadraticIntegrationInfo_vector;
+  std::vector<std::unordered_map<networkPoint*, std::vector<linear_triangle_integration_info>>> map_Point_LinearIntegrationInfo_vector;
+  std::vector<std::unordered_map<networkPoint*, std::vector<pseudo_quadratic_triangle_integration_info>>> map_Point_PseudoQuadraticIntegrationInfo_vector;
 
-  using BEM_IGIGn_info_type = std::tuple<networkPoint *, networkFace *, double, double>;
-  std::unordered_map<networkPoint *, std::vector<BEM_IGIGn_info_type>> map_Point_BEM_IGIGn_info_init;
+  using BEM_IGIGn_info_type = std::tuple<networkPoint*, networkFace*, double, double>;
+  std::unordered_map<networkPoint*, std::vector<BEM_IGIGn_info_type>> map_Point_BEM_IGIGn_info_init;
 
   void setIntegrationInfo();
 
   bool isPseudoQuadraticElement = false;
+  bool isTrueQuadraticElement = false;
   bool isLinearElement = false;
 
-  /* --------------------------------------------------------------------------
-   */
+  // # ------------------------------------------------------------------
+  // # True quadratic 要素用の事前計算データ
+  // #
+  // # true_quadratic 要素では、3頂点 + 3辺中点の6自由度を持つ。
+  // # BIE の直接積分 (setDirectIntegration) で繰り返し必要になる
+  // # 幾何量（曲面上の位置・クロス積）と形状関数値を、
+  // # 各求積ルールの求積点で事前に計算して保存する。
+  // #
+  // # 幾何は2次補間（6節点: 3頂点 + 3辺中点座標）で評価する。
+  // # 求積点の数は vector で管理し、ルール変更に柔軟に対応する。
+  // #
+  // # ハイブリッド重み分配ルール（DodecaPoints::N6_new の else 分岐と同構造）:
+  // #   - Dirichlet面: 全辺中点が独立DOF（full quadratic）
+  // #   - Neumann面:
+  // #     - CORNER辺の中点: 独立DOF（重み保持）
+  // #     - 非CORNER辺の中点: 両端頂点に 0.5 ずつ再分配（実質linear）
+  // #   CORNER辺を0〜2本持つNeumann面が存在しうる。
+  // # ------------------------------------------------------------------
+
+  /// 求積点での事前計算データ（幾何・形状関数・重み）
+  struct TrueQuadQP {
+    Tddd X;                   ///< 曲面上の位置（2次幾何補間）
+    Tddd cross;               ///< クロス積 dX/dt0 × dX/dt1（法線方向・局所Jacobian）
+    std::array<double, 6> N6; ///< 形状関数値（ハイブリッド再分配適用済み）
+    double w;                 ///< 求積重み
+  };
+
+  /// 6DOF のグローバルインデックス [0-2]=頂点, [3-5]=辺中点
+  /// 非活性な辺中点（非CORNER Neumann辺）は負値: 再分配済みのため直接参照しない
+  std::array<int32_t, 6> true_quad_dof_indices = {-1, -1, -1, -1, -1, -1};
+
+  /// 遠方非隣接ソース用の求積点（例: Dunavant p2m設定点数）
+  std::vector<TrueQuadQP> true_quad_qp_far;
+  /// 近傍非隣接ソース用の求積点（例: GW5x5 25点）
+  std::vector<TrueQuadQP> true_quad_qp_near;
+  /// 辺中点Duffy用の求積点（辺番号 0/1/2 ごとに 2×25=50点）
+  /// 辺分割はターゲット非依存（辺番号のみ依存）なので事前計算可能
+  /// 注: 頂点Duffyは頂点並べ替えがターゲット依存のため事前計算不可
+  std::array<std::vector<TrueQuadQP>, 3> true_quad_qp_duffy;
+
+  /// 辺中点DOFの活性状態を返す
+  /// midpoint_index >= 0 の辺のみ中点DOFとして有効。
+  /// PLPLPL辺順序: l0=p0-p1, l1=p1-p2, l2=p2-p0
+  /// 戻り値: {l0活性, l1活性, l2活性}
+  std::array<bool, 3> trueQuadMidpointActive() const noexcept {
+    auto [p0, l0, p1, l1, p2, l2] = this->PLPLPL;
+    (void)p0;
+    (void)p1;
+    (void)p2;
+    return {l0->midpoint_index >= 0, l1->midpoint_index >= 0, l2->midpoint_index >= 0};
+  }
+
+  /// ハイブリッド true_quadratic 形状関数を計算
+  /// 非活性な辺中点の重みを両端頂点に 0.5 ずつ再分配
+  /// TriShape<6> 順序: N0=p0, N1=p1, N2=p2, N3=mid(l0), N4=mid(l1), N5=mid(l2)
+  std::array<double, 6> trueQuadN6(double t0, double t1) const noexcept {
+    const auto mid_active = trueQuadMidpointActive();
+    auto [N0, N1, N2, N3, N4, N5] = TriShape<6>(t0, t1);
+    std::array<double, 6> N6 = {N0, N1, N2, N3, N4, N5};
+    // l0 (p0-p1間): 非活性ならN3を頂点p0,p1に再分配
+    if (!mid_active[0]) {
+      N6[0] += 0.5 * N6[3];
+      N6[1] += 0.5 * N6[3];
+      N6[3] = 0.;
+    }
+    // l1 (p1-p2間): 非活性ならN4を頂点p1,p2に再分配
+    if (!mid_active[1]) {
+      N6[1] += 0.5 * N6[4];
+      N6[2] += 0.5 * N6[4];
+      N6[4] = 0.;
+    }
+    // l2 (p2-p0間): 非活性ならN5を頂点p2,p0に再分配
+    if (!mid_active[2]) {
+      N6[2] += 0.5 * N6[5];
+      N6[0] += 0.5 * N6[5];
+      N6[5] = 0.;
+    }
+    return N6;
+  }
 
   Tdd phiphin = {0., 0.};
   Tddd phinTuple = {0., 0., 0.};
 
-  //@========================================================================
+  // # ========================================================================
 
-  // #ifdef DEM
-  //   public:
-  //    V_netPp contactP = {};
-  // #endif
-
-  //   private:
-  // VV_d xyzInverse;
-  // V_netPp XPoints;
-  // V_netPp Points;
 public:
   T_PPP Points;
-  std::tuple<networkPoint *, networkLine *, networkPoint *, networkLine *, networkPoint *, networkLine *> PLPLPL;
+  std::tuple<networkPoint*, networkLine*, networkPoint*, networkLine*, networkPoint*, networkLine*> PLPLPL;
   //% ------------------------------------------------------ */
-  std::unordered_set<networkPoint *> ParametricPoints;
+  std::unordered_set<networkPoint*> ParametricPoints;
   //! ------------------------------------------------------ */
-  std::unordered_set<networkPoint *> ContactPoints;
-  std::unordered_map<Network *, std::unordered_set<networkPoint *>> map_Net_ContactPoints = {{nullptr, {}}};
+  std::unordered_set<networkPoint*> ContactPoints;
+  std::unordered_map<Network*, std::unordered_set<networkPoint*>> map_Net_ContactPoints = {{nullptr, {}}};
 
 public:
   //% ------------------------------------------------------ */
   //%           パーティクライズで作られるParametricPoints        */
   //% ------------------------------------------------------ */
-  const std::unordered_set<networkPoint *> &getParametricPoints() const noexcept { return this->ParametricPoints; };
+  const std::unordered_set<networkPoint*>& getParametricPoints() const noexcept { return this->ParametricPoints; };
   void clearParametricPoints() {
-    for (const auto &p : this->ParametricPoints)
+    for (const auto& p : this->ParametricPoints)
       delete p;
     this->ParametricPoints.clear();
   };
-  void addParametricPoints(networkPoint *const p) { this->ParametricPoints.emplace(p); };
-  void addParametricPoints(const V_netPp &P) { this->ParametricPoints.insert(P.begin(), P.end()); };
-  void addParametricPoints(const std::unordered_set<networkPoint *> &P) { this->ParametricPoints.insert(P.begin(), P.end()); };
+  void addParametricPoints(networkPoint* const p) { this->ParametricPoints.emplace(p); };
+  void addParametricPoints(const V_netPp& P) { this->ParametricPoints.insert(P.begin(), P.end()); };
+  void addParametricPoints(const std::unordered_set<networkPoint*>& P) { this->ParametricPoints.insert(P.begin(), P.end()); };
   //! ------------------------------------------------------ */
   //!                          接触の判別                      */
   //! ------------------------------------------------------ */
-  const std::unordered_set<networkPoint *> &getContactPoints() const noexcept { return this->ContactPoints; };
-  const std::unordered_set<networkPoint *> &getContactPoints(Network *const net) const noexcept {
+  const std::unordered_set<networkPoint*>& getContactPoints() const noexcept { return this->ContactPoints; };
+  const std::unordered_set<networkPoint*>& getContactPoints(Network* const net) const noexcept {
     auto it = this->map_Net_ContactPoints.find(net);
     if (it != this->map_Net_ContactPoints.end())
       return it->second;
     else
       return this->map_Net_ContactPoints.at(nullptr);
   };
-  const std::unordered_set<networkPoint *> getContactPoints(const std::vector<Network *> &nets) const noexcept {
-    std::unordered_set<networkPoint *> ret;
-    for (const auto &n : nets) {
+  const std::unordered_set<networkPoint*> getContactPoints(const std::vector<Network*>& nets) const noexcept {
+    std::unordered_set<networkPoint*> ret;
+    for (const auto& n : nets) {
       auto points = getContactPoints(n);
       ret.insert(points.begin(), points.end());
     }
@@ -1569,45 +1666,44 @@ public:
   //    setBoundsは，setPointsFromCurrentLines()を実行する．
   // };
   /* ------------------------------------------------------ */
-  Tddd mirror(const Tddd &v) const noexcept {
+  Tddd mirror(const Tddd& v) const noexcept {
     // 与えられたvの鏡像を返す
     return v - 2. * Dot(v, this->normal) * this->normal;
   };
-  Tddd mirrorPosition(const Tddd &v) const noexcept {
+  Tddd mirrorPosition(const Tddd& v) const noexcept {
     // 与えられた位置ベクトルに対して，鏡像位置を返す．ただし，最短距離にできる鏡像位置．
     auto u = std::get<0>(this->Points)->X;
     return v + 2. * Dot(u - v, this->normal) * this->normal;
   };
-  Tddd mirrorPosition(const Tddd &v, const double scale) const noexcept {
+  Tddd mirrorPosition(const Tddd& v, const double scale) const noexcept {
     // 与えられた位置ベクトルに対して，鏡像位置を返す．ただし，最短距離にできる鏡像位置．
     return v + scale * Dot(this->X - v, this->normal) * this->normal;
   };
-  Tddd mirrorPosition(const networkPoint *p, const double scale = 2.) const noexcept {
+  Tddd mirrorPosition(const networkPoint* p, const double scale = 2.) const noexcept {
     // 与えられた位置ベクトルに対して，鏡像位置を返す．ただし，最短距離にできる鏡像位置．
     return p->X + scale * Dot(this->X - p->X, this->normal) * this->normal;
   };
 
   // networkFace(Network *network_IN, const T_LLL &Lines_IN, T_3P);
-  networkFace(Network *network_IN, networkPoint *const p0, networkLine *const l0, networkPoint *const p1, networkLine *const l1, networkPoint *const p2, networkLine *const l2);
-  networkFace(Network *network_IN, networkPoint *const p0, networkPoint *const p1, networkPoint *const p2);
+  networkFace(Network* network_IN, networkPoint* const p0, networkLine* const l0, networkPoint* const p1, networkLine* const l1, networkPoint* const p2, networkLine* const l2);
+  networkFace(Network* network_IN, networkPoint* const p0, networkPoint* const p1, networkPoint* const p2);
   /*コピーコンストラクタ*/
   networkFace(const netFp f);
   ~networkFace();
 
-  std::unordered_set<networkPoint *> particlize(const double dx, const V_d &depth_list);
+  std::unordered_set<networkPoint*> particlize(const double dx, const V_d& depth_list);
 
   V_netFp getNeighbors() const noexcept {
     V_netFp ret;
-    networkFace *f;
-    std::ranges::for_each(this->Lines, [&](const auto &l) {
+    networkFace* f;
+    std::ranges::for_each(this->Lines, [&](const auto& l) {
       if (f = (*l)(this)) {
         ret.emplace_back(f);
-      };
-    });
+      }; });
     return ret;
   };
 
-  netL *getLineBetween(const networkFace *const f) const noexcept {
+  netL* getLineBetween(const networkFace* const f) const noexcept {
     auto [l0, l1, l2] = this->Lines;
     if (l0 != nullptr && f == (*l0)(this))
       return l0;
@@ -1620,7 +1716,7 @@ public:
   };
 
 public:
-  T_PPP getPointsFromLines(const T_LLL &lines) const {
+  T_PPP getPointsFromLines(const T_LLL& lines) const {
     //! p0 <-> line[0] <-> p1 <-> line[1] <-> p2 <-> line[2] を 作成
     const auto [l0, l1, l2] = lines;
     const auto l0_points = l0->getPoints();
@@ -1641,7 +1737,7 @@ public:
 
   T_PPP getPointsFromLines() const noexcept { return getPointsFromLines(this->Lines); };
 
-  void setPoints(networkPoint *const p0, networkLine *const l0, networkPoint *const p1, networkLine *const l1, networkPoint *const p2, networkLine *const l2) {
+  void setPoints(networkPoint* const p0, networkLine* const l0, networkPoint* const p1, networkLine* const l1, networkPoint* const p2, networkLine* const l2) {
     this->PLPLPL = {p0, l0, p1, l1, p2, l2};
     this->Points = {p0, p1, p2};
     this->Lines = {l0, l1, l2};
@@ -1652,18 +1748,18 @@ public:
     this->setPoints(p1, l0, p0, l2, p2, l1);
   };
 
-  T_PPP setPoints(netL *l0, netL *l1, netL *l2) {
+  T_PPP setPoints(netL* l0, netL* l1, netL* l2) {
     try {
       const auto [p0, p1, p2] = this->Points = getPointsFromLines({l0, l1, l2});
       this->PLPLPL = {p0, l0, p1, l1, p2, l2};
       return this->Points;
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     }
   };
 
-  T_PPP setPoints(const T_LLL &lines) {
+  T_PPP setPoints(const T_LLL& lines) {
     const auto [l0, l1, l2] = lines;
     return setPoints(l0, l1, l2);
   }
@@ -1673,7 +1769,7 @@ public:
       const auto [p0, p1, p2] = this->Points = getPointsFromLines(this->Lines);
       this->PLPLPL = {p0, std::get<0>(this->Lines), p1, std::get<1>(this->Lines), p2, std::get<2>(this->Lines)};
       return this->Points;
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     }
@@ -1681,7 +1777,7 @@ public:
 
   T_PPP setPoints() { return setPoints(this->Lines); };
 
-  bool setGeometricProperties(const T3Tddd &toX_this_points) {
+  bool setGeometricProperties(const T3Tddd& toX_this_points) {
     /**
      *! 依存関係の明示方法
      * 下のように使う．これによって，setPointsFromLinesした後に，これを実行する必要があることを印象付けることができる．
@@ -1738,7 +1834,7 @@ public:
         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
       } else
         return true;
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     };
@@ -1751,7 +1847,7 @@ public:
   //------------------------
   // bool Replace(netL *oldL, netL *newL, netF *newF = nullptr) { return
   // network::replace(this, this->Lines, oldL, newL, newF); };
-  bool Replace(netL *oldL, netL *newL) {
+  bool Replace(netL* oldL, netL* newL) {
     // switchでないと，順番に意味のあるFaceではおかしくなるので注意
     if (this->replace(oldL, newL) && oldL->erase(this) && newL->add(this))
       return true;
@@ -1759,7 +1855,7 @@ public:
       return false;
   };
 
-  double getSubArea(const networkPoint *const p) const noexcept {
+  double getSubArea(const networkPoint* const p) const noexcept {
     auto [p0, p1, p2] = this->getPoints(p);
     auto a = (p0->X + p1->X) / 2.;
     auto b = (p0->X + p2->X) / 2.;
@@ -1775,7 +1871,7 @@ public:
   };
   //////////////////////
   // このfaceの保存状況に従って，lに対する前後のpointへのインデックスを取得できる
-  Tiii point_indicies(const netL *l) const {
+  Tiii point_indicies(const netL* l) const {
     try {
       // for (auto i = 0; i < 3; i++)
       // 	if ((l->getPoints()[0] == this->Points[i] /*back*/ &&
@@ -1794,7 +1890,7 @@ public:
         return {2, 0, 1};
 
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       std::stringstream ss;
       ss << "このlineを基準としてインデックスをつくれない：この線はこの面のいっ"
@@ -1815,7 +1911,7 @@ public:
     };
   };
   // 与えられたpをindex[0]として，this->Pointsのインデックスを返す
-  Tiii point_indicies(const networkPoint *const p) const {
+  Tiii point_indicies(const networkPoint* const p) const {
     try {
       if (p == std::get<0>(this->Points))
         return {0, 1, 2};
@@ -1827,7 +1923,7 @@ public:
       // 	if (p == this->Points[i])
       // 		return {i, (i + 1) % 3, (i + 2) % 3};
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       std::stringstream ss;
       ss << "このpointを基準としてインデックスをつくれない：この線はこの面のい"
@@ -1847,8 +1943,8 @@ public:
     };
   };
 
-  const Tddd &getAngles() const { return this->angles; };
-  Tddd getAngles(const netL *l) const {
+  const Tddd& getAngles() const { return this->angles; };
+  Tddd getAngles(const netL* l) const {
     try {
       if (l == std::get<0>(this->Lines))
         return this->angles;
@@ -1856,12 +1952,12 @@ public:
         return RotateLeft(this->angles, 1);
       else
         return RotateLeft(this->angles, 2);
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     };
   };
-  Tddd getAngles(const networkPoint *const p) const {
+  Tddd getAngles(const networkPoint* const p) const {
     try {
       auto [i, j, k] = point_indicies(p);
       auto [a0, a1, a2] = this->angles;
@@ -1873,12 +1969,12 @@ public:
         return {a2, a0, a1};
       // return {this->angles[i], /*ここにこの線lが位置する*/ this->angles[j],
       // this->angles[k]};
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     };
   };
-  double getAngle(const networkPoint *p) const {
+  double getAngle(const networkPoint* p) const {
     if (p == std::get<0>(this->Points))
       return std::get<0>(this->angles);
     else if (p == std::get<1>(this->Points))
@@ -1901,7 +1997,7 @@ public:
   /* --------------------------------- SURFACE --------------------------------
    */
 
-  bool SurfaceQ() const noexcept { return this->Tetras[0] == nullptr || this->Tetras[1] == nullptr; };
+  bool BoundaryQ() const noexcept { return this->Tetras[0] == nullptr || this->Tetras[1] == nullptr; };
 
   /* ------------------------------------------------------ */
   //% タプル
@@ -1921,9 +2017,9 @@ public:
   */
   /* --------------------------------------------------------------------------
    */
-  const std::array<networkPoint *, 3> &getPoints() const noexcept { return this->Points; };
+  const std::array<networkPoint*, 3>& getPoints() const noexcept { return this->Points; };
 
-  std::array<networkPoint *, 3> getPoints(const networkPoint *const p) const noexcept {
+  std::array<networkPoint*, 3> getPoints(const networkPoint* const p) const noexcept {
     if (p == std::get<0>(this->Points))
       return this->Points;
     else if (p == std::get<1>(this->Points))
@@ -1931,7 +2027,7 @@ public:
     else
       return {std::get<2>(this->Points), std::get<0>(this->Points), std::get<1>(this->Points)};
   };
-  std::array<networkPoint *, 3> getPoints(const networkLine *const l) const noexcept {
+  std::array<networkPoint*, 3> getPoints(const networkLine* const l) const noexcept {
     if (l == std::get<1>(this->PLPLPL))
       return this->Points;
     else if (l == std::get<3>(this->PLPLPL))
@@ -1941,8 +2037,8 @@ public:
   };
   /* --------------------------------------------------------------------------
    */
-  const T_LLL &getLines() const noexcept { return this->Lines; };
-  T_LLL getLines(const networkLine *const l) const noexcept {
+  const T_LLL& getLines() const noexcept { return this->Lines; };
+  T_LLL getLines(const networkLine* const l) const noexcept {
     if (l == std::get<0>(this->Lines))
       return this->Lines;
     else if (l == std::get<1>(this->Lines))
@@ -1954,10 +2050,10 @@ public:
   };
   /* --------------------------------------------------------------------------
    */
-  const T_TT &getTetras() const noexcept { return this->Tetras; };
+  const T_TT& getTetras() const noexcept { return this->Tetras; };
   /* --------------------------------------------------------------------------
    */
-  bool replace(netL *const oldL, netL *const newL) {
+  bool replace(netL* const oldL, netL* const newL) {
     if (std::get<0>(this->Lines) == oldL) {
       std::get<0>(this->Lines) = newL;
       return true;
@@ -1970,7 +2066,7 @@ public:
     } else
       return false;
   };
-  bool replace(netP *const oldP, netP *const newP) {
+  bool replace(netP* const oldP, netP* const newP) {
     if (std::get<0>(this->Points) == oldP) {
       std::get<0>(this->Points) = newP;
       return true;
@@ -1983,20 +2079,20 @@ public:
     } else
       return false;
   };
-  std::vector<networkFace *> getNeighbors(const networkFace *const obj) const noexcept { return {(*std::get<0>(this->Lines))(obj), (*std::get<1>(this->Lines))(obj), (*std::get<2>(this->Lines))(obj)}; };
+  std::vector<networkFace*> getNeighbors(const networkFace* const obj) const noexcept { return {(*std::get<0>(this->Lines))(obj), (*std::get<1>(this->Lines))(obj), (*std::get<2>(this->Lines))(obj)}; };
   /* ------------------------------------------------------ */
-  std::tuple<T_PPP, T_LLL> getPointsLinesTuple(const networkLine *const l) const { return {this->getPoints(l), getLines(l)}; };
+  std::tuple<T_PPP, T_LLL> getPointsLinesTuple(const networkLine* const l) const { return {this->getPoints(l), getLines(l)}; };
   /* ------------------------------------------------------ */
-  netP *getPointFront(const netL *l) const noexcept { return std::get<1>(getPoints(l)); };
-  netP *getPointBack(const netL *l) const noexcept { return std::get<0>(getPoints(l)); };
-  netP *getPointOpposite(const netL *l) const noexcept { return std::get<2>(getPoints(l)); };
+  netP* getPointFront(const netL* l) const noexcept { return std::get<1>(getPoints(l)); };
+  netP* getPointBack(const netL* l) const noexcept { return std::get<0>(getPoints(l)); };
+  netP* getPointOpposite(const netL* l) const noexcept { return std::get<2>(getPoints(l)); };
   /* ------------------------------------------------------ */
-  netL *getLineFront(const networkPoint *p) const noexcept { return std::get<0>(getLinesTupleFrom(p)); };
-  netL *getLineBack(const networkPoint *p) const noexcept { return std::get<2>(getLinesTupleFrom(p)); };
-  netL *getLineOpposite(const networkPoint *p) const noexcept { return std::get<1>(getLinesTupleFrom(p)); };
+  netL* getLineFront(const networkPoint* p) const noexcept { return std::get<0>(getLinesTupleFrom(p)); };
+  netL* getLineBack(const networkPoint* p) const noexcept { return std::get<2>(getLinesTupleFrom(p)); };
+  netL* getLineOpposite(const networkPoint* p) const noexcept { return std::get<1>(getLinesTupleFrom(p)); };
   /* ------------------------------------------------------ */
 
-  netL *getLine(const netL *l, int j = 0) const {
+  netL* getLine(const netL* l, int j = 0) const {
     auto it = std::find(this->Lines.begin(), this->Lines.end(), l);
     if (it != this->Lines.end()) {
       int j_3 = j % 3; // should be [2,1,0,-1,-2]
@@ -2006,11 +2102,11 @@ public:
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Line not found");
   };
 
-  netL *getLineFront(const netL *l) const noexcept { return getLine(l, 1); };
-  netL *getLineBack(const netL *l) const noexcept { return getLine(l, -1); };
-  netF *getFaceFront(const netL *l) { return (*getLine(l, 1))(this); };
-  netF *getFaceBack(const netL *l) { return (*getLine(l, -1))(this); };
-  T_LLL getLinesTupleFrom(const networkPoint *const p) const {
+  netL* getLineFront(const netL* l) const noexcept { return getLine(l, 1); };
+  netL* getLineBack(const netL* l) const noexcept { return getLine(l, -1); };
+  netF* getFaceFront(const netL* l) { return (*getLine(l, 1))(this); };
+  netF* getFaceBack(const netL* l) { return (*getLine(l, -1))(this); };
+  T_LLL getLinesTupleFrom(const networkPoint* const p) const {
     try {
       if (p == std::get<0>(this->Points))
         return this->Lines;
@@ -2020,7 +2116,7 @@ public:
         return RotateLeft(this->Lines, 2);
       else
         throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     };
@@ -2031,14 +2127,15 @@ public:
   // const { return (*(getLinesFrom(p)[0]))(this); }; netF
   // *getFaceOpposite(const networkPoint *p) const { return
   // (*(getLinesFrom(p)[0]))(this); };
-  netF *getFaceFront(const networkPoint *p) const noexcept { return (*(std::get<0>(getLinesTupleFrom(p))))(this); };
-  netF *getFaceBack(const networkPoint *p) const noexcept { return (*(std::get<2>(getLinesTupleFrom(p))))(this); };
-  netF *getFaceOpposite(const networkPoint *p) const noexcept { return (*(std::get<1>(getLinesTupleFrom(p))))(this); };
+  netF* getFaceFront(const networkPoint* p) const noexcept { return (*(std::get<0>(getLinesTupleFrom(p))))(this); };
+  netF* getFaceBack(const networkPoint* p) const noexcept { return (*(std::get<2>(getLinesTupleFrom(p))))(this); };
+  netF* getFaceOpposite(const networkPoint* p) const noexcept { return (*(std::get<1>(getLinesTupleFrom(p))))(this); };
 
   /* --------------------------------------------------------------------------
    */
 
-  template <size_t N> std::array<networkPoint *, N> getPoints() const {
+  template <size_t N>
+  std::array<networkPoint*, N> getPoints() const {
     static_assert(N == 3 || N == 6, "Unsupported getPoints. Only 3 or 6 are supported.");
     if constexpr (N == 3) {
       return ToArray(this->Points);
@@ -2051,7 +2148,8 @@ public:
     }
   }
   //
-  template <size_t N, bool networkLine::*BoolMember = nullptr> std::array<networkPoint *, N> getPoints(const networkPoint *P = nullptr) const {
+  template <size_t N, bool networkLine::* BoolMember = nullptr>
+  std::array<networkPoint*, N> getPoints(const networkPoint* P = nullptr) const {
     static_assert(N == 3 || N == 6, "Unsupported getPoints. Only 3 or 6 are supported.");
     if constexpr (N == 3) {
       if (P == std::get<0>(this->Points) || P == nullptr)
@@ -2084,7 +2182,8 @@ public:
     }
   }
 
-  template <size_t N, bool networkLine::*BoolMember = nullptr> std::array<networkPoint *, N> getPoints(const networkLine *L = nullptr) const {
+  template <size_t N, bool networkLine::* BoolMember = nullptr>
+  std::array<networkPoint*, N> getPoints(const networkLine* L = nullptr) const {
     static_assert(N == 3 || N == 6, "Unsupported getPoints. Only 3 or 6 are supported.");
     if constexpr (N == 3) {
       return ToArray(this->getPoints(L));
@@ -2108,7 +2207,7 @@ public:
   /* --------------------------------------------------------------------------
    */
 
-  std::tuple<networkPoint *, networkLine *, networkPoint *, networkLine *, networkPoint *, networkLine *> getPointsAndLines(const networkPoint *origin) const {
+  std::tuple<networkPoint*, networkLine*, networkPoint*, networkLine*, networkPoint*, networkLine*> getPointsAndLines(const networkPoint* origin) const {
     auto [P0, L0, P1, L1, P2, L2] = this->PLPLPL;
     if (P0 == origin || nullptr == origin) {
       return this->PLPLPL;
@@ -2120,7 +2219,7 @@ public:
       return this->PLPLPL;
   };
 
-  std::tuple<networkPoint *, networkLine *, networkPoint *, networkLine *, networkPoint *, networkLine *> getPointsAndLinesFromNearest(const networkPoint *origin) const {
+  std::tuple<networkPoint*, networkLine*, networkPoint*, networkLine*, networkPoint*, networkLine*> getPointsAndLinesFromNearest(const networkPoint* origin) const {
     auto [P0, L0, P1, L1, P2, L2] = this->PLPLPL;
     if (P0 == origin || nullptr == origin) {
       return this->PLPLPL;
@@ -2132,7 +2231,7 @@ public:
       return this->PLPLPL;
   };
 
-  std::tuple<networkPoint *, networkLine *, networkPoint *, networkLine *, networkPoint *, networkLine *> getPointsAndLines(const networkLine *origin) const {
+  std::tuple<networkPoint*, networkLine*, networkPoint*, networkLine*, networkPoint*, networkLine*> getPointsAndLines(const networkLine* origin) const {
     auto [P0, L0, P1, L1, P2, L2] = this->PLPLPL;
     if (L0 == origin || nullptr == origin) {
       return this->PLPLPL;
@@ -2147,7 +2246,7 @@ public:
   /* --------------------------------------------------------------------------
    */
 
-  std::tuple<netPp, netPp, netPp, netPp, netPp, netPp> get6PointsTuple(const networkLine *l /*基準*/) const {
+  std::tuple<netPp, netPp, netPp, netPp, netPp, netPp> get6PointsTuple(const networkLine* l /*基準*/) const {
     try {
       auto [l0, l1, l2] = this->getLines(l); // 修正した2022/03/21
       // if (l1 == l)
@@ -2179,13 +2278,13 @@ public:
       auto [p0_f1, p1_f1, p2_f1] = (*l1)(this)->getPoints(l1); // f1
       auto [p0_f2, p1_f2, p2_f2] = (*l2)(this)->getPoints(l2); // f2
       return {p2_f0, p2_f1, p2_f2, p0_f0, p0_f1, p0_f2};
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     };
   };
 
-  std::tuple<netPp, netPp, netPp, netPp, netPp, netPp> get6PointsTuple(const networkPoint *p) const {
+  std::tuple<netPp, netPp, netPp, netPp, netPp, netPp> get6PointsTuple(const networkPoint* p) const {
     try {
       if (p == nullptr || !MemberQ_(this->Points, p)) {
         p = std::get<0>(this->Points);
@@ -2199,14 +2298,14 @@ public:
        *  1    1/---4(p)---\2   2
        */
       return (*l1)(this)->get6PointsTuple(l1);
-    } catch (std::exception &e) {
+    } catch (std::exception& e) {
       std::cerr << e.what() << colorReset << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
     };
   };
 
   //@ 2024/02/02本格的に使い始める
-  std::array<networkPoint *, 6> get6Points(const networkPoint *p) const {
+  std::array<networkPoint*, 6> get6Points(const networkPoint* p) const {
     if (p == nullptr || !MemberQ_(this->Points, p))
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "p is nullptr or not found in this->Points");
     /*
@@ -2241,334 +2340,106 @@ public:
   T3Tddd getLocationsTuple() const { return {std::get<0>(this->Points)->X, std::get<1>(this->Points)->X, std::get<2>(this->Points)->X}; };
   T3Tddd getXVertices() const { return {std::get<0>(this->Points)->X, std::get<1>(this->Points)->X, std::get<2>(this->Points)->X}; };
 
-  netFp divide(netLp DivL, netLp newDivL, netLp newMidL, int type);
+  netFp Split(netLp DivL, netLp newDivL, netLp newMidL, int type);
 
   /* ------------------------------------------------------ */
-  bool isFacing(const networkFace *const F, const double rad = 1E-10) const { return isFlat(this->normal, -F->normal, rad) || isFlat(this->normal, F->normal, rad); };
-};
-
-bool isEdge(const networkFace *const f) {
-  return std::ranges::any_of(f->getPoints(), [](const networkPoint *p) { return isEdge(p); });
+  bool isFacing(const networkFace* const F, const double rad = 1E-10) const { return isFlat(this->normal, -F->normal, rad) || isFlat(this->normal, F->normal, rad); };
 };
 
 /* -------------------------------------------------------------------------- */
-
-T3Tddd ToX(const networkFace *const f) { return ToX(f->getPoints()); };
-std::vector<T3Tddd> ToX(const std::vector<networkFace *> &fs) {
-  std::vector<T3Tddd> ret(fs.size());
-  int i = 0;
-  for (const auto &f : fs)
-    ret[i++] = ToX(f->getPoints());
-  return ret;
-};
-std::vector<T3Tddd> ToX(const std::unordered_set<networkFace *> &fs) {
-  std::vector<T3Tddd> ret(fs.size());
-  int i = 0;
-  for (const auto &f : fs)
-    ret[i++] = ToX(f->getPoints());
-  return ret;
-};
+/*                                 クラスに属さない関数                                 */
 /* -------------------------------------------------------------------------- */
-Tddd TriangleNormal(const networkFace *const f) { return TriangleNormal(ToX(f)); };
+
+bool isEdge(const networkFace* const f);
+
+/* -------------------------------------------------------------------------- */
+T3Tddd ToX(const networkFace* const f);
+std::vector<T3Tddd> ToX(const std::vector<networkFace*>& fs);
+std::vector<T3Tddd> ToX(const std::unordered_set<networkFace*>& fs);
+/* -------------------------------------------------------------------------- */
+Tddd TriangleNormal(const networkFace* const f);
 //@ ------------------------ 抽出用関数など ----------------------- */
-std::vector<Tddd> extX(const std::unordered_set<networkFace *> &fs) {
-  std::vector<Tddd> ret;
-  for (const auto &f : fs)
-    ret.emplace_back(f->X);
-  return ret;
-};
-std::vector<T3Tddd> extVertices(const std::unordered_set<networkFace *> &fs) {
-  std::vector<T3Tddd> ret(fs.size());
-  int i = 0;
-  for (const auto &f : fs)
-    ret[i++] = f->getXVertices();
-  return ret;
-};
-std::vector<T2Tddd> extX(const std::unordered_set<networkLine *> &ls) {
-  std::vector<T2Tddd> ret(ls.size());
-  int i = 0;
-  for (const auto &l : ls)
-    ret[i++] = l->getLocationsTuple();
-  return ret;
-};
-std::vector<Tddd> extNormals(const V_netFp &fs) {
-  std::vector<Tddd> ret(fs.size());
-  int i = 0;
-  for (const auto &f : fs)
-    ret[i++] = f->normal;
-  return ret;
-};
+std::vector<Tddd> extX(const std::unordered_set<networkFace*>& fs);
+std::vector<T3Tddd> extVertices(const std::unordered_set<networkFace*>& fs);
+std::vector<T2Tddd> extX(const std::unordered_set<networkLine*>& ls);
+std::vector<Tddd> extNormals(const V_netFp& fs);
 
 //@ ------------------------------------------------------ */
 
-std::vector<netL *> link(const V_netPp &obj, Network *net) {
-  try {
-    std::vector<netL *> ret;
-    int s = obj.size();
-    for (int i = 0; i < s; i++) {
-      auto l = link(obj[i], obj[(i + 1) % s], net);
-      ret.emplace_back(l);
-    }
-    return ret;
-  } catch (const error_message &e) {
-    Print(obj);
-    if (DuplicateFreeQ(obj))
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "no duplication.....???");
-    else
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "duplication found!");
-  }
-};
-netL *unlink(netP *obj, netP *obj_) {
-  if (obj_ == obj)
-    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "a point is trying to unlink itself!");
+std::vector<netL*> link(const V_netPp& obj, Network* net);
+netL* unlink(netP* obj, netP* obj_);
 
-  if (!obj || !obj_ /*if NULL*/)
-    return nullptr;
-
-  auto line = obj->getLineBetween(obj_);
-  auto line_ = obj_->getLineBetween(obj);
-
-  if (line != nullptr) {
-    line->erase(obj);
-    line->erase(obj_);
-  }
-
-  if (obj != nullptr)
-    obj->erase(line);
-  if (obj_ != nullptr)
-    obj_->erase(line);
-  return line;
-
-  // if ((line == line_) && line) {
-  //    line->erase(obj);
-  //    line->erase(obj_);
-  //    obj->erase(line);
-  //    obj_->erase(line);
-  //    return line;
-  // } else {
-  //    std::cout << Red << obj << " and " << obj_ << " are not linked" <<
-  //    colorReset << std::endl; return nullptr;
-  // }
-};
 //@ ------------------------------------------------------ */
 //@                         extract                        */
 //@ ------------------------------------------------------ */
-/*
- * under scorer _ means the function returns FLATTEND list
- */
-std::unordered_set<networkPoint *> extPointsCORNER_(const std::vector<networkPoint *> &ps) {
-  std::unordered_set<networkPoint *> ret;
-  for (const auto &p : ps)
-    if (p->CORNER)
-      ret.emplace(p);
-  return ret;
-};
-std::unordered_set<networkPoint *> extPointsCORNER_(const std::unordered_set<networkPoint *> &ps) {
-  std::unordered_set<networkPoint *> ret;
-  for (const auto &p : ps)
-    if (p->CORNER)
-      ret.emplace(p);
-  return ret;
-};
-std::unordered_set<networkPoint *> extPointsCornerOrNeumann_(const std::vector<networkPoint *> &ps) {
-  std::unordered_set<networkPoint *> ret;
-  for (const auto &p : ps)
-    if (p->CORNER || p->Neumann)
-      ret.emplace(p);
-  return ret;
-};
-std::unordered_set<networkPoint *> extPointsCornerOrNeumann_(const std::unordered_set<networkPoint *> &ps) {
-  std::unordered_set<networkPoint *> ret;
-  for (const auto &p : ps)
-    if (p->CORNER || p->Neumann)
-      ret.emplace(p);
-  return ret;
-};
+
+std::unordered_set<networkPoint*> extPointsCORNER_(const std::vector<networkPoint*>& ps);
+std::unordered_set<networkPoint*> extPointsCORNER_(const std::unordered_set<networkPoint*>& ps);
+std::unordered_set<networkPoint*> extPointsCornerOrNeumann_(const std::vector<networkPoint*>& ps);
+std::unordered_set<networkPoint*> extPointsCornerOrNeumann_(const std::unordered_set<networkPoint*>& ps);
+
 // b! ------------------------------------------------------ */
 // b! ---------------------- extLines ---------------------- */
 // b! ------------------------------------------------------ */
 /* ------------------ for unordered_set ----------------- */
-std::unordered_set<networkLine *> extLinesCORNER_(const std::unordered_set<networkFace *> &fs) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &f : fs)
-    std::ranges::for_each(f->getLines(), [&](const auto &l) {
-      if (l->CORNER) {
-        ret.emplace(l);
-      };
-    });
-  return ret;
-};
-std::unordered_set<networkLine *> extLines_(const std::unordered_set<networkFace *> &fs) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &f : fs)
-    std::ranges::for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
-  return ret;
-};
-std::unordered_set<networkLine *> extLinesCORNER_(const std::unordered_set<networkPoint *> &ps) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &p : ps)
-    for (const auto &l : p->getLines())
-      if (l->CORNER)
-        ret.emplace(l);
-  return ret;
-};
-std::unordered_set<networkLine *> extLinesCORNER_(const networkPoint *p) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &l : p->getLines())
-    if (l->CORNER)
-      ret.emplace(l);
-  return ret;
-};
-std::unordered_set<networkLine *> extLines_(const std::unordered_set<networkPoint *> &ps) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &p : ps)
-    for (const auto &l : p->getLines())
-      ret.emplace(l);
-  return ret;
-};
+std::unordered_set<networkLine*> extLinesCORNER_(const std::unordered_set<networkFace*>& fs);
+std::unordered_set<networkLine*> extLines_(const std::unordered_set<networkFace*>& fs);
+std::unordered_set<networkLine*> extLinesCORNER_(const std::unordered_set<networkPoint*>& ps);
+std::unordered_set<networkLine*> extLinesCORNER_(const networkPoint* p);
+std::unordered_set<networkLine*> extLines_(const std::unordered_set<networkPoint*>& ps);
 /* --------------------- for vector --------------------- */
-std::unordered_set<networkLine *> extLinesCORNER_(const std::vector<networkFace *> &fs) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &f : fs)
-    std::ranges::for_each(f->getLines(), [&](const auto &l) {
-      if (l->CORNER) {
-        ret.emplace(l);
-      };
-    });
-  return ret;
-};
-std::unordered_set<networkLine *> extLines_(const std::vector<networkFace *> &fs) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &f : fs)
-    std::ranges::for_each(f->getLines(), [&](const auto &l) { ret.emplace(l); });
-  return ret;
-};
-std::unordered_set<networkLine *> extLinesCORNER_(const std::vector<networkPoint *> &ps) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &p : ps)
-    for (const auto &l : p->getLines())
-      if (l->CORNER)
-        ret.emplace(l);
-  return ret;
-};
-std::unordered_set<networkLine *> extLines_(const std::vector<networkPoint *> &ps) {
-  std::unordered_set<networkLine *> ret;
-  for (const auto &p : ps)
-    for (const auto &l : p->getLines())
-      ret.emplace(l);
-  return ret;
-};
+std::unordered_set<networkLine*> extLinesCORNER_(const std::vector<networkFace*>& fs);
+std::unordered_set<networkLine*> extLines_(const std::vector<networkFace*>& fs);
+std::unordered_set<networkLine*> extLinesCORNER_(const std::vector<networkPoint*>& ps);
+std::unordered_set<networkLine*> extLines_(const std::vector<networkPoint*>& ps);
 // b! ------------------------------------------------------ */
 // b! ------------------------------------------------------ */
 // b! ------------------------------------------------------ */
 //@ ------------------------------------------------------ */
 //@ ------------------------------------------------------ */
 //@ ------------------------------------------------------ */
-V_d extLength(const std::unordered_set<networkLine *> &ls) {
-  V_d ret(ls.size());
-  int i = 0;
-  for (const auto &l : ls)
-    ret[i++] = l->length();
-  return ret;
-};
-//
-V_d extLength(const V_netLp &ls) {
-  V_d ret(ls.size());
-  int i = 0;
-  for (const auto &l : ls)
-    ret[i++] = l->length();
-  return ret;
-};
-Tddd extLength(const std::array<networkLine *, 3> &ls) { return {std::get<0>(ls)->length(), std::get<1>(ls)->length(), std::get<2>(ls)->length()}; };
+V_d extLength(const std::unordered_set<networkLine*>& ls);
+V_d extLength(const V_netLp& ls);
+Tddd extLength(const std::array<networkLine*, 3>& ls);
+V_d extAreas(const V_netFp& fs);
+V_d extractAreas(const V_netFp& fs);
 
-V_d extAreas(const V_netFp &fs) {
-  V_d ret(fs.size());
-  int i = 0;
-  for (const auto &f : fs)
-    ret[i++] = f->area;
-  return ret;
-};
-
-V_d extractAreas(const V_netFp &fs) {
-  V_d ret(fs.size());
-  int i = 0;
-  for (const auto &f : fs)
-    ret[i++] = f->area;
-  return ret;
-};
-template <class T> std::vector<Tddd> extractXtuple(const std::unordered_set<T *> &object) {
+template <class T>
+std::vector<Tddd> extractXtuple(const std::unordered_set<T*>& object) {
   std::vector<Tddd> ret(object.size());
   int i = 0;
   for (auto it = object.begin(); it != object.end(); ++it)
     ret[i++] = (*it)->X;
   return ret;
 };
-template <class T> std::vector<Tddd> extractXtuple(const std::vector<T *> &object) {
+template <class T>
+std::vector<Tddd> extractXtuple(const std::vector<T*>& object) {
   std::vector<Tddd> ret(object.size());
   for (auto i = 0; i < object.size(); i++)
     ret[i] = object[i]->X;
   return ret;
 };
 
-template <class T> VV_d extractX(const std::unordered_set<T *> &object) {
+template <class T>
+VV_d extractX(const std::unordered_set<T*>& object) {
   VV_d ret(object.size(), V_d(3));
   int i = 0;
   for (auto it = object.begin(); it != object.end(); ++it)
     ret[i++] = ToVector((*it)->X);
   return ret;
 };
-template <class T> VV_d extractX(const std::vector<T *> &object) {
+template <class T>
+VV_d extractX(const std::vector<T*>& object) {
   VV_d ret(object.size(), V_d(3));
   for (auto i = 0; i < object.size(); i++)
     ret[i] = ToVector(object[i]->X);
   return ret;
 };
 // 2021/09/06追加
-std::vector<Tddd> extXtuple(const V_netPp &points) {
-  std::vector<Tddd> ret(points.size());
-  int i = 0;
-  for (const auto &p : points)
-    ret[i++] = p->X;
-  return ret;
-};
-std::vector<Tddd> extXtuple(const V_netFp &points) {
-  std::vector<Tddd> ret(points.size());
-  int i = 0;
-  for (const auto &p : points)
-    ret[i++] = p->X;
-  return ret;
-};
-
-// template <class T>
-// VVV_d extractX(const std::vector<std::vector<T *>> &object)
-// {
-// 	VVV_d ret;
-// 	ret.reserve(object.size());
-// 	for (const auto &obj : object)
-// 		ret.emplace_back(obj3D::extractX(obj));
-// 	return ret;
-// };
-// T3Tddd extractX(networkFace const *f)
-// {
-// 	auto ps = f->getPoints();
-// 	return std::make_tuple(ps[0]->X, ps[1]->X, ps[2]->X);
-// };
-T3Tddd extractXtuple(networkFace const *f) {
-  auto [p0, p1, p2] = f->getPoints();
-  // return std::make_tuple(p0->X, p1->X, p2->X);
-  return {p0->X, p1->X, p2->X};
-};
-//
-std::vector<std::vector<Tddd>> extractXtuple(const std::vector<networkLine *> &lines) {
-  std::vector<std::vector<Tddd>> ret;
-  for (const auto &l : lines) {
-    ret.push_back({});
-    auto [p, q] = l->getPoints();
-    ret.rbegin()->emplace_back(p->X);
-    ret.rbegin()->emplace_back(q->X);
-  }
-  return ret;
-};
+std::vector<Tddd> extXtuple(const V_netPp& points);
+std::vector<Tddd> extXtuple(const V_netFp& points);
+T3Tddd extractXtuple(networkFace const* f);
+std::vector<std::vector<Tddd>> extractXtuple(const std::vector<networkLine*>& lines);
 /* -------------------------------------------------------------------------- */
 
 #include "searcher.hpp"
@@ -2581,11 +2452,11 @@ std::vector<std::vector<Tddd>> extractXtuple(const std::vector<networkLine *> &l
 /*  @---@---@ */
 /* -------------------------------------------------------------------------- */
 
-double det3(const Tddd &u, const Tddd &v, const Tddd &w) noexcept { return CrossDot(u, v, w); }
+inline double det3(const Tddd& u, const Tddd& v, const Tddd& w) noexcept { return CrossDot(u, v, w); }
 
-double orient3d(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d) noexcept { return det3(a - d, b - d, c - d); }
+inline double orient3d(const Tddd& a, const Tddd& b, const Tddd& c, const Tddd& d) noexcept { return det3(a - d, b - d, c - d); }
 
-double insphere(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d, const Tddd &e) noexcept {
+inline double insphere(const Tddd& a, const Tddd& b, const Tddd& c, const Tddd& d, const Tddd& e) noexcept {
   const auto ea = a - e;
   const auto eb = b - e;
   const auto ec = c - e;
@@ -2604,24 +2475,28 @@ double insphere(const Tddd &a, const Tddd &b, const Tddd &c, const Tddd &d, cons
 
 class networkTetra : public Tetrahedron, public ElasticBodyDynamics {
 public:
-  Network *network;
+  Network* network;
   // Network connectivities
   T_4P Points;
   T_6L Lines;
   T_4F Faces;
 
   double mass = 0;
-  networkTetra(Network *const network_IN, const T_4P &points, const T_6L &lines, const T_4F &faces);
+  networkTetra(Network* const network_IN, const T_4P& points, const T_6L& lines, const T_4F& faces);
   ~networkTetra();
 
-  networkFace *faceOpposite(const networkPoint *point) const noexcept {
-    for (auto *face : Faces) {
+  bool IsolatedQ() const noexcept {
+    return std::ranges::all_of(Faces, [](auto* f) { return f->BoundaryQ(); });
+  }
+
+  networkFace* faceOpposite(const networkPoint* point) const noexcept {
+    for (auto* face : Faces) {
       if (!face)
         continue;
       const auto pts = face->getPoints();
-      if (std::ranges::any_of(pts, [](auto *fp) { return fp == nullptr; }))
+      if (std::ranges::any_of(pts, [](auto* fp) { return fp == nullptr; }))
         continue;
-      if (!std::ranges::any_of(pts, [&](auto *fp) { return fp == point; }))
+      if (!std::ranges::any_of(pts, [&](auto* fp) { return fp == point; }))
         return face;
     }
     return nullptr;
@@ -2630,7 +2505,7 @@ public:
   /* --------------------------------------------------------------------------
    */
 
-  std::array<double, 3> grad(const std::function<double(networkPoint *)> &func) {
+  std::array<double, 3> grad(const std::function<double(networkPoint*)>& func) {
     auto [p0, p1, p2, p3] = Points;
     std::array<double, 4> values = {func(p0), func(p1), func(p2), func(p3)}, ans;
     std::array<std::array<double, 4>, 4> positions = {{{1., p0->X[0], p0->X[1], p0->X[2]}, {1., p1->X[0], p1->X[1], p1->X[2]}, {1., p2->X[0], p2->X[1], p2->X[2]}, {1., p3->X[0], p3->X[1], p3->X[2]}}};
@@ -2638,7 +2513,7 @@ public:
     return {ans[1], ans[2], ans[3]};
   };
 
-  std::array<std::array<double, 3>, 3> grad(const std::function<std::array<double, 3>(networkPoint *)> &func) {
+  std::array<std::array<double, 3>, 3> grad(const std::function<std::array<double, 3>(networkPoint*)>& func) {
     auto [p0, p1, p2, p3] = Points;
     std::array<std::array<double, 4>, 4> positions = {{{1., p0->X[0], p0->X[1], p0->X[2]}, {1., p1->X[0], p1->X[1], p1->X[2]}, {1., p2->X[0], p2->X[1], p2->X[2]}, {1., p3->X[0], p3->X[1], p3->X[2]}}};
     auto ans = Dot(Inverse(positions), std::array<std::array<double, 3>, 4>{{func(p0), func(p1), func(p2), func(p3)}});
@@ -2653,21 +2528,23 @@ public:
   //            })};
   // };
 
-  double div(const std::function<std::array<double, 3>(networkPoint *)> &func) {
+  double div(const std::function<std::array<double, 3>(networkPoint*)>& func) {
     //@ func returns {f0,f1,f2}
     //@ div . {f0,f1,f2} = f0x + f1y + f2z
     //@ which is tr(grad(func))
     return Trace(this->grad(func));
   };
 
-  std::array<double, 3> div(const std::function<std::array<std::array<double, 3>, 3>(networkPoint *)> &func) {
+  std::array<double, 3> div(const std::function<std::array<std::array<double, 3>, 3>(networkPoint*)>& func) {
     //@ func returns {f0,f1,f2}
     //@ div . {f0,f1,f2} = f0x + f1y + f2z
     //@ which is tr(grad(func))
-    return {this->div([&func](networkPoint *p) -> std::array<double, 3> { return func(p)[0]; }), this->div([&func](networkPoint *p) -> std::array<double, 3> { return func(p)[1]; }), this->div([&func](networkPoint *p) -> std::array<double, 3> { return func(p)[2]; })};
+    return {this->div([&func](networkPoint* p) -> std::array<double, 3> { return func(p)[0]; }),
+            this->div([&func](networkPoint* p) -> std::array<double, 3> { return func(p)[1]; }),
+            this->div([&func](networkPoint* p) -> std::array<double, 3> { return func(p)[2]; })};
   };
 
-  std::array<networkPoint *, 4> getPoints(const networkPoint *p) const {
+  std::array<networkPoint*, 4> getPoints(const networkPoint* p) const {
     if (p == std::get<1>(this->Points))
       return {Points[1], Points[2], Points[3], Points[0]};
     else if (p == std::get<2>(this->Points))
@@ -2686,258 +2563,81 @@ public:
 
 /* -------------------------------------------------------------------------- */
 
-netF *genFace(Network *const net, netL *const l0, netL *const l1, netL *const l2) {
-  try {
-    if (l0 && l1 && l2 && l0 != l1 && l0 != l2 && l1 != l2) {
-      auto intx_faces = Intersection(l0->getFaces(), l1->getFaces(), l2->getFaces());
-      auto s = intx_faces.size();
-      if (s == 0)
-        return new networkFace(net, Point(l2, l0), l0, Point(l0, l1), l1, Point(l1, l2), l2);
-      else if (s == 1)
-        return intx_faces[0];
-      else {
-        std::stringstream ss;
-        ss << "too many inteserctions of faces : " << intx_faces;
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-      }
-    } else {
-      std::stringstream ss;
-      ss << "{l0,l1,l2} = {" << l0 << "," << l1 << "," << l2 << "}";
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-    }
-  } catch (std::exception &e) {
-    std::cerr << e.what() << colorReset << std::endl;
-    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-  };
-};
+netF* genFace(Network* const net, netL* const l0, netL* const l1, netL* const l2);
+std::tuple<bool, networkTetra*> genTetra(Network* const net, netP* const p0, netP* const p1, netP* p2, netP* p3);
+std::tuple<bool, networkTetra*> genTetra(Network* const net, const T_4P& abcd);
+Tddd Nearest(const Tddd& X, const networkFace* f);
+double Distance(const Tddd& X, const networkFace* f);
+std::tuple<Tddd, networkFace*> Nearest_(const Tddd& X, const std::unordered_set<networkFace*>& faces);
+std::tuple<Tddd, networkFace*> Nearest_(const Tddd& X, const std::vector<networkFace*>& faces);
+std::tuple<Tddd, networkFace*> Nearest_(const Tddd& X, const double& r, const std::unordered_set<networkFace*>& faces);
+Tddd Nearest(const Tddd& X, const std::vector<networkFace*>& faces);
+Tddd Nearest(const Tddd& X, const std::unordered_set<networkFace*>& faces);
+Tddd Nearest(const networkPoint* p, const std::unordered_set<networkFace*>& faces);
 
-std::tuple<bool, networkTetra *> genTetra(Network *const net, netP *const p0, netP *const p1, netP *p2, netP *p3) {
-  try {
-    if (!p0 || !p1 || !p2 || !p3)
-      return {false, nullptr};
-
-    if (!DuplicateFreeQ(T_4P{p0, p1, p2, p3}))
-      return {false, nullptr};
-
-    /* p1, p2, p3 are always directed in the outward normal direction
-    //
-    これは右手系になっていることを保証するための処理．右手系は計算幾何学の標準のようだ．
-    // this orientation Dot(Cross(p1-p0,p2-p0),(p3-p0)) > 0
-    //      p0
-    //     /|\
-    //    / | \
-    //   /  |  \
-    //  p1--|---p2
-    //   \  |  /
-    //    \ | /
-    //     \|/
-    //      p3
-    */
-
-    if (CrossDot(p1->X - p0->X, p2->X - p0->X, p3->X - p0->X) < 0)
-      std::swap(p2, p3); // 右手系になる
-
-    /*
-    //       p0
-    //     / | \
-    //   l0  |  l1
-    //   /   l2   \
-    //  p1---|-l3-p2
-    //   \   |    /
-    //   l5  |  l4
-    //     \ | /
-    //      p3
-    */
-
-    auto [l3, l4, l5] = link(p1, p2, p3, net);
-    auto f0 = genFace(net, l3, l4, l5);
-    if (f0->Tetras[0] && f0->Tetras[1]) {
-      std::cout << "(face:" << f0 << ")->Tetras:" << f0->Tetras << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face already has 2 tetras");
-    }
-    auto [l1, l3_, l0] = link(p0, p2, p1, net);
-    auto f1 = genFace(net, l1, l3_, l0);
-    if (f1->Tetras[0] && f1->Tetras[1]) {
-      std::cout << "(face:" << f1 << ")->Tetras:" << f1->Tetras << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face already has 2 tetras");
-    }
-    auto [l2, l4_, l1_] = link(p0, p3, p2, net);
-    auto f2 = genFace(net, l2, l4_, l1_);
-    if (f2->Tetras[0] && f2->Tetras[1]) {
-      std::cout << "(face:" << f2 << ")->Tetras:" << f2->Tetras << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face already has 2 tetras");
-    }
-    auto [l0_, l5_, l2_] = link(p0, p1, p3, net);
-    auto f3 = genFace(net, l0_, l5_, l2_);
-    if (f3->Tetras[0] && f3->Tetras[1]) {
-      std::cout << "(face:" << f3 << ")->Tetras:" << f3->Tetras << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face already has 2 tetras");
-    }
-    if (l0 == l0_ || l1 == l1_ || l2 == l2_ || l3 == l3_ || l4 == l4_ || l5 == l5_) {
-      auto [t0, t1] = f0->Tetras;
-      if (t0 && Intersection(t0->Points, T_4P{p0, p1, p2, p3}).size() == 4)
-        return {false, t0};
-      else if (t1 && Intersection(t1->Points, T_4P{p0, p1, p2, p3}).size() == 4)
-        return {false, t1};
-      else {
-        auto tet = new networkTetra(net, T_4P{p0, p1, p2, p3}, T_6L{l0, l1, l2, l3, l4, l5}, T_4F{f0, f1, f2, f3});
-        for (const auto &p : {p0, p1, p2, p3})
-          if (!MemberQ(p->Tetras, tet))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "contradictions");
-        for (const auto &l : {l0, l1, l2, l3, l4, l5})
-          if (!MemberQ(l->Tetras, tet))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "contradictions");
-        for (const auto &f : {f0, f1, f2, f3})
-          if (!MemberQ(f->Tetras, tet))
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "contradictions");
-        return {true, tet};
-      }
-    } else
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "contradictions");
-  } catch (std::exception &e) {
-    std::cerr << e.what() << colorReset << std::endl;
-    throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-  }
-};
-
-std::tuple<bool, networkTetra *> genTetra(Network *const net, const T_4P &abcd) {
-  auto [a, b, c, d] = abcd;
-  return genTetra(net, a, b, c, d);
-};
-
-Tddd Nearest(const Tddd &X, const networkFace *f) {
-  return Nearest(X, ToX(f));
-  // auto [a, b, c] = ToX(f);
-  // Tddd m = (a + b + c) / 3.;
-  // Tddd ab = (a + b) / 2., bc = (b + c) / 2., ca = (c + a) / 2.;
-  // auto ret = Nearest(X, ToX(f));
-  // auto X1 = Nearest(X, T3Tddd{a, ab, ca});
-  // auto X2 = Nearest(X, T3Tddd{b, bc, ab});
-  // auto X3 = Nearest(X, T3Tddd{c, ca, bc});
-  // auto X4 = Nearest(X, T3Tddd{ab, bc, ca});
-  // if (Norm(ret - X) > Norm(X1 - X))
-  //    ret = X1;
-  // if (Norm(ret - X) > Norm(X2 - X))
-  //    ret = X2;
-  // if (Norm(ret - X) > Norm(X3 - X))
-  //    ret = X3;
-  // if (Norm(ret - X) > Norm(X4 - X))
-  //    ret = X4;
-  // return ret;
-};
-double Distance(const Tddd &X, const networkFace *f) { return Norm(Nearest(X, ToX(f)) - X); };
-// Tddd Nearest(const networkPoint *p, const networkFace *f) { return
-// Nearest(ToX(p), ToX(f)); };
-std::tuple<Tddd, networkFace *> Nearest_(const Tddd &X, const std::unordered_set<networkFace *> &faces) {
-  double nearest_d = 1E+20, d;
-  Tddd nearest_x, x;
-  networkFace *nearest_f = nullptr;
-  std::ranges::for_each(faces, [&](const auto &f) {
-    x = Nearest(X, f);
-    if (nearest_d >= (d = Norm(X - x))) {
-      nearest_d = d;
-      nearest_x = x;
-      nearest_f = f;
-    }
-  });
-  return {nearest_x, nearest_f};
-};
-std::tuple<Tddd, networkFace *> Nearest_(const Tddd &X, const std::vector<networkFace *> &faces) {
-  double distance = 1E+20, tmp;
-  Tddd ret, near;
-  networkFace *F = nullptr;
-  for (const auto &f : faces)
-    if (distance > (tmp = Norm(X - (near = Nearest(X, f))))) {
-      distance = tmp;
-      ret = near;
-      F = f;
-    }
-  return {ret, F};
-};
-std::tuple<Tddd, networkFace *> Nearest_(const Tddd &X, const double &r, const std::unordered_set<networkFace *> &faces) {
-  double distance = 1E+20, tmp;
-  Tddd ret, near;
-  networkFace *F = nullptr;
-  for (const auto &f : faces)
-    if (distance > (tmp = Norm(X - (near = Nearest(X, f))))) {
-      distance = tmp;
-      ret = near;
-      F = f;
-    }
-  return {ret, F};
-};
-Tddd Nearest(const Tddd &X, const std::vector<networkFace *> &faces) { return std::get<0>(Nearest_(X, faces)); };
-Tddd Nearest(const Tddd &X, const std::unordered_set<networkFace *> &faces) { return std::get<0>(Nearest_(X, faces)); };
-Tddd Nearest(const networkPoint *p, const std::unordered_set<networkFace *> &faces) { return Nearest(ToX(p), faces); };
+/* -------------------------------------------------------------------------- */
 
 #ifdef tetgenH
 
-tetgenio generate_tetgenio_input(const auto &surfaces) {
+inline tetgenio generate_tetgenio_input(const auto& surfaces) {
   std::cout << Red << "generate_tetgenio_input" << colorReset << std::endl;
-  tetgenio in;
-  /* ---------------------------- distribute index ----------------------------
-   */
+
+  /* -------- distribute index ----------*/
 
   // surfacesが参照する全頂点を一意に集める（tetgenへ渡す点集合）
-  std::unordered_set<networkPoint *> tmp;
-  for (const auto &f : surfaces)
-    for (const auto &p : f->getPoints())
+  std::unordered_set<networkPoint*> tmp;
+  for (const auto& f : surfaces)
+    for (const auto& p : f->getPoints())
       tmp.insert(p);
 
   // 重複排除済み集合から順序付きベクタへ移し替え
-  const std::vector<networkPoint *> points(std::make_move_iterator(tmp.begin()), std::make_move_iterator(tmp.end()));
+  const std::vector<networkPoint*> points(std::make_move_iterator(tmp.begin()), std::make_move_iterator(tmp.end()));
 
   // tetgen用のpointインデックスを割り当てる
   int count = 0;
-  for (const auto &p : points)
+  for (const auto& p : points)
     p->index = count++;
   // こちらは面のインデックス割り当て（後続で参照しやすくするため）
   count = 0;
-  for (const auto &f : surfaces)
+  for (const auto& f : surfaces)
     f->index = count++;
 
-  /* --------------------------------------------------------------------------
-   */
+  /* -------- tetgenio in の作成 -------- */
+
+  tetgenio in;
 
   // pointlistに3次元座標を詰める（tetgen形式：xyzxyz...）
-  in.pointlist = (REAL *)malloc(points.size() * 3 * sizeof(REAL));
+  in.pointlist = (REAL*)malloc(points.size() * 3 * sizeof(REAL));
   if (!in.pointlist) {
     printf("Memory allocation error for in.pointlist\n");
     throw std::runtime_error("Memory allocation error for in.pointlist");
   }
-
   // 事前に割り当てたインデックスを利用
-  for (const auto &p : points) {
+  for (const auto& p : points) {
     in.pointlist[p->index * 3] = p->X[0];
     in.pointlist[p->index * 3 + 1] = p->X[1];
     in.pointlist[p->index * 3 + 2] = p->X[2];
   }
 
   // 面集合をtetgenのfacet配列へコピー（各三角形→単一ポリゴン）
-  in.facetlist = (tetgenio::facet *)malloc(surfaces.size() * sizeof(tetgenio::facet));
+  in.facetlist = (tetgenio::facet*)malloc(surfaces.size() * sizeof(tetgenio::facet));
   if (!in.facetlist) {
     printf("Memory allocation error for in.facetlist\n");
     free(in.pointlist);
     throw std::runtime_error("Memory allocation error for in.facetlist");
   }
 
-  //@ 面データを in.facetlist に保存
+  // 面データを in.facetlist に保存
   for (const auto surface : surfaces) {
-    int i = surface->index;
-    const auto &[p0, p1, p2] = surface->getPoints();
-
-    auto f = &in.facetlist[i];
-    in.init(f);
-
-    f->numberofpolygons = 1;
-    f->polygonlist = new tetgenio::polygon[1];
-    auto p = &f->polygonlist[0];
-    in.init(p);
-
-    p->numberofvertices = 3;
-
-    // 三角形の頂点インデックス（pointlistの行を指す）
-    p->vertexlist = new int[3];
+    auto f = &in.facetlist[surface->index];    // tetgenのfacet配列の該当面
+    in.init(f);                                // facetの初期化
+    f->numberofpolygons = 1;                   // 各facetは単一ポリゴン（三角形）で構成される
+    f->polygonlist = new tetgenio::polygon[1]; // ポリゴン配列の確保
+    auto p = &f->polygonlist[0];               // ポリゴンデータへのポインタ
+    in.init(p);                                // ポリゴンの初期化
+    p->numberofvertices = 3;                   // 三角形なので頂点数は3
+    const auto& [p0, p1, p2] = surface->getPoints();
+    p->vertexlist = new int[3]; // 頂点インデックス配列の確保
     p->vertexlist[0] = p0->index;
     p->vertexlist[1] = p1->index;
     p->vertexlist[2] = p2->index;
@@ -2952,73 +2652,106 @@ tetgenio generate_tetgenio_input(const auto &surfaces) {
   return in;
 }
 
+// 点群からtetgenio入力を生成する関数
+inline tetgenio generate_tetgenio_input_from_points(const std::vector<networkPoint*>& points) {
+  std::cout << Red << "generate_tetgenio_input_from_points" << colorReset << std::endl;
+
+  tetgenio in;
+  in.firstnumber = 0;
+
+  // pointlistに3次元座標を詰める
+  in.numberofpoints = points.size();
+  in.pointlist = (REAL*)malloc(in.numberofpoints * 3 * sizeof(REAL));
+  if (!in.pointlist) {
+    throw std::runtime_error("Memory allocation failed for pointlist");
+  }
+
+  // インデックスを割り当てつつ座標をコピー
+  int count = 0;
+  for (const auto& p : points) {
+    p->index = count;
+    in.pointlist[count * 3 + 0] = p->X[0];
+    in.pointlist[count * 3 + 1] = p->X[1];
+    in.pointlist[count * 3 + 2] = p->X[2];
+    count++;
+  }
+
+  // 点群のみの場合、facetlist（面情報）は作成しない
+  in.numberoffacets = 0;
+  in.facetlist = nullptr;
+
+  std::cout << Green << "generate_tetgenio_input_from_points: done" << colorReset << std::endl;
+  return in;
+}
+
+// [追加] 点群と面群の両方からtetgenio入力を生成する関数 (PLC用)
+inline tetgenio generate_tetgenio_input_mixed(const std::vector<networkPoint*>& points, const std::vector<networkFace*>& faces) {
+  std::cout << Red << "generate_tetgenio_input_mixed" << colorReset << std::endl;
+
+  tetgenio in;
+  in.firstnumber = 0;
+
+  // 1. Point List (全点)
+  in.numberofpoints = points.size();
+  in.pointlist = (REAL*)malloc(in.numberofpoints * 3 * sizeof(REAL));
+  if (!in.pointlist) {
+    throw std::runtime_error("Memory allocation failed for pointlist");
+  }
+
+  // インデックスを割り当てつつ座標をコピー
+  int count = 0;
+  for (const auto& p : points) {
+    p->index = count;
+    in.pointlist[count * 3 + 0] = p->X[0];
+    in.pointlist[count * 3 + 1] = p->X[1];
+    in.pointlist[count * 3 + 2] = p->X[2];
+    count++;
+  }
+
+  // 2. Facet List (面)
+  in.numberoffacets = faces.size();
+  in.facetlist = (tetgenio::facet*)malloc(in.numberoffacets * sizeof(tetgenio::facet));
+  if (!in.facetlist && in.numberoffacets > 0) {
+    throw std::runtime_error("Memory allocation failed for facetlist");
+  }
+
+  for (size_t i = 0; i < faces.size(); ++i) {
+    auto f = faces[i];
+    tetgenio::facet* F = &in.facetlist[i];
+    tetgenio::init(F);
+    F->numberofpolygons = 1;
+    F->polygonlist = (tetgenio::polygon*)malloc(F->numberofpolygons * sizeof(tetgenio::polygon));
+    F->numberofholes = 0;
+    F->holelist = nullptr;
+
+    tetgenio::polygon* P = &F->polygonlist[0];
+    tetgenio::init(P);
+    P->numberofvertices = 3;
+    P->vertexlist = (int*)malloc(P->numberofvertices * sizeof(int));
+
+    auto [p0, p1, p2] = f->getPoints();
+    P->vertexlist[0] = p0->index;
+    P->vertexlist[1] = p1->index;
+    P->vertexlist[2] = p2->index;
+  }
+
+  std::cout << Green << "generate_tetgenio_input_mixed: done" << colorReset << std::endl;
+  return in;
+}
+
 #endif
 
-networkFace *isFace(const networkPoint *const a, const networkPoint *const b, const networkPoint *const c) {
-  for (const auto &p : {a, b, c})
-    for (const auto &f : p->Faces)
-      if (f->MemberQ(a) && f->MemberQ(b) && f->MemberQ(c))
-        return f;
-  return nullptr;
-};
-networkLine *ConnectedQ(const networkFace *const a, const networkFace *const b) {
-  auto [l0, l1, l2] = a->getLines();
-  if ((*l0)(a) == b)
-    return l0;
-  else if ((*l1)(a) == b)
-    return l1;
-  else if ((*l2)(a) == b)
-    return l2;
-  return nullptr;
-};
-networkLine *ConnectedQ(const networkLine *const l, const networkPoint *const a) {
-  // 両方が参照し合う状態かどうか
-  /*
-   __line__
-   |      |
-   |     *|-><--* point
-   --------
-  */
-  for (const auto &L : a->getLines())
-    if (L == l) {
-      auto [p0, p1] = L->getPoints();
-      if (p0 == a || p1 == a)
-        return L;
-    }
-  return nullptr;
-};
-networkLine *ConnectedQ(const networkPoint *const a, const networkLine *const l) { return ConnectedQ(l, a); };
+/* -------------------------------------------------------------------------- */
+/*                                    接続関係                                    */
+/* -------------------------------------------------------------------------- */
 
-networkLine *ConnectedQ(const networkPoint *const a, const networkPoint *const b) {
-  // 両方が参照し合う状態かどうか
-  /*
-   point  __line__
-   *--><--|*     |
-          |     *|-><--* point
-          --------
-  */
-  networkLine *L;
-  for (const auto &l : a->getLines())
-    if (L = ConnectedQ(l, a))
-      if (ConnectedQ(L, b))
-        return L;
-  return nullptr;
-};
-
-T_3L ConnectedQ(const networkPoint *const a, const networkPoint *const b, const networkPoint *const c) {
-  return T_3L{ConnectedQ(a, b), ConnectedQ(b, c), ConnectedQ(c, a)};
-
-  // for (const auto &la : a->getLines())
-  //    if ((*la)(a) == b)
-  //       for (const auto &lb : b->getLines())
-  //          if ((*lb)(b) == c)
-  //             for (const auto &lc : c->getLines())
-  //                if ((*lc)(c) == a)
-  //                   return T_3L{la, lb, lc};
-  // return T_3L{nullptr, nullptr, nullptr};
-};
-
-T_3L ConnectedQ(const T_3P &abc) { return ConnectedQ(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc)); };
+networkFace* isFace(const networkPoint* const a, const networkPoint* const b, const networkPoint* const c);
+networkLine* ConnectedQ(const networkFace* const a, const networkFace* const b);
+networkLine* ConnectedQ(const networkLine* const l, const networkPoint* const a);
+networkLine* ConnectedQ(const networkPoint* const a, const networkLine* const l);
+networkLine* ConnectedQ(const networkPoint* const a, const networkPoint* const b);
+T_3L ConnectedQ(const networkPoint* const a, const networkPoint* const b, const networkPoint* const c);
+T_3L ConnectedQ(const T_3P& abc);
 
 /* ========================================================================== */
 /*   Networkは持っているPointsから情報を取り出すメソッドを提供する */
@@ -3034,10 +2767,10 @@ class Network : public CoordinateBounds, public RigidBodyDynamics {
 public:
   virtual ~Network(); // = default;  // Virtual destructor
 
-  vtkPolygonWriter<networkPoint *> vtpWriter;
+  vtkPolygonWriter<networkPoint*> vtpWriter;
 
 public:
-  Network *surfaceNet;
+  Network* surfaceNet;
 
   // b#
   // --------------------------------------------------------------------------
@@ -3045,11 +2778,14 @@ public:
   // --------------------------------------------------------------------------
   // */
 public:
-  octree<networkFace *> *octreeOfFaces;
-  octree<networkPoint *> *octreeOfPoints;
-  void genOctreeOfFaces(const Tii &depthlimit, const int objnum) {
+  octree<networkFace*>* octreeOfFaces;
+  octree<networkPoint*>* octreeOfPoints;
+  // Geometry/topology signature cache for setGeometricProperties() skipping.
+  // Kept here so any caller can rely on consistent detection.
+  bool setGeometricProperties();
+  void genOctreeOfFaces(const Tii& depthlimit, const int objnum) {
     std::cout << this->getName() << "genOctreeOfFaces(" << depthlimit << ", " << objnum << ")";
-    this->setGeometricProperties();
+    this->setGeometricPropertiesForce();
     if (this->octreeOfFaces)
       delete this->octreeOfFaces;
     this->octreeOfFaces = new octree(this->scaledBounds(expand_bounds), depthlimit, objnum, this->Faces);
@@ -3059,17 +2795,18 @@ public:
     this->octreeOfFaces->setNeighbors();
   };
 
-  void genOctreeOfPoints(const Tii &depthlimit, const int objnum) {
+  void genOctreeOfPoints(const Tii& depthlimit, const int objnum) {
     Print("octreeOfPointsを生成");
-    this->setGeometricProperties();
+    this->setGeometricPropertiesForce();
     if (this->octreeOfPoints)
       delete this->octreeOfPoints;
     this->octreeOfPoints = new octree(this->scaledBounds(expand_bounds), depthlimit, objnum, this->Points);
     this->octreeOfPoints->deleteOuside();
   };
-  /* --------------------------------------------------------------------------
-   */
-  std::tuple<bool, octree<networkFace *> *, networkFace *> isInside_MethodOctree(const Tddd &X, const double small = 1E-13) const {
+
+  /* --------------------------------------------------------------------------*/
+
+  std::tuple<bool, octree<networkFace*>*, networkFace*> isInside_MethodOctree(const Tddd& X, const double small = 1E-13) const {
     //! セルに含まれるかどうかではなく，ポリゴンの内部にあるかどうかで判定するための関数
     if (this->octreeOfFaces) {
       auto cells = this->octreeOfFaces->getIntersectInside(X);
@@ -3081,15 +2818,15 @@ public:
           //% cellがfaceを持たない場合，
           //% まずはセルの頂点における回転数を調べることで，
           //% ポリゴンの内部外部のどちらに位置するか調べる
-          if (std::ranges::all_of(cell->WNs, [](const auto &w_num) { return w_num > 0.6; }) /*should be inside*/)
+          if (std::ranges::all_of(cell->WNs, [](const auto& w_num) { return w_num > 0.6; }) /*should be inside*/)
             return {true, cell, nullptr};
-          else if (std::ranges::all_of(cell->WNs, [](const auto &w_num) { return w_num < 0.1; }) /*should be outside*/)
+          else if (std::ranges::all_of(cell->WNs, [](const auto& w_num) { return w_num < 0.1; }) /*should be outside*/)
             return {false, cell, nullptr};
           else {
             //@ 構造物の内部外部に位置するか回転数で判断するのが困難な場合
-            std::unordered_set<networkFace *> faces;
-            for (const auto &N0 : cell->neighbors)
-              for (const auto &nei : N0->neighbors)
+            std::unordered_set<networkFace*> faces;
+            for (const auto& N0 : cell->neighbors)
+              for (const auto& nei : N0->neighbors)
                 faces.insert(nei->faces_.begin(), nei->faces_.end());
             if (faces.empty())
               return {false, cell, nullptr};
@@ -3108,16 +2845,16 @@ public:
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "octreeOfFaces has not been set");
   };
 
-  Tddd interpolateVector(const Tddd &X) const {
+  Tddd interpolateVector(const Tddd& X) const {
     auto [isinside, cell, _] = isInside_MethodOctree(X);
     if (cell)
       return cell->Interpolate(X, cell->vectors);
     else
       return {0., 0., 0.};
   };
-  // b#
+
   // --------------------------------------------------------------------------
-  // */
+
 public:
   RungeKutta<Tddd> RK_COM;
   RungeKutta<T4d> RK_Q;
@@ -3130,291 +2867,51 @@ public:
   /* ------------------------------------------------------ */
   /*                          体積の計算                      */
   /* ------------------------------------------------------ */
-  double getVolume() const {
-    // ガウスの定理において，F=(x,y,z)とおいてdivF=3とすると，体積積分の結果は体積の3倍となる．
-    // 面積分側は(x*nx+y*ny+z*nz)を核にした面積分と体積の3倍が等しいことになる．
-    double ret = 0;
-    for (const auto &f : getSurfaces()) {
-      auto intp = interpolationTriangleLinear0101(f->getXVertices());
-      for (const auto &[x0, x1, w0w1] : __GWGW5__Tuple)
-        ret += w0w1 * Dot(intp(x0, x1), intp.cross(x0, x1));
-    }
-    return ret / 3.;
-  };
-
-  double getVolume(std::function<std::array<double, 3>(const networkPoint *)> func_X) const {
-    double ret = 0;
-    std::array<std::array<double, 3>, 3> X0X1X2;
-    for (const auto &f : this->getSurfaces()) {
-      auto [p0, p1, p2] = f->getPoints();
-      X0X1X2 = {func_X(p0), func_X(p1), func_X(p2)};
-      auto intp = interpolationTriangleLinear0101(X0X1X2);
-      for (const auto &[x0, x1, w0w1] : __GWGW5__Tuple)
-        ret += w0w1 * Dot(intp(x0, x1), intp.cross(x0, x1));
-    }
-    return ret / 3.;
-  };
-
-  double GaussIntegral2(const Tddd &X) const {
-    /*
-    integrate(r.n/|r^3|)
-
-     ^^^^
-     ||||
-    +----+
-    | 4pi|-->   outside:0
-    +----+
-    */
-    double ret = 0;
-    Tddd r;
-    // for (const auto &f : this->getSurfaces())
-    // {
-    // 	interpolationTriangleLinear0101 intp(f->getXVertices());
-    // 	for (const auto &[x0, x1, w0w1] : __GWGW14__Tuple)
-    // 	{
-    // 		r = intp(x0, x1) - X;
-    // 		ret += Dot(r / std::pow(Norm(r), 3), intp.cross(x0, x1)) * w0w1;
-    // 	}
-    // }
-
-    for (const auto &f : this->getSurfaces()) {
-
-      auto [X0, X1, X2] = f->getXVertices();
-      X0 -= X2;
-      X1 -= X2;
-      auto A = X - X2;
-      double tmp = 0;
-      for (const auto &[t0, t1, w0w1] : __GWGW14__Tuple)
-        tmp += (1. - t0) / std::pow(Norm(X0 * t0 + X1 * t1 * (1 - t0) - A), 3) * w0w1;
-      ret += Dot(A, Cross(X0, X1)) * tmp;
-    }
-    return ret;
-
-    // for (const auto &f : this->getSurfaces())
-    // {
-
-    // 	auto [X0, X1, X2] = f->getXVertices();
-    // 	X0 -= X2;
-    // 	X1 -= X2;
-    // 	auto A = X - X2;
-    // 	double tmp = 0;
-    // 	for (const auto &[t0, t1, w0w1] : __GWGW8__Tuple)
-    // 		tmp += 1. / std::pow(Norm(X0 * t0 * std::pow(1 - t0, -1 / 3.) +
-    // X1 * t1 * std::pow(1 - t0, 2 / 3.) - A * std::pow(1 - t0, -1 / 3.)), 3) *
-    // w0w1; 	ret += Dot(A, Cross(X0, X1)) * tmp;
-    // }
-    // return ret;
-  };
-
-  double GaussIntegral(const Tddd &X) const {
-    double ret = 0;
-    Tddd r;
-    for (const auto &f : this->getSurfaces()) {
-      interpolationTriangleLinear0101 intp(f->getXVertices());
-      for (const auto &[x0, x1, w0w1] : __GWGW14__Tuple) {
-        r = intp(x0, x1) - X;
-        ret += Dot(r / std::pow(Norm(r), 3), intp.cross(x0, x1)) * w0w1;
-      }
-    }
-    return ret;
-  };
-
-  double windingNumber(const Tddd &X) const {
-    double ret = 0;
-    for (const auto &f : this->getSurfaces())
-      ret += SolidAngle_VanOosteromAandStrackeeJ1983(X, f->getXVertices());
-    return ret / (4. * M_PI);
-  };
-
-  bool InsideQ(const Tddd &X) const {
-    if (!CoordinateBounds::InsideQ(X))
-      return false;
-    else if (this->windingNumber(X) < 0.75)
-      return false;
-    else
-      return true;
-  };
-
-  std::vector<double> windingNumber(const std::vector<Tddd> &Xs) const {
-    std::vector<double> ret(Xs.size(), 0.);
-    T3Tddd V;
-    for (const auto &f : this->getSurfaces()) {
-      V = f->getXVertices();
-      for (auto i = 0; i < Xs.size(); ++i)
-        ret[i] += SolidAngle_VanOosteromAandStrackeeJ1983(Xs[i], V);
-    }
-    for (auto &r : ret)
-      r /= (4. * M_PI);
-    return ret;
-  };
-
-  bool all_of_isInside(const std::vector<Tddd> &Xs) const {
-    if (!CoordinateBounds::InsideQ(X))
-      return false;
-    else {
-      for (auto &wn : this->windingNumber(Xs)) {
-        // ひとつでも小さい値があればfalse
-        if (wn < 0.75)
-          return false;
-      }
-      return true;
-    }
-  };
+  double getVolume() const;
+  double getVolume(std::function<std::array<double, 3>(const networkPoint*)> func_X) const;
+  double GaussIntegral2(const Tddd& X) const;
+  double GaussIntegral(const Tddd& X) const;
+  double windingNumber(const Tddd& X) const;
+  bool InsideQ(const Tddd& X) const;
+  std::vector<double> windingNumber(const std::vector<Tddd>& Xs) const;
+  bool all_of_isInside(const std::vector<Tddd>& Xs) const;
   //! ------------------------------------------------------ */
   //!                          接触の判別                      */
   //! ------------------------------------------------------ */
 
-  std::unordered_set<networkFace *> getContactFacesOfPoints() const {
-    std::unordered_set<networkFace *> ret;
-    for (const auto &p : this->getPoints())
-      ret.insert(std::begin(p->getContactFaces()), std::end(p->getContactFaces()));
-    return ret;
-  };
-
-  std::unordered_set<networkPoint *> getContactPointsOfPoints() const {
-    std::unordered_set<networkPoint *> ret;
-    for (const auto &p : this->getPoints())
-      ret.insert(begin(p->getContactPoints()), end(p->getContactPoints()));
-    return ret;
-  };
-  std::unordered_set<networkPoint *> getContactPointsOfPoints(const std::vector<Network *> &nets) const {
-    /*
-    getContactPointsOfPointsは，自身の保有するPointsが接した点を返す．
-    Pointsの保有するmap_Net_ContactPointsから指定されたNetworkのPointsを抽出している．
-    */
-    std::unordered_set<networkPoint *> ret;
-    for (const auto &p : this->getPoints())
-      ret.insert(begin(p->getContactPoints(nets)), end(p->getContactPoints(nets)));
-    return ret;
-  };
-
-public:
-  //% ------------------------------------------------------ */
-  void makeMirroredPoints(const Buckets<networkFace *> &B_face, const double mirroring_distance) {
-    auto points = this->getPoints();
-    for (const auto &p : points)
-      p->makeMirroredPoints(B_face, mirroring_distance);
-  };
-  void clearMirroredPoints() {
-    auto points = this->getPoints();
-    for (const auto &p : points)
-      p->clearMirroredPoints();
-  };
-  //% ------------------------------------------------------ */
+  std::unordered_set<networkFace*> getContactFacesOfPoints() const;
+  std::unordered_set<networkPoint*> getContactPointsOfPoints() const;
+  std::unordered_set<networkPoint*> getContactPointsOfPoints(const std::vector<Network*>& nets) const;
 
   // b$ =================================================================== */
   // b$       ３次元空間分割に関する．　バケツ．Faces,Points,ParametricPoints
-  // 　　　　　　*/ b$
-  // =================================================================== */
+  // b$ =================================================================== */
 
 public:
-  Buckets<networkFace *> BucketFaces, BucketSurfaces;
-  Buckets<networkPoint *> BucketPoints;
-  Buckets<networkTetra *> BucketTetras;
+  Buckets<networkFace*> BucketFaces, BucketSurfaces;
+  Buckets<networkPoint*> BucketPoints;
+  Buckets<networkTetra*> BucketTetras;
 
   const double expand_bounds = 1.5;
 
-  /* --------------------------------------------------------------------------
-   */
+  /* --------------------------------------------------------------------------*/
 
-  void makeBuckets(const double spacing = 1E+20) {
-    this->makeBucketPoints(spacing);
-    this->makeBucketFaces(spacing);
-    this->makeBucketTetras(spacing);
-  };
+  void makeBuckets(const double spacing = 1E+20);
 
-  void makeBucketTetras(double spacing = 1E+20) {
-    if (spacing > 1E+10)
-      spacing = this->getScale() / 10.;
-    std::cout << this->getName() << " makeBucketTetras(" << spacing << ")" << std::endl;
-    this->setGeometricProperties();
-    this->BucketTetras.clear();
-    this->BucketTetras.initialize(this->scaledBounds(expand_bounds), spacing);
-    double particlize_spacing;
-    std::array<double, 3> mean;
-    for (const auto &t : this->getTetras()) {
-      //! add extra points to make sure that the face is included in the bucket
-      bool fully_inside_a_cell_found = false;
-      auto [p0, p1, p2, p3] = t->Points;
-      mean = (p0->X + p1->X + p2->X + p3->X) / 4.;
-      auto [inserted, ijk] = this->BucketTetras.addAndGetIndices(mean, t);
-      if (inserted && ::InsideQ(t->bounds, this->BucketTetras.getBounds(ijk).bounds)) {
-        fully_inside_a_cell_found = true;
-        break;
-      }
-
-      if (!fully_inside_a_cell_found) {
-        for (auto &f : t->Faces) {
-          double particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 20.;
-          for (const auto &[xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
-            this->BucketTetras.add(xyz, t);
-        }
-      }
-    }
-    this->BucketTetras.setVector();
-    std::cout << this->getName() << " makeBucketTetras done" << std::endl;
-  };
+  void makeBucketTetras(double spacing = 1E+20);
 
   /*面は点と違って，複数のバケツ（セル）と接することがある*/
-  void makeBucketFaces(double spacing = 1E+20) {
-    if (spacing > 1E+10)
-      spacing = this->getScale() / 10.;
-    std::cout << this->getName() << " makeBucketFaces(" << spacing << ")" << std::endl;
-    this->setGeometricProperties();
-    std::cout << "setGeometricProperties done" << std::endl;
-    this->BucketFaces.clear();
-    std::cout << "BucketFaces.clear done" << std::endl;
-    this->BucketSurfaces.clear();
-    std::cout << "BucketSurfaces.clear done" << std::endl;
-    this->BucketFaces.initialize(this->scaledBounds(expand_bounds), spacing);
-    std::cout << "BucketFaces.initialize done" << std::endl;
-    this->BucketSurfaces.initialize(this->scaledBounds(expand_bounds), spacing);
-    std::cout << "BucketSurfaces.initialize done" << std::endl;
-
-    auto insert = [&spacing](networkFace *f, Buckets<networkFace *> &bucket) {
-      //! add extra points to make sure that the face is included in the bucket
-      auto [inserted, ijk] = bucket.addAndGetIndices(Mean(f->getXVertices()), f);
-      if (inserted && ::InsideQ(f->bounds, bucket.getBounds(ijk).bounds))
-        return;
-
-      double particlize_spacing = std::min(spacing, Min(extLength(f->getLines()))) / 30.;
-      for (const auto &[xyz, t0t1] : triangleIntoPoints(f->getXVertices(), particlize_spacing))
-        bucket.add(xyz, f);
-    };
-
-    for (auto f : this->getFaces()) {
-      insert(f, this->BucketFaces);
-      if (f->SurfaceQ())
-        insert(f, this->BucketSurfaces);
-    }
-    std::cout << "insert done" << std::endl;
-    this->BucketFaces.setVector();
-    std::cout << "BucketFaces.setVector done" << std::endl;
-    this->BucketSurfaces.setVector();
-    std::cout << "BucketSurfaces.setVector done" << std::endl;
-    std::cout << this->getName() << " makeBucketFaces done" << std::endl;
-  };
+  void makeBucketFaces(double spacing = 1E+20);
 
   double last_makeBucketPoints_spacing = 0.;
 
-  void makeBucketPoints(double spacing = 1E+20) {
-    if (spacing > 1E+10)
-      spacing = this->getScale() / 10.;
-    std::cout << this->getName() << " makeBucketPoints(" << spacing << ")" << std::endl;
-    this->last_makeBucketPoints_spacing = spacing;
-    this->setGeometricProperties();
-    this->BucketPoints.initialize_add(this->scaledBounds(expand_bounds), spacing, this->getPoints());
-    std::cout << green << "BucketPoints.data1D.size() = " << this->BucketPoints.data1D.size() << colorReset << std::endl;
-    this->BucketPoints.setVector();
-    std::cout << this->getName() << " makeBucketPoints done" << std::endl;
-  };
+  void makeBucketPoints(double spacing = 1E+20);
 
-  /* --------------------------------------------------------------------------
-   */
+  /* --------------------------------------------------------------------------*/
 
-  std::vector<networkFace *> ContactFaces;
+  std::vector<networkFace*> ContactFaces;
 
-  void setContactFaces(const std::vector<Network *> &nets) {
+  void setContactFaces(const std::vector<Network*>& nets) {
 
     std::cout << this->getName() << " setContactFaces()" << std::endl;
     auto points = ToVector(this->Points);
@@ -3425,50 +2922,57 @@ public:
      を設定する．
      */
 
-    this->setGeometricProperties();
+    this->setGeometricPropertiesForce();
 
-    for (const auto &p : points) {
+    for (const auto& p : points) {
       p->setContactRange(nets);
       p->clearContactFaces();
     }
 
 #pragma omp parallel for
-    for (const auto &p : points)
+    for (const auto& p : points)
       p->addContactFaces(nets, false);
 
-    std::unordered_set<networkFace *> faces;
-    for (const auto &p : points)
-      for (auto &[f, _, __] : p->ContactFaces)
+    // Lines の接触判定（端点の contact_range 設定後に実行）
+    auto lines = ToVector(this->Lines);
+    for (const auto& l : lines) {
+      l->setContactRange();
+      l->clearContactFaces();
+    }
+
+#pragma omp parallel for
+    for (const auto& l : lines)
+      l->addContactFaces(nets, false);
+
+    std::unordered_set<networkFace*> faces;
+    for (const auto& p : points)
+      for (auto& [f, _, __] : p->ContactFaces)
+        faces.emplace(f);
+    for (const auto& l : lines)
+      for (auto& [f, _, __] : l->ContactFaces)
         faces.emplace(f);
     this->ContactFaces = std::vector(begin(faces), end(faces));
   };
 
   // b$
-  // -----------------------------------------------------------------------------------------
-  // */
 
-  std::array<double, 3> NearestSurfacePoint(const std::array<double, 3> &X) const {
-    double min_distance = 1E+20, r;
-    std::array<double, 3> v, ret = {1E+20, 1E+20, 1E+20};
-    for (const auto &f : this->getSurfaces()) {
-      if (min_distance > (r = (Norm((v = Nearest(X, f)) - X)))) {
-        min_distance = r;
-        ret = v;
-      }
-    }
-    return ret;
-  }
+  // ----------------------------------------------------------------------------------------- */
 
-  std::array<double, 3> NearestSurfacePoint(const std::array<double, 3> &X, const std::function<Tddd(const networkPoint *)> &position) const {
+  /*
+  Nearestは，外部のNearest関数と似たように，Networkの境界面上の最も近い点を返す．
+  ただし，Network内の面に限定して探索を行う．
+  */
+  std::tuple<networkFace*, std::array<double, 3>> Nearest(const std::array<double, 3>& X, const std::function<Tddd(const networkPoint*)>& position = [](const networkPoint* p) { return p->X; }) const {
     double min_distance = 1E+20, r;
-    std::array<double, 3> v, ret = {1E+20, 1E+20, 1E+20};
+    std::tuple<networkFace*, std::array<double, 3>> ret = {nullptr, {1E+20, 1E+20, 1E+20}};
     T3Tddd X0X1X2;
-    for (const auto &f : this->getSurfaces()) {
+    Tddd X_nearest;
+    for (const auto& f : this->getBoundaryFaces()) {
       auto [p0, p1, p2] = f->getPoints();
       X0X1X2 = {position(p0), position(p1), position(p2)};
-      if (min_distance > (r = (Norm((v = Nearest(X, X0X1X2)) - X)))) {
+      if (min_distance > (r = (Norm((X_nearest = ::Nearest(X, X0X1X2)) - X)))) {
         min_distance = r;
-        ret = v;
+        ret = {f, X_nearest};
       }
     }
     return ret;
@@ -3479,18 +2983,18 @@ public:
   // @ ============================================================== */
 
   void RigidBodyUpdatePoints() {
-    for (const auto &p : this->getPoints())
+    for (const auto& p : this->getPoints())
       p->setXSingle(this->rigidTransformation(p->initialX));
     // p->setXSingle(this->quaternion.Rv(p->initialX - this->ICOM) -
     // (p->initialX - this->ICOM) + trans + p->initialX);
-    this->setGeometricProperties();
+    this->setGeometricPropertiesForce();
   };
 
   void calcPhysicalProperties() {
     this->force.fill(0.);
     this->inertia.fill(0.);
     this->mass = 0.;
-    for (const auto &p : this->Points) {
+    for (const auto& p : this->Points) {
       // for (auto i = 0; i < 3; ++i)
       // 	this->force[i] += p->force[i];
       std::get<0>(this->force) += std::get<0>(p->force);
@@ -3507,7 +3011,7 @@ public:
     // this->center_of_mass /= this->mass;
     // //! -------------------------------------- */
     Tddd tmp = {0, 0, 0};
-    for (const auto &p : this->Points) {
+    for (const auto& p : this->Points) {
       tmp = p->X - this->center_of_mass;
       std::get<3>(this->force) += std::get<0>(p->force) * std::get<0>(tmp);
       std::get<4>(this->force) += std::get<1>(p->force) * std::get<1>(tmp);
@@ -3527,7 +3031,7 @@ public:
     //%this->center_of_massが設定してある必要がある
     //%ネットワークの各点にかかっている力の総和を計算する
     this->force.fill(0.);
-    for (const auto &p : this->Points) {
+    for (const auto& p : this->Points) {
       auto F = p->force;
       auto r = (p->X - this->center_of_mass);
       auto [Fx, Fy, Fz, Fx_, Fy_, Fz_] = F;
@@ -3558,7 +3062,7 @@ public:
             Cross[X[z0, z1], f[z0, z1]], {z0, 0, 1}, {z1, 0, 1 - z0}]]]
     */
     this->force.fill(0.);
-    for (const auto &f : this->Faces) {
+    for (const auto& f : this->Faces) {
       auto [p0, p1, p2] = f->getPoints();
       auto [f0x, f0y, f0z, f0x_, f0y_, f0z_] = p0->force;
       auto [f1x, f1y, f1z, f1x_, f1y_, f1z_] = p1->force;
@@ -3600,13 +3104,17 @@ public:
   bool isFloatingBody;
   bool isAbsorber;
 
-  std::function<Tddd(const networkPoint *)> absorb_velocity = [](const networkPoint *p) -> Tddd { return {0., 0., 0.}; };
-  std::function<Tddd(const networkPoint *)> absorb_gradPhi_t = [](const networkPoint *p) -> Tddd { return {0., 0., 0.}; };
-  std::function<double(const Tddd &X, const double t)> absorb_phi = [](const Tddd &X, const double t) -> double { return 0.; };
-  std::function<double(const Tddd &X, const double t)> absorb_eta = [](const Tddd &X, const double t) -> double { return 0.; };
-  std::function<double(const networkPoint *)> absorb_gamma = [](const networkPoint *p) -> double { return 0.; };
+  std::function<Tddd(const Tddd&, double)> absorb_velocity = [](const Tddd&, double) -> Tddd { return {0., 0., 0.}; };
+  std::function<Tddd(const Tddd&, double)> absorb_gradPhi_t = [](const Tddd&, double) -> Tddd { return {0., 0., 0.}; };
+  std::function<double(const Tddd& X, const double t)> absorb_phi = [](const Tddd& X, const double t) -> double { return 0.; };
+  std::function<double(const Tddd& X, const double t)> absorb_eta = [](const Tddd& X, const double t) -> double { return 0.; };
+  std::function<double(double signed_distance)> absorb_gamma = [](double) -> double { return 0.; };
   WaterWaveTheory water_wave_theory;
   RandomWaterWaveTheory random_water_wave_theory;
+
+  // Initial condition lambdas (set via "initial_condition" in Fluid JSON; nullptr = not set)
+  std::function<double(const Tddd& X, const double t)> ic_phi = nullptr;
+  std::function<double(const Tddd& X, const double t)> ic_eta = nullptr;
 
 #ifdef BEM
 public:
@@ -3615,40 +3123,9 @@ public:
   std::array<bool, 6> isFixed = {false, false, false, false, false, false};
   JSON inputJSON;
   std::tuple<std::string, double> velocity_name_start;
-
   const double move_amplitude = 0.4;
-  T6d velocityPredefined() {
-    double t = _current_time_;
-    double s = M_PI / 2.;
-    // double a = move_amplitude;
-    double k = M_PI / 1.;
-    /* ------------------------------------------------------ */
-    // T6d move_dir = {std::cos(k * t), std::sin(k * t), 0., 0., 0., 0.};
-    // T6d ddt_move_dir = {-k * std::sin(k * t), k * std::std::cos(k * t), 0.,
-    // 0., 0., 0.};
-    // // /* |U|*n_p . n_surface = phin <-- given
-    // auto tmp = (-move_amplitude * std::exp(-t) * (sin(k * t - s) -
-    // std::sin(-s)) + move_amplitude * std::exp(-t) * (std::cos(k * t - s) *
-    // k)) * move_dir; tmp += move_amplitude * std::exp(-t) * (sin(k * t - s) -
-    // std::sin(-s)) * ddt_move_dir; return tmp;
-    /* ------------------------------------------------------ */
-    Tddd tmp = Normalize(Tddd{1., 1., 0.});
-    T6d move_dir = {std::get<0>(tmp), std::get<1>(tmp), std::get<2>(tmp), 0., 0., 0.};
-    return (-move_amplitude * std::exp(-t) * (std::sin(k * t - s) - std::sin(-s)) + move_amplitude * std::exp(-t) * (std::cos(k * t - s) * k)) * move_dir;
-  };
-
-  Tddd translationPredefined() {
-    double t = _current_time_;
-    double s = M_PI / 2.;
-    double k = M_PI / 1.;
-    /* ------------------------------------------------------ */
-    // Tddd move_dir = {std::cos(k * t), std::sin(k * t), 0.};
-    // return move_amplitude * std::exp(-t) * (sin(k * t - s) - std::sin(-s)) *
-    // move_dir;
-    /* ------------------------------------------------------ */
-    Tddd move_dir = Normalize(Tddd{1., 1., 0.});
-    return move_amplitude * std::exp(-t) * (std::sin(k * t - s) - std::sin(-s)) * move_dir;
-  };
+  T6d velocityPredefined();
+  Tddd translationPredefined();
   V_d nabla_phi;
   V_d meanX;
 #endif
@@ -3656,116 +3133,123 @@ public:
   // BEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEM
 
 private:
-  using V_netLp = std::vector<networkLine *>;
+  using V_netLp = std::vector<networkLine*>;
   std::string name = "no_name";
   std::string filename = "no_name";
   // 接続している点をLinesをとおして素早く参照できる
 protected:
-  std::unordered_set<networkTetra *> Tetras;
-  std::unordered_set<networkPoint *> Points;
-  std::unordered_set<networkFace *> Faces;
-  std::vector<networkPoint *> Points_vector;
-  std::vector<networkFace *> Faces_vector;
+  std::unordered_set<networkTetra*> Tetras;
+  std::unordered_set<networkPoint*> Points;
+  std::unordered_set<networkFace*> Faces;
+  std::vector<networkPoint*> Points_vector;
+  std::vector<networkFace*> Faces_vector;
   V_netPp PointGarbage;
   V_netFp FaceGarbage;
 
+  // 接続を持ち得ないnetworkPoint
+  std::unordered_set<networkPoint*> IsolatedPoints;
+
+  // ============================
+  // Coordinate Scaling for FMM numerical stability
+  // ============================
+  double scale_factor_ = 1.0;
+  bool is_scaled_ = false;
+  // 元座標は各点の X_temporary に保存（反復順序に依存しない安全な方法）
+
 public:
-  std::unordered_set<networkLine *> Lines;
-  // 2021/08/10追加
-  // bool isMember(const networkPoint *const p_IN) const { return
-  // (this->Points.find(p_IN) != this->Points.end()); };
-  bool MemberQ(networkPoint *const &p_IN) const { return (this->Points.find(p_IN) != this->Points.end()); };
-  // bool isMember(const networkFace *const f_IN) const { return
-  // (this->Faces.find(f_IN) != this->Faces.end()); };
-  bool MemberQ(networkFace *const &f_IN) const { return (this->Faces.find(f_IN) != this->Faces.end()); };
-  //
-  void add(netPp const p_IN) { this->Points.emplace(p_IN); };
-  void add(netFp const f_IN) { this->Faces.emplace(f_IN); };
-  void add(netTp const t_IN) { this->Tetras.emplace(t_IN); };
-  void add(const V_netPp &ps_IN) {
-    for (const auto &p : ps_IN)
-      this->add(p);
-  };
-  //
-  void add(const V_netFp &fs_IN) {
-    for (const auto &f : fs_IN)
-      this->add(f);
-  };
-  //
-  bool erase(networkFace *f) {
-    auto it = this->Faces.find(f);
-    if (it != this->Faces.end()) {
-      this->Faces.erase(it);
-      return true;
-    } else
-      return false;
-  };
-  void erase(const V_netFp &fs) {
-    for (auto &f : fs)
-      erase(f);
-  };
-  bool erase(networkPoint *p) {
-    auto it = this->Points.find(p);
-    if (it != this->Points.end()) {
-      this->Points.erase(it);
-      return true;
-    } else
-      return false;
-  };
-  bool erase(networkLine *l) {
-    auto it = this->Lines.find(l);
-    if (it != this->Lines.end()) {
-      this->Lines.erase(it);
-      return true;
-    } else
-      return false;
-  };
+  // Compute characteristic length (3/4 of bounding box diagonal)
+  // FMM uses rho = |r - r_center|, with rho_max = diagonal/2 (center to corner).
+  // Using 3/4 of diagonal provides good numerical stability while keeping rho normalized.
+  double computeCharacteristicLength() const {
+    auto [xrange, yrange, zrange] = this->bounds;
+    double Lx = std::abs(std::get<1>(xrange) - std::get<0>(xrange));
+    double Ly = std::abs(std::get<1>(yrange) - std::get<0>(yrange));
+    double Lz = std::abs(std::get<1>(zrange) - std::get<0>(zrange));
+    return std::sqrt(Lx * Lx + Ly * Ly + Lz * Lz);
+  }
+
+  // Apply coordinate scaling: store original coordinates in X_temporary, scale by 1/L
+  void applyScaling(double L) {
+    if (is_scaled_) {
+      throw std::runtime_error("Network::applyScaling: already scaled");
+    }
+    if (L <= 0) {
+      throw std::runtime_error("Network::applyScaling: L must be positive");
+    }
+    scale_factor_ = L;
+    // Store original coordinates in X_temporary and scale
+    for (auto& p : this->Points) {
+      p->X_temporary = p->X;
+      p->setXSingle(p->X / L);
+    }
+    // Scale edge midpoint positions (true quadratic geometry)
+    for (auto& l : this->Lines) {
+      l->X_mid /= L;
+      l->Xtarget = l->X_mid;
+    }
+    is_scaled_ = true;
+    this->setGeometricPropertiesForce();
+  }
+
+  // Remove coordinate scaling: restore original coordinates from X_temporary
+  void removeScaling() {
+    if (!is_scaled_) {
+      return; // Nothing to do
+    }
+    // Restore original coordinates from X_temporary
+    for (auto& p : this->Points) {
+      p->setXSingle(p->X_temporary);
+    }
+    // Restore edge midpoint positions
+    for (auto& l : this->Lines) {
+      l->X_mid *= scale_factor_;
+      l->Xtarget = l->X_mid;
+    }
+    scale_factor_ = 1.0;
+    is_scaled_ = false;
+    this->setGeometricPropertiesForce();
+  }
+
+  double getScaleFactor() const { return scale_factor_; }
+  bool isScaled() const { return is_scaled_; }
+
+public:
+  std::unordered_set<networkLine*> Lines;
+  bool MemberQ(networkPoint* const& p_IN) const;
+  bool MemberQ(networkFace* const& f_IN) const;
+  void add(netPp const p_IN);
+  void add(netFp const f_IN);
+  void add(netTp const t_IN);
+  void add(const V_netPp& ps_IN);
+  void add(const V_netFp& fs_IN);
+  bool erase(networkFace* f);
+  void erase(const V_netFp& fs);
+  bool erase(networkPoint* p);
+  bool erase(networkLine* l);
 
   //% ------------------------- obj ------------------------ */
   //%
   // NetwrokObjは，Networkとしてコンストラクトするために，下のコンストラクタように修正した．*/
   // \label{Network::constructor}
   // Netwrokコンストラク
-  Network(const std::string &filename = "file_name_is_not_given", const std::string &name_IN = "no_name")
-      : CoordinateBounds(Tddd{{0., 0., 0.}}), RigidBodyDynamics(), name(name_IN), filename(filename), BucketFaces(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.), BucketSurfaces(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.), BucketPoints(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.), BucketTetras(CoordinateBounds(Tddd{{0., 0., 0.}}), 1.), IGNORE(false), grid_pull_depth(0), velocity_name_start({"fixed", 0.}), inputJSON(), octreeOfFaces(nullptr), octreeOfPoints(nullptr), surfaceNet(nullptr) {
-    if (filename.contains(".obj") || filename.contains(".off")) {
-      Load3DFile objLoader(filename);
-      if (!objLoader.f_v.empty())
-        this->setFaces(objLoader.f_v,
-                       this->setPoints(objLoader.v)); // indexの書き換えも可能だがする必要は今のところない
-      if (!objLoader.l_v.empty())
-        this->setLines(objLoader.l_v,
-                       this->setPoints(objLoader.v)); // indexの書き換えも可能だがする必要は今のところない
-
-      this->displayStates();
-    } else if (filename == "file_name_is_not_given") {
-      // std::cout << "filename is not given" << std::endl;
-    } else {
-      std::stringstream ss;
-      ss << "file format is not supported: " << filename;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-    }
-  };
+  Network(const std::string& filename = "file_name_is_not_given", const std::string& name_IN = "no_name");
   //% ------------------------------------------------------ */
-  const std::string &getName() const { return this->name; };
-  const std::string &getFileName() const { return this->filename; };
+  const std::string& getName() const { return this->name; };
+  const std::string& getFileName() const { return this->filename; };
   void setName(const std::string nameIN) { this->name = nameIN; };
   // V_netPp linkXPoints(Network &water, Network &obj);
   /* ------------------------------------------------------ */
   void displayStates() {
-    std::cout << "/* "
-                 "-------------------------------------------------------------"
-                 "------------- */"
-              << colorReset << std::endl;
+    std::cout << "/* -------------------------------------------------------------------------- */" << colorReset << std::endl;
     const int size = 15;
     V_i num(size, 0), pointsLines(size, 0);
     // 点の持つ線の数をカウント
-    for (const auto &p : this->Points)
+    for (const auto& p : this->Points)
       for (auto i = 0; i < size; i++)
         if (p->Lines.size() == (size_t)i)
           pointsLines[i]++;
     V_i connection(3);
-    for (const auto &l : this->getLines()) {
+    for (const auto& l : this->getLines()) {
       if ((l->getFaces()).size() == 0)
         connection[0]++;
       else if ((l->getFaces()).size() == 1)
@@ -3782,346 +3266,79 @@ public:
     std::cout << Magenta << std::setw(25) << "Lines of points : " << GridVector(pointsLines, 6) << std::endl;
     std::cout << Magenta << std::setw(25) << " Connection of faces : " << GridVector(connection, 6);
     if (connection[0] == 0 && connection[1] == 0 && connection[2] != 0)
-      std::cout << Blue
-                << " 全ての線が2つの面と接続しているため，格子は閉じた面を形成"
-                   "している"
-                << colorReset;
+      std::cout << Blue << " 全ての線が2つの面と接続しているため，格子は閉じた面を形成している" << colorReset;
     std::cout << colorReset << std::endl;
-    std::cout << "/* "
-                 "-------------------------------------------------------------"
-                 "------------- */"
-              << colorReset << std::endl;
+    std::cout << "/* -------------------------------------------------------------------------- */" << colorReset << std::endl;
   };
   double rotation_offset;
   V_d translation_offset;
   double rotation;
   V_d translation;
-  void rotate(const double theta, const Tddd &axis) {
-    for (auto &p : this->getPoints())
+  void rotate(const double theta, const Tddd& axis) {
+    for (auto& p : this->getPoints())
       p->X = Dot(RotationMatrix(theta, axis), p->X);
-    this->setGeometricProperties();
+    this->setGeometricPropertiesForce();
   };
   /* ------------------------------------------------------ */
   /*             ネットワークの姿勢に関する変数とメソッド          */
   /* ------------------------------------------------------ */
-  void rotate(const Quaternion &Q, const Tddd &barycenter = {0., 0., 0.}) {
-    for (auto &p : this->getPoints())
-      p->X = Q.Rv(p->X - barycenter) + barycenter;
-    setGeometricProperties();
-  };
-  void scale(const double ratio, const Tddd &center = {0, 0, 0}) {
-    for (auto &p : this->getPoints())
-      p->setX(center + (p->X - center) * ratio);
-    this->setGeometricProperties();
-  };
-  void scale(const Tddd &ratio, const Tddd &center = {0, 0, 0}) {
-    for (auto &p : this->getPoints())
-      p->setX(center + (p->X - center) * ratio);
-    this->setGeometricProperties();
-  };
-  void translate(const Tddd &translation) {
-    for (auto &p : this->getPoints())
-      p->setXSingle(p->X + translation);
-    this->setGeometricProperties();
-  };
-  void translateFromInitialX(const Tddd &translation) {
-    for (auto &p : this->getPoints())
-      p->setXSingle(p->initialX + translation);
-    this->setGeometricProperties();
-  };
-  void resetInitialX() {
-    for (auto &p : this->getPoints())
-      p->initialX = p->X;
-  };
-  // void reverseNormal() {
-  //    for (auto &f : this->Faces)
-  //       f->reverseNormal();
-  // };
-  /* --------------------------------------------------------------------------
-   */
-  void applyTransformations(const JSON &json) {
-    if (json.find("center_of_mass")) {
-      std::get<0>(this->center_of_mass) = stob(json()["center_of_mass"])[0];
-      std::get<1>(this->center_of_mass) = stob(json()["center_of_mass"])[1];
-      std::get<2>(this->center_of_mass) = stob(json()["center_of_mass"])[2];
-    }
-    if (json.find("ignore")) {
-      this->IGNORE = stob(json.at("ignore"))[0];
-    }
-    if (json.find("rotate")) {
-      auto rotate = stod(json()["rotate"]);
-      if (rotate.size() > 1)
-        this->rotate(rotate[0], Tddd{rotate[1], rotate[2], rotate[3]});
-    }
-    if (json.find("scale")) {
-      auto scale = stod(json()["scale"]);
-      if (scale.size() > 1)
-        this->scale({scale[0], scale[1], scale[2]});
-      else
-        this->scale(scale[0]);
-    }
-    if (json.find("translate")) {
-      auto translate = stod(json.at("translate"));
-      if (translate.size() > 1)
-        this->translate({translate[0], translate[1], translate[2]});
-      resetInitialX();
-    }
-
-    if (json.find("radius"))
-      for (auto &p : this->getPoints())
-        p->radius = stod(json.at("radius"))[0];
-
-    if (json.find("mass")) {
-      if (json.at("mass").size() == 1) {
-        std::get<2>(this->inertia) = std::get<1>(this->inertia) = std::get<0>(this->inertia) = this->mass = stod(json.at("mass"))[0];
-      }
-      if (json.at("mass").size() == 3) {
-        std::get<0>(this->inertia) = stod(json.at("mass"))[0];
-        std::get<1>(this->inertia) = stod(json.at("mass"))[1];
-        std::get<2>(this->inertia) = stod(json.at("mass"))[2];
-      }
-    }
-    if (json.find("MOI")) {
-      std::get<3>(this->inertia) = stod(json.at("MOI"))[0];
-      std::get<4>(this->inertia) = stod(json.at("MOI"))[1];
-      std::get<5>(this->inertia) = stod(json.at("MOI"))[2];
-    }
-    if (json.find("COM"))
-      this->COM = this->initial_center_of_mass = Tddd{stod(json.at("COM"))[0], stod(json.at("COM"))[1], stod(json.at("COM"))[2]};
-
-    // if (json.find("remesh"))
-    // {
-    // 	auto minlen = stod(json()["remesh"]);
-    // 	if (minlen.size() > 0)
-    // 		remesh(&this, minlen[0]);
-    // }
-    // if (json.find("coarsen"))
-    // {
-    // 	auto minlen = stod(json()["coarsen"]);
-    // 	if (minlen.size() > 0)
-    // 		coarsen(&this, minlen[0]);
-    // }
-    // if (json.find("reverseNormal")) {
-    //    std::string TorF = json()["reverseNormal"][0];
-    //    if (TorF.compare("True") == 0 || TorF.compare("true") == 0 ||
-    //    TorF.compare("1") == 0) {
-    //       this->reverseNormal();
-    //       std::cout << "reverse done" << std::endl;
-    //    }
-    // }
-  };
-  /* --------------------------------------------------------------------------
-   */
-  networkFace *getNearestFace(const Tddd &xyz) const {
-    networkFace *ret = nullptr;
-    double nearest_dist = 1E+30, dist;
-    for (const auto &f : this->Faces) {
-      if (nearest_dist > (dist = Norm(f->X - xyz))) {
-        nearest_dist = dist;
-        ret = f;
-      }
-    }
-    return ret;
-  };
-  // これを使おう．
-  networkPoint *getNearestPoint(const Tddd &xyz) const {
-    networkPoint *ret = nullptr;
-    double nearest_dist = 1E+30, dist;
-    for (const auto &p : this->Points) {
-      if (nearest_dist > (dist = Norm(p->X - xyz))) {
-        nearest_dist = dist;
-        ret = p;
-      }
-    }
-    return ret;
-  };
-
-  const std::unordered_set<networkPoint *> &getPoints() const { return this->Points; };
-
-  template <typename F> const std::vector<networkPoint *> getPoints(F &&cond) const {
-    std::vector<networkPoint *> ret;
+  void rotate(const Quaternion& Q, const Tddd& barycenter = {0., 0., 0.});
+  void scale(const double ratio, const Tddd& center = {0, 0, 0});
+  void scale(const Tddd& ratio, const Tddd& center = {0, 0, 0});
+  void translate(const Tddd& translation);
+  void translateFromInitialX(const Tddd& translation);
+  void resetInitialX();
+  void applyTransformations(const JSON& json); // Implemented in a .cpp file not provided
+  const std::unordered_set<networkPoint*>& getPoints() const;
+  template <typename F>
+  const std::vector<networkPoint*> getPoints(F&& cond) const {
+    std::vector<networkPoint*> ret;
     ret.reserve(this->Points.size());
-    for (const auto &p : this->Points)
+    for (const auto& p : this->Points)
       if (cond(p))
         ret.emplace_back(p);
     return ret;
   }
+  std::vector<networkPoint*> getBoundaryPoints() const;
+  /* ------------------------------ 境界条件に関する設定関数 ------------------------------ */
 
-  std::vector<networkPoint *> getSurfacePoints() const {
-    std::unordered_set<networkPoint *> uniquePoints;
-    for (const auto &f : this->getSurfaces())
-      for (const auto &p : f->getPoints())
-        uniquePoints.emplace(p);
-    return std::vector<networkPoint *>(uniquePoints.begin(), uniquePoints.end());
-  }
-  /* ------------------------------ 境界条件に関する設定関数
-   * ------------------------------ */
+  std::unordered_set<networkPoint*> getPointsCORNER() const;
+  std::unordered_set<networkPoint*> getPointsNeumann() const;
+  std::unordered_set<networkPoint*> getPointsDirichlet() const;
+  void setMinDepthFromCORNER();
 
-  std::unordered_set<networkPoint *> getPointsCORNER() const {
-    std::unordered_set<networkPoint *> ret;
-    ret.reserve(this->Points.size());
-    for (const auto &p : this->Points)
-      if (p->CORNER)
-        ret.emplace(p);
-    return ret;
-  };
-  std::unordered_set<networkPoint *> getPointsNeumann() const {
-    std::unordered_set<networkPoint *> ret;
-    ret.reserve(this->Points.size());
-    for (const auto &p : this->Points)
-      if (p->Neumann)
-        ret.emplace(p);
-    return ret;
-  };
-  std::unordered_set<networkPoint *> getPointsDirichlet() const {
-    std::unordered_set<networkPoint *> ret;
-    ret.reserve(this->Points.size());
-    for (const auto &p : this->Points)
-      if (p->Dirichlet)
-        ret.emplace(p);
-    return ret;
-  };
+  /* --------------------------------------------------------------------------*/
 
-  void setMinDepthFromCORNER() {
-    std::vector<networkPoint *> points = ToVector(this->getPoints());
-    for (const auto &p : points) {
-      if (p->CORNER)
-        p->minDepthFromCORNER_ = p->minDepthFromCORNER = 0;
-      else
-        p->minDepthFromCORNER_ = p->minDepthFromCORNER = 100000000;
-      //
-      if (p->isMultipleNode)
-        p->minDepthFromMultipleNode_ = p->minDepthFromMultipleNode = 0;
-      else
-        p->minDepthFromMultipleNode_ = p->minDepthFromMultipleNode = 100000000;
-    }
-
-    for (auto i = 0; i < 100; i++) {
-      // #pragma omp parallel
-      for (auto &p : points)
-        // #pragma omp single nowait
-        for (auto &q : p->getNeighbors()) {
-          p->minDepthFromCORNER_ = std::min(p->minDepthFromCORNER_, q->minDepthFromCORNER + 1);
-          p->minDepthFromMultipleNode_ = std::min(p->minDepthFromMultipleNode_, q->minDepthFromMultipleNode + 1);
-        }
-      // apply
-      // #pragma omp parallel
-      for (const auto &p : points)
-      // #pragma omp single nowait
-      {
-        p->minDepthFromCORNER = p->minDepthFromCORNER_;
-        p->minDepthFromMultipleNode = p->minDepthFromMultipleNode_;
-      }
-    }
-  };
-
-  /* --------------------------------------------------------------------------
-   */
-
-  const std::unordered_set<networkFace *> &getFaces() const { return this->Faces; };
-  std::vector<networkFace *> getSurfaces() const {
-    std::vector<networkFace *> surfaces;
-    surfaces.reserve(this->Faces.size());
-    for (const auto &f : this->Faces)
-      if (f->SurfaceQ())
-        surfaces.emplace_back(f);
-    return surfaces;
-  };
-
-  const std::vector<networkFace *> &getFacesVector() const { return this->Faces_vector; }
-  const std::vector<networkPoint *> &getPointsVector() const { return this->Points_vector; }
+  const std::unordered_set<networkFace*>& getFaces() const;
+  const std::vector<networkFace*>& getFacesVector() const;
+  const std::vector<networkPoint*>& getPointsVector() const;
   // Update Faces_vector based on the contents of Faces
-  void setFacesVector() {
-    this->Faces_vector.clear();
-    this->Faces_vector.reserve(this->Faces.size());
-    this->Faces_vector.assign(this->Faces.begin(), this->Faces.end());
-  }
+  void setFacesVector();
   // Update Points_vector based on the contents of Points
-  void setPointsVector() {
-    this->Points_vector.clear();
-    this->Points_vector.reserve(this->Points.size());
-    this->Points_vector.assign(this->Points.begin(), this->Points.end());
-  }
-
-  const std::unordered_set<networkTetra *> &getTetras() const { return this->Tetras; };
-  std::unordered_set<networkPoint *> getParametricPoints() const {
-    std::unordered_set<networkPoint *> ret, tmp;
-    for (const auto &f : this->getFaces()) {
-      tmp = f->getParametricPoints();
-      ret.insert(tmp.begin(), tmp.end());
-    }
-    return ret;
-  };
-  Tddd getMeanX() const {
-    Tddd ret = {0, 0, 0};
-    for (const auto &p : this->Points)
-      ret += p->X;
-    return ret / this->Points.size();
-  };
-  // VV_d getLocations() const
-  // {
-  // 	VV_d ret;
-  // 	getLocations(ret);
-  // 	return ret;
-  // };
-  void getLocations(VV_d &ret) const {
-    ret.resize(Points.size());
-    int i(0);
-    // for (const auto &p : Points)
-    // 	ret[i++] = p->xyz;
-    for (const auto &p : Points)
-      ret[i++] = {std::get<0>(p->X), std::get<1>(p->X), std::get<2>(p->X)};
-  };
-  // std::vector<Tddd> getLocationsTuple() const
-  // {
-  // 	std::vector<Tddd> ret(this->Points.size());
-  // 	int i = 0;
-  // 	for (const auto &p : this->Points)
-  // 		ret[i++] = p->X;
-  // 	return ret;
-  // };
-  //-------------------------
-  // get lines
-
-  std::unordered_set<networkLine *> getLines() const {
-    std::unordered_set<networkLine *> ret;
-    ret.reserve(this->Points.size() * 3);
-    for (auto p : this->Points)
-      for (auto l : p->getLines())
-        ret.emplace(l);
-    return ret;
-  };
-
-  //! bool関数を受け取る
-  template <typename F> std::vector<networkLine *> getLines(F &&cond) const {
-    std::vector<networkLine *> ret;
+  void setPointsVector();
+  const std::unordered_set<networkTetra*>& getTetras() const;
+  const std::vector<networkTetra*> getIsolatedTetras() const;
+  std::unordered_set<networkPoint*> getParametricPoints() const;
+  Tddd getMeanX() const;
+  void getLocations(VV_d& ret) const;
+  std::unordered_set<networkLine*> getLines() const;
+  std::vector<networkFace*> getBoundaryFaces() const;
+  std::vector<networkLine*> getBoundaryLines() const;
+  std::vector<networkFace*> getInteriorFaces() const;
+  std::vector<networkLine*> getInteriorLines() const;
+  std::vector<networkPoint*> getInteriorPoints() const;
+  template <typename F>
+  std::vector<networkLine*> getLines(F&& cond) const {
+    std::vector<networkLine*> ret;
     ret.reserve(this->Lines.size());
-    for (const auto &l : this->Lines)
+    for (const auto& l : this->Lines)
       if (cond(l))
         ret.emplace_back(l);
     return ret;
   };
 
-  std::unordered_set<networkLine *> getLinesUO() const {
-    std::unordered_set<networkLine *> ret;
-    ret.reserve(3 * this->Faces.size());
-    for (const auto &f : this->Faces) {
-      auto [l0, l1, l2] = f->getLines();
-      ret.emplace(l0);
-      ret.emplace(l1);
-      ret.emplace(l2);
-    }
-    return ret;
-  };
-
-  V_netLp getLinesIntxn() const {
-    V_netLp ret(0);
-    for (const auto &p : this->getPoints())
-      for (const auto &l : p->Lines)
-        if (l->isIntxn())
-          ret.emplace_back(l);
-    return DeleteDuplicates(ret);
-  };
+  std::unordered_set<networkLine*> getLinesUO() const;
+  V_netLp getLinesIntxn() const;
   //======================================
   /*setXPoints_detail
   `setXPoints`は，thisとtargetの`networkFace`と`networkLine`の干渉を検知して，干渉点として`networkPoint`を新たに作成する．
@@ -4141,444 +3358,54 @@ public:
   特に，flipやdivideの後には，p->Lines,f->Linesが正しく設定されていない可能性があるので，要注意．
   */
 
-  // void setGeometricProperties() {
-  //    // std::cout << Yellow << "setGeometricProperties() start" << colorReset
-  //    << std::endl; if (!this->getPoints().empty()) {
-  //       for (const auto &p : this->getPoints())
-  //          p->setFaces();  // % point->Lines must have been determined
-  //       // std::cout << Yellow << "setFaces() done" << colorReset <<
-  //       std::endl; auto lines = ToVector(this->getLines());
-  //       // std::cout << Yellow << "lines = this->getLines()" << colorReset <<
-  //       std::endl; for (const auto &l : lines) {
-  //          if (l == nullptr)
-  //             throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "l
-  //             is nullptr");
-  //          l->setBoundsSingle();
-  //       }
-  //       // std::cout << Yellow << "setBoundsSingle() done" << colorReset <<
-  //       std::endl; for (const auto &f : this->getFaces())
-  //          f->setGeometricProperties(ToX(f->getPoints()));  // @ face->Lines
-  //          must have been determined
-  //       // std::cout << Yellow << "setGeometricProperties() done" <<
-  //       colorReset << std::endl; for (const auto &f : this->getSurfaces())
-  //          f->setDodecaPoints();
-  //       // std::cout << Yellow << "setDodecaPoints() done" << colorReset <<
-  //       std::endl; for (const auto &t : this->getTetras())
-  //          t->setProperties(ToX(t->Points));
-  //       // std::cout << Yellow << "setProperties() done" << colorReset <<
-  //       std::endl; CoordinateBounds::setBounds(ToX(this->getPoints()));
-  //       // std::cout << Yellow << "setBounds() done" << colorReset <<
-  //       std::endl;
-  //    } else {
-  //       CoordinateBounds::setBounds(Tddd{{0., 0., 0.}});
-  //    }
-  //    // std::cout << Yellow << "setGeometricProperties() end" << colorReset
-  //    << std::endl;
-  // };
+  void setGeometricPropertiesForce();
+  std::size_t topologySignature() const;
+  std::size_t geometrySignature(double inv_eps = 1e12) const;
 
-  void setGeometricProperties() {
-    try {
-      if (!this->getPoints().empty()) {
-        for (const auto &l : this->getLines())
-          l->setBoundsSingle();
-
-        for (const auto &p : this->getPoints())
-          p->setFaces(); // % point->Lines must have been determined
-
-        // Surfacesの法線方向は外向きに揃える：テトラとは逆向きにする
-        for (const auto &f : this->getSurfaces()) {
-          auto [t0, t1] = f->getTetras();
-          auto [p0, p1, p2] = f->getPoints();
-          if (t0 != nullptr) {
-            auto X = Mean(t0->vertices);
-            if (CrossDot(p1->X - p0->X, p2->X - p0->X, X - (p0->X + p1->X + p2->X) / 3.) > 0.) {
-              std::cout << "reversing face normal " << f << std::endl;
-              f->reverse();
-            }
-          } else if (t1 != nullptr) {
-            auto X = Mean(t1->vertices);
-            if (CrossDot(p1->X - p0->X, p2->X - p0->X, X - (p0->X + p1->X + p2->X) / 3.) > 0.) {
-              std::cout << "reversing face normal " << f << std::endl;
-              f->reverse();
-            }
-          }
-        }
-        //
-
-        for (const auto &f : this->getFaces())
-          f->setGeometricProperties(ToX(f->getPoints())); // @ face->Lines must have been determined
-
-        for (const auto &f : this->getSurfaces())
-          f->setDodecaPoints();
-
-        for (const auto &t : this->getTetras())
-          t->setProperties(ToX(t->Points));
-
-        CoordinateBounds::setBounds(ToX(this->getPoints()));
-
-      } else {
-        CoordinateBounds::setBounds(Tddd{{0., 0., 0.}});
-      }
-    } catch (const std::exception &e) {
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "Error in Network::setGeometricProperties()");
-    }
-  };
+private:
+  void setGeometricPropertiesImpl();
+  std::size_t computeTopologySignature() const;
+  std::size_t computeGeometrySignature(double inv_eps = 1e12) const;
+  mutable std::size_t topology_signature_cached = 0;
+  mutable std::size_t geometry_signature_cached = 0;
+  mutable bool geometry_signature_valid = false;
 
   /**
   pointのFacesとLinesの関係は整合性があるか？faceのFacesとLinesの関係は整合性があるか？をチェック．
-  setGeometricProperties()を実行していれば，この整合性は保たれるはずではある．
+  setGeometricPropertiesForce()を実行していれば，この整合性は保たれるはずではある．
   */
 
-  std::array<bool, 4> validateConectivity() {
-    std::array<bool, 4> ret = {true, true, true, true};
-    auto &validPoints = std::get<0>(ret);
-    auto &validLines = std::get<1>(ret);
-    auto &validFaces = std::get<2>(ret);
-    auto &validTetras = std::get<3>(ret);
-    // Check Points
+  std::array<bool, 4> validateConectivity();
 
-    std::cout << Yellow << "validating points - lines";
-    for (const auto &p : this->getPoints()) {
-      for (const auto &l : p->getLines())
-        if (std::find(l->getPoints().begin(), l->getPoints().end(), p) == l->getPoints().end()) {
-          validPoints = false;
-          break;
-        }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << Yellow << "validating points - faces";
-    for (const auto &p : this->getPoints()) {
-      for (const auto &f : p->getFaces()) {
-        if (std::find(f->getPoints().begin(), f->getPoints().end(), p) == f->getPoints().end()) {
-          validPoints = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << Yellow << "validating points - tetras";
-    for (const auto &p : this->getPoints()) {
-      for (const auto &t : p->Tetras) {
-        if (std::find(t->Points.begin(), t->Points.end(), p) == t->Points.end()) {
-          validPoints = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    /* --------------------------------------------------------------------------
-     */
-
-    std::cout << Green << "validating lines - points";
-    // Check Lines
-    for (const auto &l : this->getLines()) {
-      for (const auto &p : l->getPoints()) {
-        if (std::find(p->getLines().begin(), p->getLines().end(), l) == p->getLines().end()) {
-          validLines = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << Green << "validating lines - faces";
-    for (const auto &l : this->getLines()) {
-      for (const auto &f : l->getFaces()) {
-        if (std::find(f->getLines().begin(), f->getLines().end(), l) == f->getLines().end()) {
-          validLines = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << Green << "validating lines - tetras";
-    for (const auto &l : this->getLines()) {
-      for (const auto &t : l->Tetras) {
-        if (std::find(t->Lines.begin(), t->Lines.end(), l) == t->Lines.end()) {
-          validLines = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    /* --------------------------------------------------------------------------
-     */
-
-    // Check Faces
-    std::cout << Magenta << "validating faces - points";
-    for (const auto &f : this->getFaces()) {
-      for (const auto &p : f->getPoints()) {
-        if (std::find(p->getFaces().begin(), p->getFaces().end(), f) == p->getFaces().end()) {
-          validFaces = false;
-          break;
-        }
-      }
-    }
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << Magenta << "validating faces - lines";
-    for (const auto &f : this->getFaces()) {
-      for (const auto &l : f->getLines()) {
-        if (std::find(l->getFaces().begin(), l->getFaces().end(), f) == l->getFaces().end()) {
-          validFaces = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << Magenta << "validating faces - tetras" << colorReset;
-    for (const auto &f : this->getFaces()) {
-      for (const auto &t : f->Tetras)
-        if (t != nullptr) {
-          if (std::find(t->Faces.begin(), t->Faces.end(), f) == t->Faces.end()) {
-            validFaces = false;
-            break;
-          }
-        }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    /* --------------------------------------------------------------------------
-     */
-
-    std::cout << "validating tetras - points";
-    for (const auto &t : this->Tetras) {
-      for (const auto &p : t->Points) {
-        if (std::find(p->Tetras.begin(), p->Tetras.end(), t) == p->Tetras.end()) {
-          validTetras = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << "validating tetras - lines";
-    for (const auto &t : this->Tetras) {
-      for (const auto &l : t->Lines) {
-        if (std::find(l->Tetras.begin(), l->Tetras.end(), t) == l->Tetras.end()) {
-          validTetras = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    std::cout << "validating tetras - faces";
-    for (const auto &t : this->Tetras) {
-      for (const auto &f : t->Faces) {
-        if (std::find(f->Tetras.begin(), f->Tetras.end(), t) == f->Tetras.end()) {
-          validTetras = false;
-          break;
-        }
-      }
-    }
-
-    std::cout << Red << "{validPoints, validLines, validFaces, validTetras} = " << ret << colorReset << std::endl;
-
-    return ret;
-  }
-
-  /* --------------------------------------------------------------------------
-   */
+  /* --------------------------------------------------------------------------*/
 
 public:
-  V_netPp setPoints(const std::vector<Tddd> &v_IN) {
-    std::unordered_map<std::shared_ptr<Tddd>, int> map_Tddd_Int;
-    std::vector<Tddd> vecTddd(v_IN.size());
-    map_Tddd_Int.reserve(v_IN.size());
-    int n = 0;
-    for (const auto &v : v_IN) {
-      std::shared_ptr<Tddd> x(new Tddd(v));
-      vecTddd[n] = *x;
-      map_Tddd_Int[x] = n++;
-    }
-    CoordinateBounds tmp(MinMaxColumns(vecTddd));
-    CoordinateBounds bound(tmp.scaledBounds(1.11111111111));
-
-    Buckets<std::shared_ptr<Tddd>> bucket(bound, bound.getScale() / 20.);
-    std::vector<networkPoint *> ret(v_IN.size());
-    int overlap_index = 0, overlaps = 0;
-    for (const auto &[x, n] : map_Tddd_Int) {
-      auto [i, j, k] = bucket.indices(*x);
-      overlap_index = 0;
-      for (const auto &tdd : bucket.data[i][j][k])
-        if (Norm(*tdd - *x) < 1E-10) {
-          overlap_index = map_Tddd_Int[tdd];
-          break;
-        }
-      if (!overlap_index) {
-        bucket.add(*x, x);
-        ret[n] = new networkPoint(this, *x);
-      } else {
-        ret[n] = ret[overlap_index];
-        overlaps++;
-      }
-    }
-    return ret;
-  };
-
-  V_netPp setPoints(const VV_d &v_IN) {
-    std::unordered_map<std::shared_ptr<Tddd>, int> map_Tddd_Int;
-    std::vector<Tddd> vecTddd(v_IN.size());
-    map_Tddd_Int.reserve(v_IN.size());
-    int n = 0;
-    for (const auto &v : v_IN) {
-      if (v.size() != 3)
-        throw std::runtime_error("v.size() != 3");
-      std::shared_ptr<Tddd> x(new Tddd({v[0], v[1], v[2]}));
-      vecTddd[n] = *x;
-      map_Tddd_Int[x] = n++;
-    }
-    CoordinateBounds tmp(MinMaxColumns(vecTddd));
-    CoordinateBounds bound(tmp.scaledBounds(1.111111111111));
-
-    Buckets<std::shared_ptr<Tddd>> bucket(bound, bound.getScale() / 20.);
-    std::vector<networkPoint *> ret(v_IN.size());
-    int overlap_index = 0, overlaps = 0;
-    for (const auto &[x, n] : map_Tddd_Int) {
-      auto [i, j, k] = bucket.indices(*x);
-      overlap_index = 0;
-      for (const auto &tdd : bucket.data[i][j][k])
-        if (Norm(*tdd - *x) < 1E-10) {
-          overlap_index = map_Tddd_Int[tdd];
-          break;
-        }
-      if (!overlap_index) {
-        bucket.add(*x, x);
-        ret[n] = new networkPoint(this, *x);
-      } else {
-        ret[n] = ret[overlap_index];
-        overlaps++;
-      }
-    }
-    // std::cout << "overlaped nodes : " << overlaps << std::endl;
-    // std::cout << "setPoints elapsed time :" << timer() << std::endl;
-    return ret;
-  };
+  V_netPp setPoints(const std::vector<Tddd>& v_IN);
+  V_netPp setPoints(const VV_d& v_IN);
   /* --------------------------------------------------------------------------
    */
 public:
-  void setFaces(const std::vector<T3Tddd> &v_IN, const double resolution = 1E-10) {
-    std::vector<std::array<networkPoint *, 3>> v_Points(v_IN.size());
-    CoordinateBounds tmp(v_IN);
-    CoordinateBounds bound(tmp.scaledBounds(1.11111111111));
-    Buckets<networkPoint *, 0 /*一時的なものでFMMは使わないのでこれでいい*/> bucket;
-    bucket.initialize(bound, bound.getScale() / 20.);
-
-    auto findOverlap = [&](const Tddd &X) -> networkPoint * {
-      for (const auto &p : bucket.getData(X))
-        if (Norm(p->X - X) < resolution)
-          return p;
-      return nullptr;
-    };
-
-    networkPoint *p = nullptr;
-    int i = 0;
-
-    for (const auto &position : v_IN) {
-      int j = 0;
-      for (const auto &X : position) {
-        auto p = findOverlap(X);
-        if (p == nullptr) {
-          p = v_Points[i][j] = new networkPoint(this, X);
-          bucket.add(X, p);
-        } else
-          v_Points[i][j] = p;
-        j++;
-      }
-      i++;
-    }
-
-    for (const auto &[p0, p1, p2] : v_Points)
-      new networkFace(this, p0, p1, p2);
-
-    this->setGeometricProperties();
-  };
-
-  /* --------------------------------------------------------------------------
-   */
-
-  void setFaces(const VV_i &f_v, const V_netPp &points) {
-    try {
-      int count = 0;
-      for (const auto &index : f_v) {
-        if (points[index[0]] && points[index[1]] && points[index[2]])
-          new networkFace(this, points[index[0]], link(points[index[0]], points[index[1]], this), points[index[1]], link(points[index[1]], points[index[2]], this), points[index[2]], link(points[index[2]], points[index[0]], this));
-        else {
-          std::stringstream ss;
-          ss << "index = " << index << std::endl;
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-        }
-      }
-    } catch (std::exception &e) {
-      std::cerr << e.what() << colorReset << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-    };
-    this->setGeometricProperties();
-  };
-
-  /* --------------------------------------------------------------------------
-   */
-
-  void setLines(const VV_i &l_v, const V_netPp &points) {
-    std::cout << "l_v " << l_v << std::endl;
-    try {
-      for (const auto &index : l_v) {
-        for (auto i = 0; i < index.size() - 1; i++) {
-          if (points[index[i]] && points[index[i + 1]])
-            new networkLine(this, points[index[i]], points[index[i + 1]]);
-          else {
-            std::stringstream ss;
-            ss << "index = " << index << std::endl;
-            throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
-          }
-        }
-      }
-    } catch (std::exception &e) {
-      std::cerr << e.what() << colorReset << std::endl;
-      throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
-    };
-    this->setGeometricProperties();
-  };
-
-  /* --------------------------------------------------------------------------
-   */
+  void setFaces(const std::vector<T3Tddd>& v_IN, const double resolution = 1E-10);
+  void setFaces(const VV_i& f_v, const V_netPp& points);
+  void setLines(const VV_i& l_v, const V_netPp& points);
+  /* -------------------------------------------------------------------------- */
 
 public:
-  void DeleteParticles() {
-    auto points = this->Points;
-    for (const auto &p : points)
-      if (std::get<0>(p->particlize_info))
-        p->Delete();
-  };
+  void DeleteParticles();
+  void DeleteIsolatedTetras();
+  void DeleteInteriorTetras();
 
   /* ------------------------------------------------------ */
 public:
-  std::vector<MooringLine *> mooringLines;
+  std::vector<MooringLine*> mooringLines;
 
 #ifdef tetgenH
 
-  void genTetra(const tetgenio &out) {
+  void genTetra(const tetgenio& out) {
     std::cout << Red << "genTetra" << colorReset << std::endl;
     int index;
     Tddd X;
-    std::array<networkPoint *, 4> points;
+    std::array<networkPoint*, 4> points;
     // tetgenが出力した全四面体をループ
     for (int i = 0; i < out.numberoftetrahedra; i++) {
       points = {nullptr, nullptr, nullptr, nullptr};
@@ -4588,7 +3415,7 @@ public:
         index = out.tetrahedronlist[i * 4 + j];
         X = {out.pointlist[index * 3], out.pointlist[index * 3 + 1], out.pointlist[index * 3 + 2]};
         // 座標を元に、対応するnetworkPointオブジェクトを空間ハッシュ(Bucket)から高速に検索
-        for (auto &p : this->BucketPoints.getData(X))
+        for (auto& p : this->BucketPoints.getData(X))
           if (Norm(p->X - X) < 1E-12) {
             points[j] = p; // 見つかったポインタを格納
             break;
@@ -4600,77 +3427,58 @@ public:
     std::cout << Green << "Total Tetra : " << this->Tetras.size() << colorReset << std::endl;
   }
 
-  /* --------------------------------------------------------------------------
-   */
+  /* --------------------------------------------------------------------------*/
 
-  bool tetrahedralize(const std::string command, const auto &surfaces, const bool delete_tetra_first = true) {
+  bool tetrahedralize_(const std::string command, tetgenio& in) {
 
-    // delete all existing tetrahedra
-    auto existingTetras = ToVector(this->getTetras());
-    if (delete_tetra_first)
-      for (auto &t : existingTetras)
-        delete t;
-
-    // 1. 現在のサーフェスメッシュからtetgen用の入力データ(in)を生成
-    tetgenio in = generate_tetgenio_input(surfaces);
     printf("Loaded %d vertices and %d faces from Network.\n", in.numberofpoints, in.numberoffacets);
 
     // 2. tetgenの動作を制御するオプションを設定
     tetgenbehavior b;
-    // b.parse_commandline(const_cast<char *>("pq2.a10"));
-    b.parse_commandline(const_cast<char *>(command.c_str()));
+    b.parse_commandline(const_cast<char*>(command.c_str()));
 
     // 3. tetgenライブラリを実行し、結果を出力データ(out)に格納
     tetgenio out;
     ::tetrahedralize(&b, &in, &out);
-
     printf("Generated %d tetrahedra.\n", out.numberoftetrahedra);
 
-    /* --------------------------------------------------------------------------
-     */
+    /* --------------------------------------------------------------------------*/
 
-    // 4. tetgenが追加した新しい頂点（シュタイナー点）をNetworkに追加
-    //    既存の点と重複しないように、空間ハッシュ(Bucket)を使って高速にチェックする
+    // 4. tetgenが追加した新しい頂点（シュタイナー点）をNetworkに追加．既存の点と重複しないように、空間ハッシュ(Bucket)を使って高速にチェックする
     this->makeBucketPoints(this->getScale() / 50.);
-    std::vector<networkPoint *> addedPoints;
+    std::vector<networkPoint*> addedPoints;
     int count = 0;
     for (int i = 0; i < out.numberofpoints; i++) {
       std::array<double, 3> X = {out.pointlist[i * 3], out.pointlist[i * 3 + 1], out.pointlist[i * 3 + 2]};
       // 同じ座標の点がまだNetworkに存在しないかチェック
-      if (std::ranges::none_of(this->BucketPoints.getData(X), [&](auto &p) { return Norm(p->X - X) < 1E-15; })) {
+      if (std::ranges::none_of(this->BucketPoints.getData(X), [&](auto& p) { return Norm(p->X - X) < 1E-15; })) {
         auto p = new networkPoint(this, X);
         this->BucketPoints.add(X, p);
         addedPoints.push_back(p);
         count++;
       }
     }
-
-    /* --------------------------------------------------------------------------
-     */
     std::cout << "added points : " << count << std::endl;
-
-    this->setGeometricProperties();
-
+    this->setGeometricPropertiesForce();
     genTetra(out);
-
-    this->setGeometricProperties();
+    this->setGeometricPropertiesForce();
 
     // 5. 不要な面を削除（両側に四面体が存在しない面）
     auto faces = ToVector(this->getFaces());
-    for (auto &f : faces)
+    for (auto& f : faces)
       if (f->Tetras[0] == nullptr && f->Tetras[1] == nullptr)
         delete f;
 
-    this->setGeometricProperties();
+    this->setGeometricPropertiesForce();
     this->makeBuckets();
     this->checkConnectivity();
 
-    for (auto &p : addedPoints) {
-      auto &phiphin = p->phiphin;
-      auto &phiphin_t = p->phiphin_t;
+    for (auto& p : addedPoints) {
+      auto& phiphin = p->phiphin;
+      auto& phiphin_t = p->phiphin_t;
       phiphin = Tdd{0, 0};
       phiphin_t = Tdd{0, 0};
-      for (auto &q : p->getNeighborPointsOnSurfaces()) {
+      for (auto& q : p->getNeighborPointsOnSurfaces()) {
         phiphin += q->phiphin;
         phiphin_t += q->phiphin_t;
       }
@@ -4681,195 +3489,72 @@ public:
     return true;
   }
 
-  /* --------------------------------------------------------------------------
-   */
+  bool tetrahedralize(const std::string command, const auto& surfaces, const bool delete_tetra_first = true) {
+    //! delete all existing tetrahedra
+    if (delete_tetra_first) {
+      auto existingTetras = ToVector(this->getTetras());
+      for (auto& t : existingTetras)
+        delete t;
+    }
+    tetgenio in = generate_tetgenio_input(surfaces);
+    return tetrahedralize_(command, in);
+  }
 
-  bool tetrahedralize(const std::string command = "p/0.01Dq1.1YSM") { return this->tetrahedralize(command, this->getSurfaces()); }
+  /* --------------------------------------------------------------------------*/
+
+  bool tetrahedralize(const std::string command = "p/0.01Dq1.YSM") { return this->tetrahedralize(command, this->getBoundaryFaces()); }
+
+  /* --------------------------------------------------------------------------*/
+  /*                     点群から四面体を生成するメソッド                      */
+  /* --------------------------------------------------------------------------*/
+
+  bool tetrahedralizeFromPoints(const std::string command = "") {
+
+    // 既存の四面体を削除
+    auto existingTetras = ToVector(this->getTetras());
+    for (auto& t : existingTetras)
+      delete t;
+
+    // 1. 現在の点群からtetgen用の入力データ(in)を生成
+    // unordered_setからvectorへ変換して渡す
+    auto pointsVec = ToVector(this->getPoints());
+    tetgenio in = generate_tetgenio_input_from_points(pointsVec);
+    return tetrahedralize_(command, in);
+  }
+
+  /* --------------------------------------------------------------------------*/
+  /*           閉じていない面と点群から四面体を生成するメソッド (PLC)          */
+  /* --------------------------------------------------------------------------*/
+  bool tetrahedralizePLC(const std::string command = "") {
+
+    // 既存の四面体を削除
+    auto existingTetras = ToVector(this->getTetras());
+    for (auto& t : existingTetras)
+      delete t;
+
+    // 1. 全点と全面を取得
+    // Network内の全ての点と面を使用します
+    auto pointsVec = ToVector(this->getPoints());
+    auto facesVec = ToVector(this->getFaces());
+
+    // 2. tetgenio入力生成 (Mixed)
+    tetgenio in = generate_tetgenio_input_mixed(pointsVec, facesVec);
+    return tetrahedralize_(command, in);
+  }
 
 #endif
 
-  void checkConnectivity() const {
-    const auto &points = this->getPoints();
-    const auto &faces = this->getFaces();
-    const auto &tetras = this->getTetras();
-    const auto &lines = this->getLines();
-
-    for (auto *p : points) {
-      if (!p)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "null point found");
-      if (p->getNetwork() != this)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point-network mismatch");
-
-      for (auto *l : p->Lines)
-        if (l == nullptr || l->Point_A != p && l->Point_B != p)
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "line/point adjacency broken");
-      for (auto *f : p->Faces)
-        if (f == nullptr || std::ranges::none_of(f->Points, [p](auto *pf) { return pf == p; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face/point adjacency broken");
-      for (auto *t : p->Tetras)
-        if (t == nullptr || std::ranges::none_of(t->Points, [p](auto *pt) { return pt == p; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "tetra/point adjacency broken");
-    }
-
-    for (auto *f : faces) {
-      if (!f)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "null face found");
-      if (f->getNetwork() != this)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face-network mismatch");
-      for (auto *l : f->Lines)
-        if (l == nullptr || std::ranges::none_of(l->Faces, [f](auto *fl) { return fl == f; })) {
-          std::cout << "f : " << f << std::endl;
-          std::cout << "l : " << l << std::endl;
-          std::cout << "l->Faces : " << l->getFaces() << std::endl;
-          for (auto l : f->Lines)
-            std::cout << "f->Lines : " << l << std::endl;
-
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "line/face adjacency broken");
-        }
-      for (auto *p : f->Points)
-        if (p == nullptr || std::ranges::none_of(p->Faces, [f](auto *fp) { return fp == f; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point/face adjacency broken");
-      for (auto *t : f->Tetras)
-        if (t && std::ranges::none_of(t->Faces, [f](auto *ft) { return ft == f; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "tetra/face adjacency broken");
-      for (auto *t : f->Tetras)
-        if (t && std::ranges::all_of(t->Faces, [f](auto *ft) { return ft == nullptr; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "tetra/face adjacency broken");
-    }
-
-    for (auto *t : tetras) {
-      if (!t)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "null tetra found");
-      for (auto *f : t->Faces)
-        if (f == nullptr || std::ranges::none_of(f->Tetras, [t](auto *tf) { return tf == t; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face/tetra adjacency broken");
-      for (auto *l : t->Lines)
-        if (l == nullptr || std::ranges::none_of(l->Tetras, [t](auto *tl) { return tl == t; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "line/tetra adjacency broken");
-      for (auto *p : t->Points)
-        if (p == nullptr || std::ranges::none_of(p->Tetras, [t](auto *tp) { return tp == t; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point/tetra adjacency broken");
-    }
-
-    for (auto *l : lines) {
-      if (!l)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "null line found");
-      if (l->getNetwork() != this)
-        throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "line-network mismatch");
-
-      for (auto *p : l->getPoints())
-        if (p == nullptr || std::ranges::none_of(p->Lines, [l](auto *pl) { return pl == l; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "point/line adjacency broken");
-      for (auto *f : l->getFaces())
-        if (f == nullptr || std::ranges::none_of(f->Lines, [l](auto *fl) { return fl == l; })) {
-          std::cout << "f : " << f << std::endl;
-          std::cout << "l : " << l << std::endl;
-          std::cout << "l->Faces : " << l->getFaces() << std::endl;
-          for (auto l : f->Lines)
-            std::cout << "f->Lines : " << l << std::endl;
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "face/line adjacency broken");
-        }
-      for (auto *t : l->Tetras)
-        if (t == nullptr || std::ranges::none_of(t->Lines, [l](auto *tl) { return tl == l; }))
-          throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "tetra/line adjacency broken");
-    }
-  }
+  void checkConnectivity() const;
 
 public:
-  bool erase_element(networkPoint *const p) {
-    auto it = this->Points.find(p); // unordered_setの場合はfindを使用
-    if (it != this->Points.end()) {
-      this->Points.erase(it);
-      return true;
-    }
-    return false;
-  }
+  bool erase_element(networkPoint* const p);
+  bool erase_element(networkLine* const l);
+  bool erase_element(networkFace* const f);
+  bool erase_element(networkTetra* const t);
 
-  bool erase_element(networkLine *const l) {
-    auto it = this->Lines.find(l); // unordered_setの場合はfindを使用
-    if (it != this->Lines.end()) {
-      this->Lines.erase(it);
-      return true;
-    }
-    return false;
-  }
-
-  bool erase_element(networkFace *const f) {
-    auto it = this->Faces.find(f); // unordered_setの場合はfindを使用
-    if (it != this->Faces.end()) {
-      this->Faces.erase(it);
-      return true;
-    }
-    return false;
-  }
-
-  bool erase_element(networkTetra *const t) {
-    auto it = this->Tetras.find(t); // unordered_setの場合はfindを使用
-    if (it != this->Tetras.end()) {
-      this->Tetras.erase(it);
-      return true;
-    }
-    return false;
-  }
-
-  /* --------------------------------------------------------------------------
-   */
-  size_t improveTetrahedraDelaunay(const double eps = 1E-12) {
-    size_t total_flips = 0;
-    const int max_iter = 10;
-    bool flipped_this_cycle = false; // 修正点 1: フリップ実行フラグ
-
-    auto func1 = [](double before, double after) { return after / before - 1.; };
-    auto func2 = [](double before, double after) { return after - before; };
-
-    for (auto iter = 0; iter < max_iter; iter++) {
-
-      flipped_this_cycle = false; // 毎サイクルリセット
-
-      Flip23Candidate best23 = improveTetrahedraDelaunay23(eps, iter < max_iter * 0.1 ? func1 : func2);
-      if (iter > max_iter * 0.2)
-        best23.smaller_is_better = 10.;
-      Flip32Candidate best32 = improveTetrahedraDelaunay32(eps, iter < max_iter * 0.1 ? func1 : func2);
-
-      // 候補が「実際に改善するか」を先に判定
-      bool improve23 = (best23.f && best23.smaller_is_better < -eps);
-      bool improve32 = (best32.edge && best32.smaller_is_better < -eps);
-
-      if (improve23 && !improve32) {
-        improve(best23);
-        flipped_this_cycle = true;
-      } else if (!improve23 && improve32) {
-        improve(best32);
-        flipped_this_cycle = true;
-      } else if (improve23 && improve32) {
-        if (best23.smaller_is_better < best32.smaller_is_better)
-          improve(best23);
-        else
-          improve(best32);
-        flipped_this_cycle = true;
-      } else {
-        std::cout << "Delaunay converged after " << iter << " iterations." << std::endl;
-        break;
-      }
-
-      if (flipped_this_cycle) {
-        total_flips++;
-        this->setGeometricProperties();
-        this->checkConnectivity();
-      } else
-        break;
-
-      if (iter == max_iter - 1)
-        std::cerr << "Warning: improveTetrahedraDelaunay reached max_iter." << std::endl;
-    }
-
-    return total_flips;
-  }
-  /* --------------------------------------------------------------------------
-   */
-
+  size_t improveTetrahedraDelaunay(const double eps = 1E-12);
   struct Flip23Candidate {
-    networkFace *f = nullptr;
+    networkFace* f = nullptr;
     networkTetra *t0 = nullptr, *t1 = nullptr;
     networkPoint *a = nullptr, *b = nullptr, *c = nullptr, *p = nullptr, *q = nullptr;
     double smaller_is_better{std::numeric_limits<double>::infinity()};
@@ -4878,181 +3563,38 @@ public:
   };
 
   struct Flip32Candidate {
-    networkLine *edge = nullptr;
-    std::array<networkTetra *, 3> tetras{};
+    networkLine* edge = nullptr;
+    std::array<networkTetra*, 3> tetras{};
     networkPoint *p = nullptr, *q = nullptr, *a = nullptr, *b = nullptr, *c = nullptr;
     double smaller_is_better{std::numeric_limits<double>::infinity()};
     double s_before{0.};
     double s_after{0.};
   };
-
-  Flip32Candidate improveTetrahedraDelaunay32(double eps = 1E-12, std::function<double(double, double)> quality_metric = nullptr) {
-    auto insphere_ = [](const networkPoint *a, const networkPoint *b, const networkPoint *c, const networkPoint *d, const networkPoint *e) { return insphere(a->X, b->X, c->X, d->X, e->X); };
-    auto TetrahedronVolume_ = [](const networkPoint *a, const networkPoint *b, const networkPoint *c, const networkPoint *d) { return TetrahedronVolume(a->X, b->X, c->X, d->X); };
-
-    Flip32Candidate best32;
-
-    for (auto *l : this->getLines()) {
-      auto tetras = l->Tetras;
-      if (tetras.size() != 3)
-        continue;
-      auto const [p, q] = l->getPoints();
-      if (!p || !q)
-        continue;
-
-      std::unordered_set<networkPoint *> others;
-      for (auto f : l->getFaces())
-        for (auto a : f->getPoints())
-          if (a != p && a != q)
-            others.insert(a);
-
-      if (others.size() != 3)
-        continue;
-
-      auto others_ = ToVector(others);
-      auto a = others_[0];
-      auto b = others_[1];
-      auto c = others_[2];
-
-      double s_before, s_after, smaller_is_better;
-
-      s_before = std::max({insphere_(p, q, a, b, c), insphere_(p, q, b, c, a), insphere_(p, q, c, a, b)});
-      s_after = std::max(insphere_(a, b, c, p, q), insphere_(a, b, c, q, p));
-
-      // 改善量
-      if (quality_metric)
-        smaller_is_better = quality_metric(s_before, s_after);
-      else
-        smaller_is_better = s_after - s_before;
-
-      if (smaller_is_better < best32.smaller_is_better)
-        best32 = {l, {tetras[0], tetras[1], tetras[2]}, p, q, a, b, c, smaller_is_better, s_before, s_after};
-    }
-
-    return best32;
-  }
-
-  void improve(Flip32Candidate &best32) {
-    if (!best32.edge)
-      return;
-    std::cout << Blue << "delaunay flip on edge " << best32.edge << " among tetras " << best32.tetras[0] << ", " << best32.tetras[1] << ", " << best32.tetras[2] << ", improvement = " << best32.smaller_is_better << " s_before = " << best32.s_before << " s_after = " << best32.s_after << colorReset << '\n';
-    auto faces = best32.edge->getFaces();
-    for (auto f : faces)
-      delete f;
-    delete best32.edge;
-    // 3-2 flip
-    ::genTetra(this, T_4P{best32.p, best32.a, best32.b, best32.c});
-    std::cout << "genTetra 1;\n";
-    ::genTetra(this, T_4P{best32.q, best32.a, best32.b, best32.c});
-    std::cout << "genTetra 2;\n";
-    // this->setGeometricProperties();
-    // this->checkConnectivity();
-  }
+  Flip32Candidate improveTetrahedraDelaunay32(double eps = 1E-12, std::function<double(double, double)> quality_metric = nullptr);
+  void improve(Flip32Candidate& best32);
 
   /* --------------------------------------------------------------------------
    */
 
-  Flip23Candidate improveTetrahedraDelaunay23(double eps = 1E-12, std::function<double(const double, const double)> quality_metric = nullptr) {
-    auto insphere_ = [](const networkPoint *a, const networkPoint *b, const networkPoint *c, const networkPoint *d, const networkPoint *e) { return insphere(a->X, b->X, c->X, d->X, e->X); };
-    auto TetrahedronVolume_ = [](const networkPoint *a, const networkPoint *b, const networkPoint *c, const networkPoint *d) { return TetrahedronVolume(a->X, b->X, c->X, d->X); };
+  Flip23Candidate improveTetrahedraDelaunay23(double eps = 1E-12, std::function<double(const double, const double)> quality_metric = nullptr);
 
-    Flip23Candidate best23;
-    // 適当な面を選び，その両側の四面体を調べる
-    for (auto *f : this->getFaces()) {
-      if (!f)
-        continue;
-      auto const [t0, t1] = f->getTetras();
-      if (!t0 || !t1)
-        continue;
-      auto const [a, b, c] = f->getPoints();
-      if (!a || !b || !c)
-        continue;
-
-      auto findOpp = [&](networkTetra *t) -> networkPoint * {
-        for (auto *pp : t->Points)
-          if (pp && pp != a && pp != b && pp != c)
-            return pp;
-        return nullptr;
-      };
-      auto *p = findOpp(t0);
-      auto *q = findOpp(t1);
-      if (!p || !q || p == q)
-        continue;
-
-      if (isFace(p, q, a) || isFace(p, q, b) || isFace(p, q, c))
-        continue;
-
-      //   double oa = orient3d(a->X, b->X, c->X, p->X);
-      //   double ob = orient3d(a->X, b->X, c->X, q->X);
-      //   if (std::abs(oa) < eps || std::abs(ob) < eps || oa * ob >= 0.)
-      //     continue;
-
-      // s > 0 （デローニー条件違反）
-      // s <= 0 の場合は、p, qがa, b, cの外側にあることを意味する
-
-      // 体積変化が大きい場合は実行しない
-      double vol_before = TetrahedronVolume_(a, b, c, p) + TetrahedronVolume_(a, b, c, q);
-      double vol_after = TetrahedronVolume_(p, q, a, b) + TetrahedronVolume_(p, q, b, c) + TetrahedronVolume_(p, q, c, a);
-      if (vol_before < 0.9 * vol_after || vol_before > 1.1 * vol_after)
-        continue;
-
-      double s_before, s_after, smaller_is_better;
-      s_before = std::max(insphere_(a, b, c, p, q), insphere_(a, b, c, q, p));
-      s_after = std::max({insphere_(p, q, a, b, c), insphere_(p, q, b, c, a), insphere_(p, q, c, a, b)});
-
-      if (quality_metric) {
-        smaller_is_better = quality_metric(s_before, s_after);
-      } else {
-        smaller_is_better = s_after - s_before;
-      }
-
-      if (smaller_is_better < best23.smaller_is_better)
-        best23 = {f, t0, t1, a, b, c, p, q, smaller_is_better, s_before, s_after};
-    }
-    return best23;
-  }
-
-  void improve(Flip23Candidate &best23) {
-
-    if (!best23.f)
-      return;
-    std::cout << Red << "delaunay flip on face " << best23.f << " between tetras " << best23.t0 << " and " << best23.t1 << ", improvement = " << best23.smaller_is_better << " s_before = " << best23.s_before << " s_after = " << best23.s_after << colorReset << '\n';
-    delete best23.f;
-    // 2-3 flip
-    std::cout << isFace(best23.p, best23.q, best23.a) << std::endl;
-    std::cout << isFace(best23.p, best23.q, best23.b) << std::endl;
-    std::cout << isFace(best23.p, best23.q, best23.c) << std::endl;
-    std::cout << isFace(best23.p, best23.a, best23.b) << std::endl;
-    ::genTetra(this, T_4P{best23.p, best23.q, best23.a, best23.b});
-    std::cout << "genTetra 1;\n";
-    ::genTetra(this, T_4P{best23.p, best23.q, best23.b, best23.c});
-    std::cout << "genTetra 2;\n";
-    ::genTetra(this, T_4P{best23.p, best23.q, best23.c, best23.a});
-    std::cout << "genTetra 3;\n";
-    // this->setGeometricProperties();
-    // this->checkConnectivity();
-  }
+  void improve(Flip23Candidate& best23);
 };
 
 //% ==========================================================================
-//*/ %
-//========================================================================== */
 //% ==========================================================================
-//*/
 
 #include "my_vtk.hpp"
-#include "networkPoint.hpp"
+// #include "networkPoint.cpp"
 
 // BEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEM
 #ifdef BEM
-V_Netp takeNetworks(const V_netPp &ps) {
+inline V_Netp takeNetworks(const V_netPp& ps) {
   V_Netp ret({});
-  for (auto &p : ps)
+  for (auto& p : ps)
     network::add(ret, p->getNetwork());
   return ret;
 };
-
-inline V_d networkPoint::nabla_phi() const { return this->getNetwork()->nabla_phi; };
 
 #endif
 // BEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEMBEM
@@ -5069,12 +3611,12 @@ inline V_d networkPoint::nabla_phi() const { return this->getNetwork()->nabla_ph
 inline void networkFace::Delete() {
   try {
     // 1. this->Linesからthisを削除する
-    for (auto &l : this->Lines)
+    for (auto& l : this->Lines)
       if (l)
         l->erase(this);
 
     // 2. this->Pointsからthisを削除する
-    for (auto &p : this->Points)
+    for (auto& p : this->Points)
       if (p)
         p->erase(this);
 
@@ -5088,8 +3630,7 @@ inline void networkFace::Delete() {
     // 4. Networkからthisを削除する
     if (!this->network->erase(this))
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "is not a member of " + this->network->getName());
-
-  } catch (std::exception &e) {
+  } catch (std::exception& e) {
     std::cerr << e.what() << colorReset << std::endl;
     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
   };
@@ -5113,23 +3654,19 @@ inline void networkPoint::Delete() {
         ss << this->network->getName() << "にも含まれていない" << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, ss.str());
     } else {
-      auto ps = this->getNeighbors();
-      V_netLp delL = {};
-      netLp line;
-      for (const auto &p : ps) {
-        if ((line = unlink(p, this)))
-          delL.emplace_back(line);
-      }
+      // Delete adjacent faces first to clear line/point references safely.
+      auto faces = this->getFaces();
+      for (auto* f : faces)
+        if (f)
+          delete f;
 
-      for (auto i = 0; i < delL.size(); i++) {
-        if (delL[i]->getFaces().empty()) {
-          auto tmp = delL[i];
-          delL[i] = nullptr;
-          delete tmp;
-        }
-      }
+      // Then delete all incident lines (faces should already be detached).
+      auto lines = this->getLines();
+      for (auto* l : lines)
+        if (l)
+          delete l;
     }
-  } catch (std::exception &e) {
+  } catch (std::exception& e) {
     std::cerr << e.what() << colorReset << std::endl;
     throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "");
   };
@@ -5175,25 +3712,31 @@ inline Network::~Network() {
   //
   try {
     // std::cout << Red << this->getName() << colorReset << std::endl;
-    // std::cout << "destroying Points" << std::endl;
+    // std::cout << "destroying Tetras" << std::endl;
     {
-      auto tmp = this->Points;
-      for (const auto &p : tmp)
-        delete p;
+      auto tmp = this->Tetras;
+      for (const auto& t : tmp)
+        delete t;
     }
     // std::cout << "destroying Faces" << std::endl;
     {
       auto tmp = this->Faces;
-      for (const auto &f : tmp)
+      for (const auto& f : tmp)
         delete f;
     }
     // std::cout << "destroying Lines" << std::endl;
     {
       auto tmp = this->Lines;
-      for (const auto &l : tmp)
+      for (const auto& l : tmp)
         delete l;
     }
-    if (this->Points.size() == 0 && this->Faces.size() == 0 && this->Lines.size() == 0) {
+    // std::cout << "destroying Points" << std::endl;
+    {
+      auto tmp = this->Points;
+      for (const auto& p : tmp)
+        delete p;
+    }
+    if (this->Points.size() == 0 && this->Faces.size() == 0 && this->Lines.size() == 0 && this->Tetras.size() == 0) {
       // std::cout << this->getName() << " is deleted successfully" <<
       // std::endl;
     } else {
@@ -5203,7 +3746,7 @@ inline Network::~Network() {
       message << "Lines.size() = " << this->Lines.size() << std::endl;
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, message.str());
     }
-  } catch (std::exception &e) {
+  } catch (std::exception& e) {
     std::cerr << e.what() << colorReset << std::endl;
   };
 };
@@ -5217,7 +3760,7 @@ divideの操作を整理して理解するために，networkFaceにdivideの一
 networkFace::divide_detail*/
 //
 /*networkFace::divide_code*/
-inline netFp networkFace::divide(netLp DivL /*this*/, netLp newDivL, netLp newMidL, int type) {
+inline netFp networkFace::Split(netLp DivL /*this*/, netLp newDivL, netLp newMidL, int type) {
   if (!MemberQ_(this->Lines, DivL))
     throw(error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "divL is not found in this->Lines"));
   auto oldF = this;
@@ -5306,9 +3849,9 @@ inline netFp networkFace::divide(netLp DivL /*this*/, netLp newDivL, netLp newMi
   return newF;
 };
 
-std::unordered_map<netP *, Tdd> &operator+=(std::unordered_map<netP *, Tdd> &ii_dd, const std::unordered_map<netP *, Tdd> &jj_dd) {
-  std::unordered_map<netP *, Tdd>::iterator it;
-  for (auto &[jj, dd] : jj_dd)
+inline std::unordered_map<netP*, Tdd>& operator+=(std::unordered_map<netP*, Tdd>& ii_dd, const std::unordered_map<netP*, Tdd>& jj_dd) {
+  std::unordered_map<netP*, Tdd>::iterator it;
+  for (auto& [jj, dd] : jj_dd)
     if ((it = ii_dd.find(jj)) != ii_dd.end())
       it->second += dd;
     else
@@ -5316,9 +3859,9 @@ std::unordered_map<netP *, Tdd> &operator+=(std::unordered_map<netP *, Tdd> &ii_
   return ii_dd;
 };
 
-std::map<netP *, Tdd> &operator+=(std::map<netP *, Tdd> &ii_dd, const std::map<netP *, Tdd> &jj_dd) {
-  std::map<netP *, Tdd>::iterator it;
-  for (auto &[jj, dd] : jj_dd)
+inline std::map<netP*, Tdd>& operator+=(std::map<netP*, Tdd>& ii_dd, const std::map<netP*, Tdd>& jj_dd) {
+  std::map<netP*, Tdd>::iterator it;
+  for (auto& [jj, dd] : jj_dd)
     if ((it = ii_dd.find(jj)) != ii_dd.end())
       it->second += dd;
     else
@@ -5326,8 +3869,8 @@ std::map<netP *, Tdd> &operator+=(std::map<netP *, Tdd> &ii_dd, const std::map<n
   return ii_dd;
 };
 
-std::map<netP *, Tdd> &operator+=(std::map<netP *, Tdd> &ii_dd, const std::tuple<netP *, Tdd> &jj_dd) {
-  std::map<netP *, Tdd>::iterator it;
+inline std::map<netP*, Tdd>& operator+=(std::map<netP*, Tdd>& ii_dd, const std::tuple<netP*, Tdd>& jj_dd) {
+  std::map<netP*, Tdd>::iterator it;
   if ((it = ii_dd.find(std::get<0>(jj_dd))) != ii_dd.end())
     it->second += std::get<1>(jj_dd);
   else
@@ -5337,7 +3880,7 @@ std::map<netP *, Tdd> &operator+=(std::map<netP *, Tdd> &ii_dd, const std::tuple
 
 /* -------------------------------------------------------------------------- */
 
-T4T3P ToT4T3P(const T_4P &p0123) {
+inline T4T3P ToT4T3P(const T_4P& p0123) {
   auto [p0, p1, p2, p3] = p0123;
   return {{{p0, p1, p2}, {p0, p1, p3}, {p0, p2, p3}, {p1, p2, p3}}};
 };
@@ -5346,7 +3889,7 @@ T4T3P ToT4T3P(const T_4P &p0123) {
 
 /* -------------------------------------------------------------------------- */
 
-// struct QuadPoints {
+// struct PseudoQuadPatch {
 //    /*this nodes forms a quadratic element like below
 //    0
 //    | \
@@ -5362,7 +3905,7 @@ T4T3P ToT4T3P(const T_4P &p0123) {
 //    const std::array<networkLine *, 3> l_of_face;
 //    const std::array<bool, 3> ignore;
 //    const std::array<networkPoint *, 6> points;
-//    QuadPoints(const networkPoint *origin, const networkFace *f)
+//    PseudoQuadPatch(const networkPoint *origin, const networkFace *f)
 //        : p_of_face(f->getPoints(origin)),
 //          l_of_face(f->getLinesTupleFrom(std::get<0>(p_of_face))),
 //          ignore({!std::get<1>(l_of_face)->CORNER,
@@ -5376,14 +3919,14 @@ T4T3P ToT4T3P(const T_4P &p0123) {
 //                  std::get<1>(p_of_face) /*5*/}){};
 // };
 
-struct QuadPoints {
-  networkFace *f;
-  const std::tuple<networkPoint *, networkLine *, networkPoint *, networkLine *, networkPoint *, networkLine *> PLPLPL;
+struct PseudoQuadPatch {
+  networkFace* f;
+  const std::tuple<networkPoint*, networkLine*, networkPoint*, networkLine*, networkPoint*, networkLine*> PLPLPL;
   std::array<bool, 3> available; // availability of the lines (face)
-  std::array<networkFace *, 3> faces;
-  std::array<networkPoint *, 6> points;
-  std::function<bool(const networkLine *)> conditionChecker;
-  std::array<std::tuple<networkPoint *, networkFace *>, 6> points_faces;
+  std::array<networkFace*, 3> faces;
+  std::array<networkPoint*, 6> points;
+  std::function<bool(const networkLine*)> conditionChecker;
+  std::array<std::tuple<networkPoint*, networkFace*>, 6> points_faces;
 
   /*       0
          /   \
@@ -5409,23 +3952,23 @@ struct QuadPoints {
 
   */
 
-  // QuadPoints(const networkPoint *origin_point, const networkFace *f) : f(f),
+  // PseudoQuadPatch(const networkPoint *origin_point, const networkFace *f) : f(f),
   // PLPLPL(f->getPointsAndLinesFromNearest(origin_point)) { initialize(); };
-  // QuadPoints(const networkLine *origin_line, const networkFace *f) : f(f),
+  // PseudoQuadPatch(const networkLine *origin_line, const networkFace *f) : f(f),
   // PLPLPL(f->getPointsAndLines(origin_line)) { initialize(); };
 
-  QuadPoints(networkFace *f, const networkPoint *origin_point = nullptr, std::function<bool(const networkLine *)> checker = [](const networkLine *line) { return !line->CORNER && line->getSurfaces().size() == 2; }) : f(f), PLPLPL(f->getPointsAndLinesFromNearest(origin_point)), conditionChecker(checker) { initialize(); };
+  PseudoQuadPatch(networkFace* f, const networkPoint* origin_point = nullptr, std::function<bool(const networkLine*)> checker = [](const networkLine* line) { return !line->CORNER && line->getBoundaryFaces().size() == 2; }) : f(f), PLPLPL(f->getPointsAndLinesFromNearest(origin_point)), conditionChecker(checker) { initialize(); };
 
-  QuadPoints(networkFace *f, const networkLine *origin_line = nullptr, std::function<bool(const networkLine *)> checker = [](const networkLine *line) { return !line->CORNER && line->getSurfaces().size() == 2; }) : f(f), PLPLPL(f->getPointsAndLines(origin_line)), conditionChecker(checker) { initialize(); };
+  PseudoQuadPatch(networkFace* f, const networkLine* origin_line = nullptr, std::function<bool(const networkLine*)> checker = [](const networkLine* line) { return !line->CORNER && line->getBoundaryFaces().size() == 2; }) : f(f), PLPLPL(f->getPointsAndLines(origin_line)), conditionChecker(checker) { initialize(); };
 
   void initialize() {
     auto [p0, l0, p1, l1, p2, l2] = this->PLPLPL;
 
     this->available = {conditionChecker(l1), conditionChecker(l2), conditionChecker(l0)};
 
-    auto fs0 = l0->getSurfaces();
-    auto fs1 = l1->getSurfaces();
-    auto fs2 = l2->getSurfaces();
+    auto fs0 = l0->getBoundaryFaces();
+    auto fs1 = l1->getBoundaryFaces();
+    auto fs2 = l2->getBoundaryFaces();
 
     // if (fs0.size() == 2 && fs1.size() == 2 && fs2.size() == 2)
 
@@ -5511,8 +4054,8 @@ t1*(1-t0-t1)は，p5の重みであるが，p5は存在しないので，これ�
 
 */
 
-bool useOppositeFace(const networkLine *line, const double alpha = M_PI / 3.) {
-  auto faecs = line->getSurfaces();
+inline bool useOppositeFace(const networkLine* line, const double alpha = M_PI / 3.) {
+  auto faecs = line->getBoundaryFaces();
   if (faecs.size() != 2)
     return false;
   auto [p0, p1] = line->getPoints();
@@ -5546,23 +4089,28 @@ bool useOppositeFace(const networkLine *line, const double alpha = M_PI / 3.) {
   //        base_length < alpha);
 };
 
-template <typename T> struct is_std_array_of_6 : std::false_type {};
-template <typename U> struct is_std_array_of_6<std::array<U, 6>> : std::true_type {};
-template <typename T> inline constexpr bool is_std_array_of_6_v = is_std_array_of_6<T>::value;
+template <typename T>
+struct is_std_array_of_6 : std::false_type {
+};
+template <typename U>
+struct is_std_array_of_6<std::array<U, 6>> : std::true_type {
+};
+template <typename T>
+inline constexpr bool is_std_array_of_6_v = is_std_array_of_6<T>::value;
 
 struct DodecaPoints {
 
-  networkFace *f; // given center face
-  const std::function<bool(const networkLine *)> conditionChecker;
-  const QuadPoints quadpoint;
-  const std::tuple<networkPoint *, networkLine *, networkPoint *, networkLine *, networkPoint *, networkLine *> PLPLPL;
+  networkFace* f; // given center face
+  const std::function<bool(const networkLine*)> conditionChecker;
+  const PseudoQuadPatch quadpoint;
+  const std::tuple<networkPoint*, networkLine*, networkPoint*, networkLine*, networkPoint*, networkLine*> PLPLPL;
   const networkLine *l0, *l1, *l2;
   const std::array<bool, 3> available; // availability of the lines (face)
   networkFace *f0, *f1, *f2;
 
-  const QuadPoints quadpoint_l0;
-  const QuadPoints quadpoint_l1;
-  const QuadPoints quadpoint_l2;
+  const PseudoQuadPatch quadpoint_l0;
+  const PseudoQuadPatch quadpoint_l1;
+  const PseudoQuadPatch quadpoint_l2;
 
   const T3Tdd shape_map_center = {{{0., 0.5} /*quad 4 -> linear 0*/, {0.5, 0.} /*quad 5 -> linear 1*/, {0.5, 0.5} /*quad 3 -> linear 2*/}};
   //! これとN3の内積を新なパラメタとして利用すると，(t0,t1)=(1,0)で{0.,
@@ -5571,7 +4119,7 @@ struct DodecaPoints {
   const T3Tdd shape_map_l1_face = {{{0., 0.} /*0*/, {0.5, 0.} /*1*/, {0., 0.5} /*2*/}};
   const T3Tdd shape_map_l2_face = {{{0., 0.5} /*0*/, {0., 0.} /*1*/, {0.5, 0.} /*2*/}};
 
-  const QuadPoints *getQuadPoints(const int i) {
+  const PseudoQuadPatch* getPseudoQuadPatch(const int i) {
     if (i == 0)
       return &this->quadpoint_l0;
     else if (i == 1)
@@ -5583,9 +4131,9 @@ struct DodecaPoints {
   };
 
   DodecaPoints(
-      networkFace *f, const networkPoint *origin_point = nullptr, std::function<bool(const networkLine *)> checker = [](const networkLine *line) { return !line->CORNER && line->getSurfaces().size() == 2; })
-      : f(f), conditionChecker(checker), quadpoint(f, origin_point, checker), PLPLPL(quadpoint.PLPLPL), l0(std::get<1>(PLPLPL)), l1(std::get<3>(PLPLPL)), l2(std::get<5>(PLPLPL)), available(quadpoint.available), f0(l0->getSurfaces().size() == 1 ? l0->getSurfaces()[0] : (l0->getSurfaces()[0] == f ? l0->getSurfaces()[1] : l0->getSurfaces()[0])), f1(l1->getSurfaces().size() == 1 ? l1->getSurfaces()[0] : (l1->getSurfaces()[0] == f ? l1->getSurfaces()[1] : l1->getSurfaces()[0])),
-        f2(l2->getSurfaces().size() == 1 ? l2->getSurfaces()[0] : (l2->getSurfaces()[0] == f ? l2->getSurfaces()[1] : l2->getSurfaces()[0])), quadpoint_l0(f0, l0, checker), quadpoint_l1(f1, l1, checker), quadpoint_l2(f2, l2, checker) {};
+      networkFace* f, const networkPoint* origin_point = nullptr, std::function<bool(const networkLine*)> checker = [](const networkLine* line) { return !line->CORNER && line->getBoundaryFaces().size() == 2; })
+      : f(f), conditionChecker(checker), quadpoint(f, origin_point, checker), PLPLPL(quadpoint.PLPLPL), l0(std::get<1>(PLPLPL)), l1(std::get<3>(PLPLPL)), l2(std::get<5>(PLPLPL)), available(quadpoint.available), f0(l0->getBoundaryFaces().size() == 1 ? l0->getBoundaryFaces()[0] : (l0->getBoundaryFaces()[0] == f ? l0->getBoundaryFaces()[1] : l0->getBoundaryFaces()[0])),
+        f1(l1->getBoundaryFaces().size() == 1 ? l1->getBoundaryFaces()[0] : (l1->getBoundaryFaces()[0] == f ? l1->getBoundaryFaces()[1] : l1->getBoundaryFaces()[0])), f2(l2->getBoundaryFaces().size() == 1 ? l2->getBoundaryFaces()[0] : (l2->getBoundaryFaces()[0] == f ? l2->getBoundaryFaces()[1] : l2->getBoundaryFaces()[0])), quadpoint_l0(f0, l0, checker), quadpoint_l1(f1, l1, checker), quadpoint_l2(f2, l2, checker) {};
   /*
   これをみると，
   {t0, t1, 1-t0-t1, N * t0*t1, N * t0*(1-t0-t1), N * t1*(1-t0-t1)}
@@ -5619,7 +4167,8 @@ struct DodecaPoints {
   // #define USE_NEWTON_METHOD_FOR_FIND_MINIMUM
 #define USE_SUBDIVISION_METHOD_FOR_FIND_MINIMUM
 
-  template <std::size_t N> std::tuple<Tdd, std::array<double, N>> findMinimum(const std::function<std::array<double, N>(networkPoint *)> &conversion, const auto &minimizing_function, const std::array<double, 2> t0_range = {0., 1.}) {
+  template <std::size_t N>
+  std::tuple<Tdd, std::array<double, N>> findMinimum(const std::function<std::array<double, N>(networkPoint*)>& conversion, const auto& minimizing_function, const std::array<double, 2> t0_range = {0., 1.}) {
 
     Tdd first_guess = {0.25, 0.25};
     std::array<double, N> first_point = this->interpolate(first_guess, conversion), tmp;
@@ -5761,9 +4310,25 @@ struct DodecaPoints {
     return {Nc, Nl0, Nl1, Nl2};
   };
 
-  template <int i, int j> std::array<T6d, 4> N(const double t0, const double t1) const { return N6_new<i, j>(t0, t1); };
+  // CORNER edge quadratic offset at parametric coordinates
+  // Returns {0,0,0} when all offsets are zero (inactive)
+  Tddd corner_offset(const double t0, const double t1) const {
+    const auto [N0, N1, N2, N3, N4, N5] = TriShape<6>(t0, t1);
+    Tddd offset = {0., 0., 0.};
+    if (!this->conditionChecker(this->l0) && this->l0->CORNER)
+      offset += N3 * this->l0->corner_midpoint_offset;
+    if (!this->conditionChecker(this->l1) && this->l1->CORNER)
+      offset += N4 * this->l1->corner_midpoint_offset;
+    if (!this->conditionChecker(this->l2) && this->l2->CORNER)
+      offset += N5 * this->l2->corner_midpoint_offset;
+    return offset;
+  };
 
-  template <int i, int j> std::array<T6d, 4> D_N6_new(const double t0, const double t1) const {
+  template <int i, int j>
+  std::array<T6d, 4> N(const double t0, const double t1) const { return N6_new<i, j>(t0, t1); };
+
+  template <int i, int j>
+  std::array<T6d, 4> D_N6_new(const double t0, const double t1) const {
     const auto [DN0, DN1, DN2, DN3, DN4, DN5] = D_TriShape_Quadratic<i, j>(t0, t1);
     T6d Nc = {0., 0., 0., DN2, DN0, DN1};
     T6d Nl0 = {0., 0., 0., 0., 0., 0.}, Nl1 = {0., 0., 0., 0., 0., 0.}, Nl2 = {0., 0., 0., 0., 0., 0.};
@@ -5787,44 +4352,154 @@ struct DodecaPoints {
     return {Nc, Nl0, Nl1, Nl2};
   };
 
-  template <int i, int j> std::array<T6d, 4> D_N(const double t0, const double t1) const { return D_N6_new<i, j>(t0, t1); };
+  template <int i, int j>
+  std::array<T6d, 4> D_N(const double t0, const double t1) const { return D_N6_new<i, j>(t0, t1); };
 
   std::array<double, 3> X(const double t0, const double t1) const {
     auto [Nc, N0, N1, N2] = N6_new(t0, t1);
     return Dot(Nc, ToX(this->quadpoint.points)) + Dot(N0, ToX(this->quadpoint_l0.points)) + Dot(N1, ToX(this->quadpoint_l1.points)) + Dot(N2, ToX(this->quadpoint_l2.points));
   };
 
-  std::array<double, 3> X(const std::array<double, 2> &t0t1) const { return X(std::get<0>(t0t1), std::get<1>(t0t1)); };
+  std::array<double, 3> X(const std::array<double, 2>& t0t1) const { return X(std::get<0>(t0t1), std::get<1>(t0t1)); };
 
-  template <int i, int j> std::array<double, 3> D_X(const double t0, const double t1) const {
+  template <int i, int j>
+  std::array<double, 3> D_X(const double t0, const double t1) const {
     auto [Nc, N0, N1, N2] = D_N6_new<i, j>(t0, t1);
     return Dot(Nc, ToX(this->quadpoint.points)) + Dot(N0, ToX(this->quadpoint_l0.points)) + Dot(N1, ToX(this->quadpoint_l1.points)) + Dot(N2, ToX(this->quadpoint_l2.points));
   };
 
   std::array<double, 3> cross(const double t0, const double t1) const { return Cross(D_X<1, 0>(t0, t1), D_X<0, 1>(t0, t1)); };
 
+  // 最適化版: X, N6_new, crossを一度に計算（重複計算を削減）
+  std::tuple<Tddd, std::array<T6d, 4>, Tddd> X_N6_cross(const double t0, const double t1) const {
+    // N6_newとD_N6_newを一度に計算
+    const auto [N0, N1, N2, N3, N4, N5] = TriShape<6>(t0, t1);
+    const auto [DN0_t0, DN1_t0, DN2_t0, DN3_t0, DN4_t0, DN5_t0] = D_TriShape_Quadratic<1, 0>(t0, t1);
+    const auto [DN0_t1, DN1_t1, DN2_t1, DN3_t1, DN4_t1, DN5_t1] = D_TriShape_Quadratic<0, 1>(t0, t1);
+
+    // N6_new計算
+    T6d Nc = {0., 0., 0., N2, N0, N1};
+    T6d Nl0 = {0., 0., 0., 0., 0., 0.};
+    T6d Nl1 = {0., 0., 0., 0., 0., 0.};
+    T6d Nl2 = {0., 0., 0., 0., 0., 0.};
+
+    // D_N6_new<1,0>計算
+    T6d DNc_t0 = {0., 0., 0., DN2_t0, DN0_t0, DN1_t0};
+    T6d DNl0_t0 = {0., 0., 0., 0., 0., 0.};
+    T6d DNl1_t0 = {0., 0., 0., 0., 0., 0.};
+    T6d DNl2_t0 = {0., 0., 0., 0., 0., 0.};
+
+    // D_N6_new<0,1>計算
+    T6d DNc_t1 = {0., 0., 0., DN2_t1, DN0_t1, DN1_t1};
+    T6d DNl0_t1 = {0., 0., 0., 0., 0., 0.};
+    T6d DNl1_t1 = {0., 0., 0., 0., 0., 0.};
+    T6d DNl2_t1 = {0., 0., 0., 0., 0., 0.};
+
+    // 条件に応じて重みを分配
+    const auto shape_center = TriShape<6>(0.25, 0.25, this->quadpoint.available);
+    const auto shape_l0 = TriShape<6>(0.25, 0.25, this->quadpoint_l0.available);
+    const auto shape_l1 = TriShape<6>(0.25, 0.25, this->quadpoint_l1.available);
+    const auto shape_l2 = TriShape<6>(0.25, 0.25, this->quadpoint_l2.available);
+    const auto shape_center_l1 = TriShape<6>(0.5, 0.25, this->quadpoint.available);
+    const auto shape_center_l2 = TriShape<6>(0.25, 0.5, this->quadpoint.available);
+
+    if (this->conditionChecker(this->l0)) {
+      Nc += 0.5 * N3 * shape_center;
+      Nl0 = 0.5 * N3 * shape_l0;
+      DNc_t0 += 0.5 * DN3_t0 * shape_center;
+      DNl0_t0 = 0.5 * DN3_t0 * shape_l0;
+      DNc_t1 += 0.5 * DN3_t1 * shape_center;
+      DNl0_t1 = 0.5 * DN3_t1 * shape_l0;
+    } else {
+      Nc += T6d{0., 0., 0., 0., 0.5 * N3, 0.5 * N3};
+      DNc_t0 += T6d{0., 0., 0., 0., 0.5 * DN3_t0, 0.5 * DN3_t0};
+      DNc_t1 += T6d{0., 0., 0., 0., 0.5 * DN3_t1, 0.5 * DN3_t1};
+    }
+
+    if (this->conditionChecker(this->l1)) {
+      Nc += 0.5 * N4 * shape_center_l1;
+      Nl1 = 0.5 * N4 * shape_l1;
+      DNc_t0 += 0.5 * DN4_t0 * shape_center_l1;
+      DNl1_t0 = 0.5 * DN4_t0 * shape_l1;
+      DNc_t1 += 0.5 * DN4_t1 * shape_center_l1;
+      DNl1_t1 = 0.5 * DN4_t1 * shape_l1;
+    } else {
+      Nc += T6d{0., 0., 0., 0.5 * N4, 0., 0.5 * N4};
+      DNc_t0 += T6d{0., 0., 0., 0.5 * DN4_t0, 0., 0.5 * DN4_t0};
+      DNc_t1 += T6d{0., 0., 0., 0.5 * DN4_t1, 0., 0.5 * DN4_t1};
+    }
+
+    if (this->conditionChecker(this->l2)) {
+      Nc += 0.5 * N5 * shape_center_l2;
+      Nl2 = 0.5 * N5 * shape_l2;
+      DNc_t0 += 0.5 * DN5_t0 * shape_center_l2;
+      DNl2_t0 = 0.5 * DN5_t0 * shape_l2;
+      DNc_t1 += 0.5 * DN5_t1 * shape_center_l2;
+      DNl2_t1 = 0.5 * DN5_t1 * shape_l2;
+    } else {
+      Nc += T6d{0., 0., 0., 0.5 * N5, 0.5 * N5, 0.};
+      DNc_t0 += T6d{0., 0., 0., 0.5 * DN5_t0, 0.5 * DN5_t0, 0.};
+      DNc_t1 += T6d{0., 0., 0., 0.5 * DN5_t1, 0.5 * DN5_t1, 0.};
+    }
+
+    // 座標データを取得
+    const auto X_c = ToX(this->quadpoint.points);
+    const auto X_l0 = ToX(this->quadpoint_l0.points);
+    const auto X_l1 = ToX(this->quadpoint_l1.points);
+    const auto X_l2 = ToX(this->quadpoint_l2.points);
+
+    // X計算
+    Tddd X = Dot(Nc, X_c) + Dot(Nl0, X_l0) + Dot(Nl1, X_l1) + Dot(Nl2, X_l2);
+
+    // D_X計算
+    Tddd dXdt0 = Dot(DNc_t0, X_c) + Dot(DNl0_t0, X_l0) + Dot(DNl1_t0, X_l1) + Dot(DNl2_t0, X_l2);
+    Tddd dXdt1 = Dot(DNc_t1, X_c) + Dot(DNl0_t1, X_l0) + Dot(DNl1_t1, X_l1) + Dot(DNl2_t1, X_l2);
+
+    // CORNER edge quadratic correction (offset is {0,0,0} when not active)
+    if (!this->conditionChecker(this->l0) && this->l0->CORNER) {
+      X += N3 * this->l0->corner_midpoint_offset;
+      dXdt0 += DN3_t0 * this->l0->corner_midpoint_offset;
+      dXdt1 += DN3_t1 * this->l0->corner_midpoint_offset;
+    }
+    if (!this->conditionChecker(this->l1) && this->l1->CORNER) {
+      X += N4 * this->l1->corner_midpoint_offset;
+      dXdt0 += DN4_t0 * this->l1->corner_midpoint_offset;
+      dXdt1 += DN4_t1 * this->l1->corner_midpoint_offset;
+    }
+    if (!this->conditionChecker(this->l2) && this->l2->CORNER) {
+      X += N5 * this->l2->corner_midpoint_offset;
+      dXdt0 += DN5_t0 * this->l2->corner_midpoint_offset;
+      dXdt1 += DN5_t1 * this->l2->corner_midpoint_offset;
+    }
+
+    return {X, {Nc, Nl0, Nl1, Nl2}, Cross(dXdt0, dXdt1)};
+  };
+
   /*
   ６点の値を与えた場合，標準の2次補間を使えるようにする．
   */
 
-  std::array<double, 3> X(const double t0, const double t1, const std::array<std::array<double, 3>, 6> &samples) const { return Dot(TriShape<6>(t0, t1), samples); };
-  std::array<double, 3> X(const std::array<double, 2> &t0t1, const std::array<std::array<double, 3>, 6> &samples) const { return Dot(TriShape<6>(std::get<0>(t0t1), std::get<1>(t0t1)), samples); };
+  std::array<double, 3> X(const double t0, const double t1, const std::array<std::array<double, 3>, 6>& samples) const { return Dot(TriShape<6>(t0, t1), samples); };
+  std::array<double, 3> X(const std::array<double, 2>& t0t1, const std::array<std::array<double, 3>, 6>& samples) const { return Dot(TriShape<6>(std::get<0>(t0t1), std::get<1>(t0t1)), samples); };
 
-  template <int i, int j> std::array<double, 3> D_X(const double t0, const double t1, const std::array<std::array<double, 3>, 6> &samples) const { return Dot(D_TriShape<6, i, j>(t0, t1), samples); };
+  template <int i, int j>
+  std::array<double, 3> D_X(const double t0, const double t1, const std::array<std::array<double, 3>, 6>& samples) const { return Dot(D_TriShape<6, i, j>(t0, t1), samples); };
 
-  std::array<double, 3> cross(const double t0, const double t1, const std::array<std::array<double, 3>, 6> &samples) const { return Cross(D_X<1, 0>(t0, t1, samples), D_X<0, 1>(t0, t1, samples)); };
+  std::array<double, 3> cross(const double t0, const double t1, const std::array<std::array<double, 3>, 6>& samples) const { return Cross(D_X<1, 0>(t0, t1, samples), D_X<0, 1>(t0, t1, samples)); };
 
   /* --------------------------------------------------------------------------
    */
 
-  template <typename T> T Dot4(const std::array<T6d, 4> &N, const std::array<std::array<T, 6>, 4> &samples) const {
+  template <typename T>
+  T Dot4(const std::array<T6d, 4>& N, const std::array<std::array<T, 6>, 4>& samples) const {
     // 変更なし
     return Dot(std::get<0>(N), std::get<0>(samples)) + Dot(std::get<1>(N), std::get<1>(samples)) + Dot(std::get<2>(N), std::get<2>(samples)) + Dot(std::get<3>(N), std::get<3>(samples));
   };
 
-  template <typename ConversionFunc> auto conversions(ConversionFunc conversion) const {
+  template <typename ConversionFunc>
+  auto conversions(ConversionFunc conversion) const {
     // 変更なし
-    using T = std::invoke_result_t<ConversionFunc, networkPoint *>;
+    using T = std::invoke_result_t<ConversionFunc, networkPoint*>;
     std::array<std::array<T, 6>, 4> samples;
     for (auto i = 0; i < 6; ++i) {
       std::get<0>(samples)[i] = conversion(this->quadpoint.points[i]);
@@ -5835,13 +4510,17 @@ struct DodecaPoints {
     return samples;
   };
 
-  template <typename ConversionFunc> auto interpolate(const double t0, const double t1, ConversionFunc conversion) const {
-    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint *>;
+  template <typename ConversionFunc>
+  auto interpolate(const double t0, const double t1, ConversionFunc conversion) const {
+    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint*>;
     if constexpr (is_std_array_of_6_v<ReturnT>) {
       auto samples = conversion(this->f->getPoints()[0]); // 引数のPointはダミー
       return Dot(TriShape<6>(t0, t1), samples);
     } else {
-      return this->Dot4(N6_new(t0, t1), conversions(conversion));
+      auto result = this->Dot4(N6_new(t0, t1), conversions(conversion));
+      if constexpr (std::is_same_v<ReturnT, Tddd>)
+        result += corner_offset(t0, t1);
+      return result;
     }
   };
 
@@ -5870,11 +4549,13 @@ struct DodecaPoints {
 
   //! -----------------------------------------------------------------
 
-  template <typename ConversionFunc> auto interpolate(const Tdd t0t1, ConversionFunc conversion) const { return interpolate(std::get<0>(t0t1), std::get<1>(t0t1), conversion); };
+  template <typename ConversionFunc>
+  auto interpolate(const Tdd t0t1, ConversionFunc conversion) const { return interpolate(std::get<0>(t0t1), std::get<1>(t0t1), conversion); };
 
   // ベクトルや配列を補間するバージョンも同様に if constexpr で分岐
-  template <std::size_t N, typename ConversionFunc> auto interpolate(const std::array<Tdd, N> &t0t1, ConversionFunc conversion) const {
-    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint *>;
+  template <std::size_t N, typename ConversionFunc>
+  auto interpolate(const std::array<Tdd, N>& t0t1, ConversionFunc conversion) const {
+    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint*>;
 
     if constexpr (is_std_array_of_6_v<ReturnT>) {
       using T_elem = typename ReturnT::value_type;
@@ -5887,14 +4568,18 @@ struct DodecaPoints {
       using T_elem = ReturnT;
       std::array<T_elem, N> ret;
       auto samples = conversions(conversion);
-      for (auto i = 0; i < t0t1.size(); ++i)
+      for (auto i = 0; i < t0t1.size(); ++i) {
         ret[i] = this->Dot4(N6_new(std::get<0>(t0t1[i]), std::get<1>(t0t1[i])), samples);
+        if constexpr (std::is_same_v<T_elem, Tddd>)
+          ret[i] += corner_offset(std::get<0>(t0t1[i]), std::get<1>(t0t1[i]));
+      }
       return ret;
     }
   };
   // 1つ目の関数：std::vector<std::array<Tdd, N>> を引数に取るバージョン
-  template <std::size_t N, typename ConversionFunc> auto interpolate(const std::vector<std::array<Tdd, N>> &t0t1, ConversionFunc conversion) const {
-    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint *>;
+  template <std::size_t N, typename ConversionFunc>
+  auto interpolate(const std::vector<std::array<Tdd, N>>& t0t1, ConversionFunc conversion) const {
+    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint*>;
 
     if constexpr (is_std_array_of_6_v<ReturnT>) {
       // 【新機能】6節点の値を直接与える場合
@@ -5911,15 +4596,19 @@ struct DodecaPoints {
       std::vector<std::array<T_elem, N>> ret(t0t1.size());
       auto samples = conversions(conversion);
       for (auto i = 0; i < t0t1.size(); ++i)
-        for (auto j = 0; j < N; ++j)
+        for (auto j = 0; j < N; ++j) {
           ret[i][j] = this->Dot4(N6_new(std::get<0>(t0t1[i][j]), std::get<1>(t0t1[i][j])), samples);
+          if constexpr (std::is_same_v<T_elem, Tddd>)
+            ret[i][j] += corner_offset(std::get<0>(t0t1[i][j]), std::get<1>(t0t1[i][j]));
+        }
       return ret;
     }
   };
 
   // 2つ目の関数：std::vector<Tdd> を引数に取るバージョン
-  template <typename ConversionFunc> auto interpolate(const std::vector<Tdd> &t0t1, ConversionFunc conversion) const {
-    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint *>;
+  template <typename ConversionFunc>
+  auto interpolate(const std::vector<Tdd>& t0t1, ConversionFunc conversion) const {
+    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint*>;
 
     if constexpr (is_std_array_of_6_v<ReturnT>) {
       // 【新機能】6節点の値を直接与える場合
@@ -5942,8 +4631,9 @@ struct DodecaPoints {
     }
   };
 
-  template <int i, int j, typename ConversionFunc> auto D_interpolate(const double t0, const double t1, ConversionFunc conversion) const {
-    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint *>;
+  template <int i, int j, typename ConversionFunc>
+  auto D_interpolate(const double t0, const double t1, ConversionFunc conversion) const {
+    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint*>;
     if constexpr (is_std_array_of_6_v<ReturnT>) {
       auto samples = conversion(this->f->getPoints()[0]); // 引数のPointはダミー
       return Dot(D_TriShape<6, i, j>(t0, t1), samples);
@@ -5952,10 +4642,12 @@ struct DodecaPoints {
     }
   };
 
-  template <int i, int j, typename ConversionFunc> auto D_interpolate(const Tdd t0t1, ConversionFunc conversion) const { return D_interpolate<i, j>(std::get<0>(t0t1), std::get<1>(t0t1), conversion); };
+  template <int i, int j, typename ConversionFunc>
+  auto D_interpolate(const Tdd t0t1, ConversionFunc conversion) const { return D_interpolate<i, j>(std::get<0>(t0t1), std::get<1>(t0t1), conversion); };
 
-  template <int i, int j, typename ConversionFunc> auto D_interpolate(const std::vector<Tdd> t0t1, ConversionFunc conversion) const {
-    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint *>;
+  template <int i, int j, typename ConversionFunc>
+  auto D_interpolate(const std::vector<Tdd> t0t1, ConversionFunc conversion) const {
+    using ReturnT = std::invoke_result_t<ConversionFunc, networkPoint*>;
 
     if constexpr (is_std_array_of_6_v<ReturnT>) {
       using T_elem = typename ReturnT::value_type;
@@ -5977,11 +4669,11 @@ struct DodecaPoints {
 
 /* -------------------------------------------------------------------------- */
 template <typename U, typename T>
-typename std::enable_if<std::is_same<T, Network *>::value || std::is_same<T, std::vector<networkLine *>>::value || std::is_same<T, std::unordered_set<networkLine *>>::value || std::is_same<T, std::vector<networkFace *>>::value || std::is_same<T, std::unordered_set<networkFace *>>::value || std::is_same<T, std::vector<networkTetra *>>::value || std::is_same<T, std::unordered_set<networkTetra *>>::value>::type vtkPolygonWrite(std::ofstream &ofs, const T &uo_f,
-                                                                                                                                                                                                                                                                                                                                                                                                                                            const std::unordered_map<networkPoint *, U> &data_double = {}) {
-  vtkPolygonWriter<networkPoint *> vtp;
+typename std::enable_if<std::is_same<T, Network*>::value || std::is_same<T, std::vector<networkLine*>>::value || std::is_same<T, std::unordered_set<networkLine*>>::value || std::is_same<T, std::vector<networkFace*>>::value || std::is_same<T, std::unordered_set<networkFace*>>::value || std::is_same<T, std::vector<networkTetra*>>::value || std::is_same<T, std::unordered_set<networkTetra*>>::value>::type vtkPolygonWrite(std::ofstream& ofs, const T& uo_f,
+                                                                                                                                                                                                                                                                                                                                                                                                                                     const std::unordered_map<networkPoint*, U>& data_double = {}) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uo_f.size());
-  for (const auto &f : uo_f) {
+  for (const auto& f : uo_f) {
     auto abc = f->getPoints();
     vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
     vtp.addPolygon(abc);
@@ -5991,21 +4683,22 @@ typename std::enable_if<std::is_same<T, Network *>::value || std::is_same<T, std
   vtp.write(ofs);
 }
 
-template <typename face_list> void vtkPolygonWrite(std::ofstream &ofs, const face_list &uo_f, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, std::variant<double, std::array<double, 3>>>>> &name_uo_data) {
-  vtkUnstructuredGridWriter<networkPoint *> vtu;
+template <typename face_list>
+void vtkPolygonWrite(std::ofstream& ofs, const face_list& uo_f, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint*, std::variant<double, std::array<double, 3>>>>>& name_uo_data) {
+  vtkUnstructuredGridWriter<networkPoint*> vtu;
   vtu.reserve(uo_f.size());
-  for (const auto &f : uo_f) {
+  for (const auto& f : uo_f) {
     auto abc = f->getPoints();
     vtu.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
     vtu.addGrid(abc);
   }
   for (auto i = 0; i < name_uo_data.size(); ++i) {
-    std::unordered_map<networkPoint *, double> double_map;
-    std::unordered_map<networkPoint *, std::array<double, 3>> array_map;
+    std::unordered_map<networkPoint*, double> double_map;
+    std::unordered_map<networkPoint*, std::array<double, 3>> array_map;
 
-    for (const auto &[key, value] : std::get<1>(name_uo_data[i])) {
+    for (const auto& [key, value] : std::get<1>(name_uo_data[i])) {
       std::visit(
-          [&](auto &&arg) {
+          [&](auto&& arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, double>) {
               double_map[key] = arg;
@@ -6026,20 +4719,19 @@ template <typename face_list> void vtkPolygonWrite(std::ofstream &ofs, const fac
   vtu.write(ofs);
 };
 
-void vtkPolygonWrite(std::ofstream &ofs, const T_4F &tuple_f) {
-  vtkPolygonWriter<networkPoint *> vtp;
-  std::ranges::for_each(tuple_f, [&](const auto &f) {
+inline void vtkPolygonWrite(std::ofstream& ofs, const T_4F& tuple_f) {
+  vtkPolygonWriter<networkPoint*> vtp;
+  std::ranges::for_each(tuple_f, [&](const auto& f) {
     auto abc = f->getPoints();
     vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-    vtp.addPolygon(abc);
-  });
+    vtp.addPolygon(abc); });
   vtp.write(ofs);
 };
 
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL) {
-  vtkPolygonWriter<networkPoint *> vtp;
+inline void vtkPolygonWrite(std::ofstream& ofs, const std::unordered_set<networkLine*>& uoL) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoL.size());
-  for (const auto &l : uoL) {
+  for (const auto& l : uoL) {
     auto [a, b] = l->getPoints();
     vtp.add(a, b);
     vtp.addLine(a, b);
@@ -6047,10 +4739,11 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *>
   vtp.write(ofs);
 };
 
-template <typename U> void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL, const std::unordered_map<networkPoint *, U> &data_double) {
-  vtkPolygonWriter<networkPoint *> vtp;
+template <typename U>
+void vtkPolygonWrite(std::ofstream& ofs, const std::unordered_set<networkLine*>& uoL, const std::unordered_map<networkPoint*, U>& data_double) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoL.size());
-  for (const auto &l : uoL) {
+  for (const auto& l : uoL) {
     auto [a, b] = l->getPoints();
     vtp.add(a, b);
     vtp.addLine(a, b);
@@ -6060,10 +4753,11 @@ template <typename U> void vtkPolygonWrite(std::ofstream &ofs, const std::unorde
 };
 
 // for const std::vector<std::tuple<std::string, std::unordered_map<T, U>>
-template <typename U> void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkLine *> &uoL, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, U>>> &name_uo_data = {}) {
-  vtkPolygonWriter<networkPoint *> vtp;
+template <typename U>
+void vtkPolygonWrite(std::ofstream& ofs, const std::unordered_set<networkLine*>& uoL, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint*, U>>>& name_uo_data = {}) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoL.size());
-  for (const auto &l : uoL) {
+  for (const auto& l : uoL) {
     auto [a, b] = l->getPoints();
     vtp.add(a, b);
     vtp.addLine(a, b);
@@ -6075,20 +4769,20 @@ template <typename U> void vtkPolygonWrite(std::ofstream &ofs, const std::unorde
 
 // for std::variant<double, std::array<double, 3>>
 
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkPoint *> &uoP, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, std::variant<double, std::array<double, 3>>>>> &name_uo_data = {}) {
-  vtkPolygonWriter<networkPoint *> vtp;
+inline void vtkPolygonWrite(std::ofstream& ofs, const std::unordered_set<networkPoint*>& uoP, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint*, std::variant<double, std::array<double, 3>>>>>& name_uo_data = {}) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoP.size());
-  for (const auto &p : uoP) {
+  for (const auto& p : uoP) {
     vtp.add(p);
   }
 
-  for (const auto &[name, data] : name_uo_data) {
-    std::unordered_map<networkPoint *, double> double_map;
-    std::unordered_map<networkPoint *, std::array<double, 3>> array_map;
+  for (const auto& [name, data] : name_uo_data) {
+    std::unordered_map<networkPoint*, double> double_map;
+    std::unordered_map<networkPoint*, std::array<double, 3>> array_map;
 
-    for (const auto &[key, value] : data) {
+    for (const auto& [key, value] : data) {
       std::visit(
-          [&](auto &&arg) {
+          [&](auto&& arg) {
             using T = std::decay_t<decltype(arg)>;
             if constexpr (std::is_same_v<T, double>) {
               double_map[key] = arg;
@@ -6110,10 +4804,10 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkPoint *
   vtp.write(ofs);
 }
 
-void vtkUnstructuredGridWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
-  vtkUnstructuredGridWriter<networkPoint *> vtu;
+inline void vtkUnstructuredGridWrite(std::ofstream& ofs, const std::unordered_set<networkFace*>& uoF) {
+  vtkUnstructuredGridWriter<networkPoint*> vtu;
   vtu.reserve(uoF.size());
-  for (const auto &f : uoF) {
+  for (const auto& f : uoF) {
     auto abc = f->getPoints();
     vtu.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
     vtu.addGrid(abc);
@@ -6121,10 +4815,10 @@ void vtkUnstructuredGridWrite(std::ofstream &ofs, const std::unordered_set<netwo
   vtu.write(ofs);
 };
 
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *> &uoF) {
-  vtkPolygonWriter<networkPoint *> vtp;
+inline void vtkPolygonWrite(std::ofstream& ofs, const std::unordered_set<networkFace*>& uoF) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoF.size());
-  for (const auto &f : uoF) {
+  for (const auto& f : uoF) {
     auto abc = f->getPoints();
     vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
     vtp.addPolygon(abc);
@@ -6132,33 +4826,32 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkFace *>
   vtp.write(ofs);
 };
 
-void vtkPolygonWrite(std::ofstream &ofs, const std::vector<networkFace *> &uoF, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint *, double>>> &name_uo_data) {
-  vtkPolygonWriter<networkPoint *> vtp;
+inline void vtkPolygonWrite(std::ofstream& ofs, const std::vector<networkFace*>& uoF, const std::vector<std::tuple<std::string, std::unordered_map<networkPoint*, double>>>& name_uo_data) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoF.size());
 
-  for (const auto &f : uoF) {
+  for (const auto& f : uoF) {
     auto abc = f->getPoints();
     vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
     vtp.addPolygon(abc);
   }
 
-  for (const auto &[name, data] : name_uo_data) {
+  for (const auto& [name, data] : name_uo_data) {
     vtp.addPointData(name, data);
   }
 
   vtp.write(ofs);
 }
 
-void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *> &uoTet) {
+inline void vtkPolygonWrite(std::ofstream& ofs, const std::unordered_set<networkTetra*>& uoTet) {
   // vtuがいいならそうなるように修正しなければならない．
-  vtkPolygonWriter<networkPoint *> vtp;
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoTet.size());
-  for (const auto &tet : uoTet)
-    std::ranges::for_each(tet->Faces, [&](const auto &f) {
+  for (const auto& tet : uoTet)
+    std::ranges::for_each(tet->Faces, [&](const auto& f) {
       auto abc = f->getPoints();
       vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-      vtp.addPolygon(abc);
-    });
+      vtp.addPolygon(abc); });
   // for (const auto &tet : uoTet) {
   //    vtp.add(std::get<0>(tet->Points),
   //            std::get<1>(tet->Points),
@@ -6169,21 +4862,21 @@ void vtkPolygonWrite(std::ofstream &ofs, const std::unordered_set<networkTetra *
   vtp.write(ofs);
 };
 
-void vtkPolygonWrite(std::ofstream &ofs, const std::vector<networkTetra *> &uoTet) {
-  vtkPolygonWriter<networkPoint *> vtp;
+inline void vtkPolygonWrite(std::ofstream& ofs, const std::vector<networkTetra*>& uoTet) {
+  vtkPolygonWriter<networkPoint*> vtp;
   vtp.reserve(uoTet.size());
-  for (const auto &tet : uoTet)
-    std::ranges::for_each(tet->Faces, [&](const auto &f) {
+  for (const auto& tet : uoTet)
+    std::ranges::for_each(tet->Faces, [&](const auto& f) {
       auto abc = f->getPoints();
       vtp.add(std::get<0>(abc), std::get<1>(abc), std::get<2>(abc));
-      vtp.addPolygon(abc);
-    });
+      vtp.addPolygon(abc); });
   vtp.write(ofs);
 };
-template <typename T> typename std::enable_if<std::is_same<T, std::vector<networkTetra *>>::value || std::is_same<T, std::unordered_set<networkTetra *>>::value>::type vtkUnstructuredGridWrite(std::ofstream &ofs, const T &uoTet) {
-  vtkUnstructuredGridWriter<networkPoint *> vtu;
+template <typename T>
+typename std::enable_if<std::is_same<T, std::vector<networkTetra*>>::value || std::is_same<T, std::unordered_set<networkTetra*>>::value>::type vtkUnstructuredGridWrite(std::ofstream& ofs, const T& uoTet) {
+  vtkUnstructuredGridWriter<networkPoint*> vtu;
   vtu.reserve(uoTet.size());
-  for (const auto &tet : uoTet) {
+  for (const auto& tet : uoTet) {
     auto abcd = tet->Points;
     vtu.add(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd));
     vtu.addGrid(abcd);
@@ -6192,38 +4885,39 @@ template <typename T> typename std::enable_if<std::is_same<T, std::vector<networ
 };
 
 // Correctly define the `DataVariant`
-using DataVariant3 = std::variant<std::unordered_map<networkPoint *, double>, std::unordered_map<networkPoint *, Tddd>, std::unordered_map<networkPoint *, std::variant<double, Tddd>>>;
+using DataVariant3 = std::variant<std::unordered_map<networkPoint*, double>, std::unordered_map<networkPoint*, Tddd>, std::unordered_map<networkPoint*, std::variant<double, Tddd>>>;
 
 // Function Definition
-template <typename T> typename std::enable_if<std::is_same<T, std::vector<networkTetra *>>::value || std::is_same<T, std::unordered_set<networkTetra *>>::value>::type vtkUnstructuredGridWrite(std::ofstream &ofs, const T &uoTet, const std::vector<std::tuple<std::string, DataVariant3>> &name_uo_data) {
+template <typename T>
+typename std::enable_if<std::is_same<T, std::vector<networkTetra*>>::value || std::is_same<T, std::unordered_set<networkTetra*>>::value>::type vtkUnstructuredGridWrite(std::ofstream& ofs, const T& uoTet, const std::vector<std::tuple<std::string, DataVariant3>>& name_uo_data) {
   if (uoTet.empty())
     return;
 
-  vtkUnstructuredGridWriter<networkPoint *> vtu;
+  vtkUnstructuredGridWriter<networkPoint*> vtu;
   vtu.reserve(uoTet.size());
 
-  for (const auto &tet : uoTet) {
+  for (const auto& tet : uoTet) {
     auto abcd = tet->Points;
     vtu.add(std::get<0>(abcd), std::get<1>(abcd), std::get<2>(abcd), std::get<3>(abcd));
     vtu.addGrid(abcd);
   }
 
-  for (const auto &[name, data] : name_uo_data) {
-    std::unordered_map<networkPoint *, double> double_map;
-    std::unordered_map<networkPoint *, Tddd> array_map;
+  for (const auto& [name, data] : name_uo_data) {
+    std::unordered_map<networkPoint*, double> double_map;
+    std::unordered_map<networkPoint*, Tddd> array_map;
 
     std::visit(
-        [&](auto &&arg) {
+        [&](auto&& arg) {
           using VType = std::decay_t<decltype(arg)>;
 
-          if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint *, double>>) {
+          if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint*, double>>) {
             double_map = arg;
-          } else if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint *, Tddd>>) {
+          } else if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint*, Tddd>>) {
             array_map = arg;
-          } else if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint *, std::variant<double, Tddd>>>) {
-            for (const auto &[key, value] : arg) {
+          } else if constexpr (std::is_same_v<VType, std::unordered_map<networkPoint*, std::variant<double, Tddd>>>) {
+            for (const auto& [key, value] : arg) {
               std::visit(
-                  [&](auto &&val) {
+                  [&](auto&& val) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(val)>, double>) {
                       double_map[key] = val;
                     } else if constexpr (std::is_same_v<std::decay_t<decltype(val)>, Tddd>) {
@@ -6246,59 +4940,6 @@ template <typename T> typename std::enable_if<std::is_same<T, std::vector<networ
 
   vtu.write(ofs);
 }
-
-//@ ===========================================================================
-//*/
-//@                             FMM using Nwtwork */
-//@ ===========================================================================
-//*/
-
-// inline void target4FMM_Element::setDirectIntegration(const auto
-// &Bucket_sources) {
-//    auto b_deepest = Bucket_sources.getBucketAtDeepest(this->Xtarget);
-
-//    this->uo_phiphin_WGNWGnN.clear();
-//    this->uo_phiphin_WGNWGnN.reserve(b_deepest->data1D_vector.size() * 3);
-
-//    //! これはsorceがsource4FMM_Elementの場合のものになっている
-//    auto setNear = [&](const auto *B) {
-//       for (const auto &source : B->data1D_vector)
-//          for (const auto &[phiphin, WGN_WGnN] :
-//          source->use_this_source_when_set_direct_integration(this))  //$
-//          このソース点の直接積分計算をどのように行うかを指定する関数
-//             uo_phiphin_WGNWGnN[phiphin] += WGN_WGnN;
-//    };
-
-//    setNear(b_deepest);
-//    for (const auto &b : b_deepest->buckets_near)
-//       setNear(b);
-
-//    auto set_parent = [&](auto b, auto &set_parent__) -> void {
-//       if (b != nullptr) {
-//          for (auto B : b->buckets_near)
-//             if (!B->has_child)
-//                setNear(B);
-//          set_parent__(b->parent, set_parent__);
-//       }
-//    };
-//    set_parent(b_deepest->parent, set_parent);
-
-//    this->vec_phiphin_WGNWGnN.assign(uo_phiphin_WGNWGnN.begin(),
-//    uo_phiphin_WGNWGnN.end());
-// }
-
-/* -------------------------------------------------- */
-
-// inline std::array<double, 2> target4FMM_Element::integrateRigidMode() const {
-//    std::array<double, 2> ret = {0., 0.};
-//    for (const auto &[phiphin, WGN_WGnN] : this->vec_phiphin_WGNWGnN) {
-//       ret[0] += (*std::get<1>(phiphin)) * WGN_WGnN[0];
-//       ret[1] += (*std::get<0>(phiphin)) * WGN_WGnN[1];
-//    }
-//    return ret;
-// }
-
-/* -------------------------------------------------------------------------- */
 
 /*
 
@@ -6332,77 +4973,30 @@ P->add(l or f)
 
 /* -------------------------------------------------------------------------- */
 
-void dual_replace(netP *p, netL *line_before, netL *line_after) {
-  p->replace(line_before, line_after);
-  line_before->replace(p, nullptr); // lineのpointの数は固定:2
-  line_after->replace(nullptr, p);  // lineのpointの数は固定:2
-}
-
-void dual_replace(netP *p, netF *face_before, netF *face_after) {
-  p->replace(face_before, face_after);
-  face_before->replace(p, nullptr); // faceのpointの数は固定:3
-  face_after->replace(nullptr, p);  // faceのpointの数は固定:3
-}
+void dual_replace(netP* p, netL* line_before, netL* line_after);
+void dual_replace(netP* p, netF* face_before, netF* face_after);
 
 /* -------------------------------------------------------------------------- */
 
-void dual_replace(netL *l, netP *point_before, netP *point_after) {
-  l->replace(point_before, point_after);
-  point_before->erase(l); //! pointのlineの数は固定ではない
-  point_after->add(l);    //! pointのlineの数は固定ではない
-}
-
-// void dual_replace(netL *l, netF *face_before, netF *face_after) {
-//   l->replace(face_before, face_after);
-//   face_before->replace(l, nullptr); // faceのlineの数は固定:3
-//   face_after->replace(nullptr, l);  // faceのlineの数は固定:3
-// }
-
-// これは上を更に発展させたもので，face_afterの持っていたl_beforeの代わりにlを入れる．
-void dual_replace(netL *l, netF *face_before, netF *face_after, netL *l_face_before, netL *l_face_after) {
-  l->replace(face_before, face_after);
-  face_before->replace(l, l_face_before); // faceのlineの数は固定:3
-  face_after->replace(l_face_after, l);   // faceのlineの数は固定:3
-  if (l_face_before != nullptr)
-    l_face_before->add(face_before); //! lineのfaceの数は固定ではない
-  if (l_face_after != nullptr)
-    l_face_after->erase(face_after); //! lineのfaceの数は固定ではない
-}
+void dual_replace(netL* l, netP* point_before, netP* point_after);
+void dual_replace(netL* l, netF* face_before, netF* face_after, netL* l_face_before, netL* l_face_after);
 
 /* -------------------------------------------------------------------------- */
 
-void dual_replace(netF *f, netL *line_before, netL *line_after) {
-  f->replace(line_before, line_after);
-  line_before->erase(f); //! lineのfaceの数は固定ではない
-  line_after->add(f);    //! lineのfaceの数は固定ではない
-}
+void dual_replace(netF* f, netL* line_before, netL* line_after);
+void dual_replace(netF* f, netL* line_before, netL* line_after, netF* f_line_before);
+void dual_replace(netF* f, netL* line_before, netL* line_after, netF* f_line_before, netF* f_line_after);
+void dual_replace(netF* f, netP* point_before, netP* point_after);
+void dual_replace(netF* f, netP* point_before, netP* point_after, netF* f_point_before);
 
-void dual_replace(netF *f, netL *line_before, netL *line_after, netF *f_line_before) {
-  f->replace(line_before, line_after);
-  line_before->replace(f, f_line_before); //! lineのfaceの数は固定ではない
-  line_after->add(f);                     //! lineのfaceの数は固定ではない
-}
+/* -------------------------------------------------------------------------- */
 
-void dual_replace(netF *f, netL *line_before, netL *line_after, netF *f_line_before, netF *f_line_after) {
-  f->replace(line_before, line_after);
-  line_before->replace(f, f_line_before); //! lineのfaceの数は固定ではない
-  line_after->replace(f_line_after, f);   //! lineのfaceの数は固定ではない
-}
-
-void dual_replace(netF *f, netP *point_before, netP *point_after) {
-  f->replace(point_before, point_after);
-  point_before->erase(f); //! pointのfaceの数は固定ではない
-  point_after->add(f);    //! pointのfaceの数は固定ではない
-}
-
-void dual_replace(netF *f, netP *point_before, netP *point_after, netF *f_point_before) {
-  f->replace(point_before, point_after);
-  point_before->replace(f, f_point_before); //! pointのfaceの数は固定ではない
-  point_after->add(f);                      //! pointのfaceの数は固定ではない
+inline bool networkPoint::BoundaryQ() const noexcept {
+  return std::any_of(this->Faces.begin(), this->Faces.end(), [](const auto& f) { return f->BoundaryQ(); });
 }
 
 #include "MooringLine.hpp"
 #include "NetworkUtility.hpp"
-#include "networkFace.hpp"
-#include "networkLine.hpp"
-#include "networkTetra.hpp"
+// #include "networkFace.cpp"
+// #include "networkLine.cpp"
+// #include "networkTetra.cpp"

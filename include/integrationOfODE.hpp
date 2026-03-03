@@ -33,26 +33,29 @@ $$
 
 // \label{ODE:RungeKutta}
 template <typename T> struct RungeKuttaCommon {
-  double dt_fixed; // 基本となるステップ間隔,固定
+  double dt_fixed = 0.0; // 基本となるステップ間隔,固定
   /* ----------------------- 毎回変わる値 ----------------------- */
-  double dt;          // 次回計算する必要がある値になる増分,回数ごとに変化
+  double dt = 0.0;    // 次回計算する必要がある値になる増分,回数ごとに変化
   std::vector<T> _dX; // これにプッシュしていく，c1k1,c2k2,c3k3,c4k4,,,//このベクトルの長さで何回目かを判断数し，必要な回数まできたら，finished=trueとなる
   T dX;               //_dXやdtを基に計算される
   /* ------------------------- 初期値 ------------------------ */
-  double t_init; // 初期値,固定
+  double t_init = 0.0; // 初期値,固定
   T Xinit;
   /* ------------------------ 積分結果 ------------------------ */
-  bool finished; // 全てそろって積分が評価できるようになったらtrue
-                 // 最終結果はdXに代入される;
+  bool finished = false; // 全てそろって積分が評価できるようになったらtrue
+                         // 最終結果はdXに代入される;
   void displayStatus() {
     std::cout << "dt : " << red << this->dt << colorReset << std::endl;
     // std::cout << "_dX : " << red << this->_dX << colorReset << std::endl;
     std::cout << "dX : " << red << this->dX << colorReset << std::endl;
   };
-  int steps;
-  int current_step;
-  RungeKuttaCommon() {};
-  RungeKuttaCommon(const double dt_IN, const double t0, const T &X0, int stepsIN) : dt_fixed(dt_IN), dt(0), t_init(t0), Xinit(X0), _dX({}), dX(X0), steps(stepsIN), current_step(0) { finished = false; };
+  int steps = 0;
+  int current_step = 0;
+  RungeKuttaCommon() : Xinit{}, dX{} {};
+  RungeKuttaCommon(const double dt_IN, const double t0, const T &X0, int stepsIN) : dt_fixed(dt_IN), dt(0), t_init(t0), Xinit(X0), _dX({}), dX(X0), steps(stepsIN), current_step(0) {
+    finished = false;
+    _dX.reserve(stepsIN);
+  };
   ~RungeKuttaCommon() {};
 
   void initialize(const double dt_IN, const double t0, const T &X0, int stepsIN) {
@@ -65,6 +68,7 @@ template <typename T> struct RungeKuttaCommon {
     this->steps = stepsIN;
     if (stepsIN < 1 || stepsIN > 4)
       throw error_message(__FILE__, __PRETTY_FUNCTION__, __LINE__, "stepsINが1~4の整数でなければならない");
+    this->_dX.reserve(stepsIN);
     this->current_step = 0;
     this->finished = false;
   };
@@ -72,6 +76,8 @@ template <typename T> struct RungeKuttaCommon {
   T getXinit() const { return this->Xinit; };
 
   T getX() const {
+    if (this->steps == 0)
+      return this->Xinit;
     if (this->current_step == 0)
       return this->Xinit;
     else
@@ -319,6 +325,8 @@ template <typename T> struct RungeKuttaCommon {
   /*            微分を与えて，次の時刻に使うべきXを返す            */
   /* ------------------------------------------------------ */
   T getX(const T &dXdt_IN) const {
+    if (this->steps == 0)
+      return this->Xinit;
     switch (this->steps) {
     case 1:
       return this->Xinit + dXdt_IN * dt_fixed;

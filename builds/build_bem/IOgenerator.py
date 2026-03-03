@@ -134,14 +134,14 @@ def generate_input_files(inputfiles, setting, generate_in_out_directory, id):
         f.close()
 
     # @ -------------------------------------------------------- #
-    # @                  setting.json を出力                      #
+    # @                  settings.json を出力                     #
     # @ -------------------------------------------------------- #    
 
-    print(Blue,'='*28,'setting.json', coloroff)
+    print(Blue,'='*28,'settings.json', coloroff)
     for key, value in setting.items():
         print(f'{key: >{18}}', ':\t', green, value, coloroff)
     print(Blue,'-'*40, coloroff)
-    f = open(input_directory+"/setting.json", 'w')
+    f = open(input_directory + "/settings.json", 'w')
     json.dump(setting, f, ensure_ascii=True, indent=4)
     f.close()
 

@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <complex>
+#include <limits>
 
 // Compute the factorial of a_near given number
 // static const std::vector<uint64_t> factorial_list = {1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800, 39916800, 479001600, 6227020800, 87178291200, 1307674368000, 20922789888000, 355687428096000, 6402373705728000, 121645100408832000};
@@ -42,6 +43,45 @@ const std::complex<double> complex0(0, 0);
 #include "AAA_L2L_FMM.hpp"
 #include "AAA_M2L_FMM.hpp"
 #include "AAA_M2M_FMM.hpp"
+
+// `i_absk_A_FMM.hpp` is generated with GCC's __float128 (`std::float128_t`) and `q` literals.
+// Apple clang/libc++ typically can't compile it, so provide a small double-precision fallback.
+#if defined(_LIBCPP_VERSION)
+static const int N_i_absk_A_FMM = 30;
+static const std::array<std::array<std::complex<double>, 61>, 31> i_absk_A_FMM = [] {
+  std::array<std::array<std::complex<double>, 61>, 31> out{};
+  for (int n = 0; n <= N_i_absk_A_FMM; ++n) {
+    for (int mi = 0; mi < 2 * N_i_absk_A_FMM + 1; ++mi) {
+      const int m = mi - N_i_absk_A_FMM;
+      if (std::abs(m) > n) {
+        out[n][mi] = {0.0, 0.0};
+        continue;
+      }
+      double a = A_FMM[n][mi];
+      // i_absk_A_FMM uses (-1)^n * A_FMM so its magnitude is positive.
+      if (n & 1)
+        a = -a;
+      const int abs_m = std::abs(m);
+      switch (abs_m & 3) {
+      case 0:
+        out[n][mi] = {a, 0.0};
+        break;
+      case 1:
+        out[n][mi] = {0.0, a};
+        break;
+      case 2:
+        out[n][mi] = {-a, 0.0};
+        break;
+      default:
+        out[n][mi] = {0.0, -a};
+        break;
+      }
+    }
+  }
+  return out;
+}();
+#else
 #include "i_absk_A_FMM.hpp"
+#endif
 
 #endif

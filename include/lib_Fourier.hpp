@@ -11,7 +11,7 @@
 
 /* -------------------------------------------------------------------------- */
 
-std::vector<std::vector<std::complex<double>>> operator*(std::vector<std::vector<std::complex<double>>> a, const std::vector<std::vector<std::complex<double>>> &b) {
+inline std::vector<std::vector<std::complex<double>>> operator*(std::vector<std::vector<std::complex<double>>> a, const std::vector<std::vector<std::complex<double>>> &b) {
   int P = b[0].size();
   for (int i = 0; i < a.size(); ++i)
     for (int j = 0; j < P; ++j)
@@ -34,10 +34,17 @@ template <typename T> std::vector<std::complex<double>> DFT(const std::vector<T>
     // for (int k = 0; k <= s - 1; ++k)
     //    sum += sample[k] * std::polar(1.0, c * k);  //! sampleが複素数の場合に対応するためpolarの引数としてsampleは渡せない
 
+#if defined(__cpp_lib_execution)
     std::complex<double> sum = std::transform_reduce(std::execution::par_unseq, sample.begin(), sample.end(), std::complex<double>{0}, std::plus<>(), [&](const auto &val) {
       int k = &val - &sample[0];           //! これはポインタの差分でkを求める方法
       return val * std::polar(1.0, c * k); //! sampleが複素数の場合に対応するためpolarの引数としてsampleは渡せない
     });
+#else
+    std::complex<double> sum = std::transform_reduce(sample.begin(), sample.end(), std::complex<double>{0}, std::plus<>(), [&](const auto &val) {
+      int k = &val - &sample[0];           //! これはポインタの差分でkを求める方法
+      return val * std::polar(1.0, c * k); //! sampleが複素数の場合に対応するためpolarの引数としてsampleは渡せない
+    });
+#endif
     result[n] = sum / static_cast<double>(s);
   }
   return result;
@@ -188,6 +195,7 @@ template <typename T> std::vector<std::vector<std::complex<double>>> InverseDFT(
 // 事前計算テーブルを生成するためのヘルパー関数を定義する名前空間
 // 事前計算テーブル生成
 namespace detail {
+#if !defined(BEM_DISABLE_FLOAT128)
 template <size_t N> constexpr auto make_inverse_dft_polar_table() {
   std::array<std::array<std::complex<std::float128_t>, N>, N> table{};
   for (size_t n = 0; n < N; ++n) {
@@ -199,11 +207,28 @@ template <size_t N> constexpr auto make_inverse_dft_polar_table() {
   }
   return table;
 }
+#else
+template <size_t N> inline auto make_inverse_dft_polar_table() {
+  std::array<std::array<std::complex<double>, N>, N> table{};
+  for (size_t n = 0; n < N; ++n) {
+    const double c = static_cast<double>(n) * 2.0 * M_PI / static_cast<double>(N);
+    for (size_t k = 0; k < N; ++k) {
+      const double angle = c * static_cast<double>(k);
+      table[n][k] = {std::cos(angle) * static_cast<double>(N), std::sin(angle) * static_cast<double>(N)};
+    }
+  }
+  return table;
+}
+#endif
 } // namespace detail
 
 // Nは配列長
 template <typename T, size_t N> std::array<std::complex<double>, N> InverseDFT(const std::array<T, N> &sample) {
+#if !defined(BEM_DISABLE_FLOAT128)
   static constexpr auto polar_table = detail::make_inverse_dft_polar_table<N>();
+#else
+  static const auto polar_table = detail::make_inverse_dft_polar_table<N>();
+#endif
   std::array<std::complex<double>, N> result{};
   std::complex<double> sum = 0;
   for (int n = 0; n < N; ++n) {
@@ -448,23 +473,34 @@ template <typename INPUT, typename TREATED, size_t Nk, size_t Mk, size_t Ns, siz
   }
   void convolve() { this->InverseDFT(); }
 
-  static constexpr std::float128_t rows_q = static_cast<std::float128_t>(rows);
-  static constexpr std::float128_t cols_q = static_cast<std::float128_t>(cols);
-  static constexpr std::float128_t div_rows = static_cast<std::float128_t>(1.0q) / rows_q;
-  static constexpr std::float128_t div_cols = static_cast<std::float128_t>(1.0q) / cols_q;
-  static constexpr std::float128_t two_pi_div_rows = static_cast<std::float128_t>(6.2831853071795864769252867665590057683943387987502q) / static_cast<std::float128_t>(rows);
-  static constexpr std::float128_t two_pi_div_cols = static_cast<std::float128_t>(6.2831853071795864769252867665590057683943387987502q) / static_cast<std::float128_t>(cols);
+#if !defined(BEM_DISABLE_FLOAT128)
+  using fourier_angle_t = std::float128_t;
+  static constexpr fourier_angle_t rows_q = static_cast<fourier_angle_t>(rows);
+  static constexpr fourier_angle_t cols_q = static_cast<fourier_angle_t>(cols);
+  static constexpr fourier_angle_t div_rows = static_cast<fourier_angle_t>(1.0q) / rows_q;
+  static constexpr fourier_angle_t div_cols = static_cast<fourier_angle_t>(1.0q) / cols_q;
+  static constexpr fourier_angle_t two_pi_div_rows = static_cast<fourier_angle_t>(6.2831853071795864769252867665590057683943387987502q) / static_cast<fourier_angle_t>(rows);
+  static constexpr fourier_angle_t two_pi_div_cols = static_cast<fourier_angle_t>(6.2831853071795864769252867665590057683943387987502q) / static_cast<fourier_angle_t>(cols);
+#else
+  using fourier_angle_t = long double;
+  static constexpr fourier_angle_t rows_q = static_cast<fourier_angle_t>(rows);
+  static constexpr fourier_angle_t cols_q = static_cast<fourier_angle_t>(cols);
+  static constexpr fourier_angle_t div_rows = static_cast<fourier_angle_t>(1.0L) / rows_q;
+  static constexpr fourier_angle_t div_cols = static_cast<fourier_angle_t>(1.0L) / cols_q;
+  static constexpr fourier_angle_t two_pi_div_rows = static_cast<fourier_angle_t>(6.2831853071795864769252867665590057683943387987502L) / static_cast<fourier_angle_t>(rows);
+  static constexpr fourier_angle_t two_pi_div_cols = static_cast<fourier_angle_t>(6.2831853071795864769252867665590057683943387987502L) / static_cast<fourier_angle_t>(cols);
+#endif
 
   void constexpr initialize_polar_1_c_k() {
     for (int n = 0; n < rows; ++n)
       for (int k = 0; k < rows; ++k) {
-        this->polar_1_c_k_for_rows[n][k] = Polar(div_rows, -static_cast<std::float128_t>(n * k) * two_pi_div_rows);
-        this->polar_1_c_k_for_rows_[n][k] = Polar(rows_q, static_cast<std::float128_t>(n * k) * two_pi_div_rows);
+        this->polar_1_c_k_for_rows[n][k] = Polar(div_rows, -static_cast<fourier_angle_t>(n * k) * two_pi_div_rows);
+        this->polar_1_c_k_for_rows_[n][k] = Polar(rows_q, static_cast<fourier_angle_t>(n * k) * two_pi_div_rows);
       }
     for (int n = 0; n < cols; ++n)
       for (int k = 0; k < cols; ++k) {
-        this->polar_1_c_k_for_cols[n][k] = Polar(div_cols, -static_cast<std::float128_t>(n * k) * two_pi_div_cols);
-        this->polar_1_c_k_for_cols_[n][k] = Polar(cols_q, static_cast<std::float128_t>(n * k) * two_pi_div_cols);
+        this->polar_1_c_k_for_cols[n][k] = Polar(div_cols, -static_cast<fourier_angle_t>(n * k) * two_pi_div_cols);
+        this->polar_1_c_k_for_cols_[n][k] = Polar(cols_q, static_cast<fourier_angle_t>(n * k) * two_pi_div_cols);
       }
   }
 
@@ -693,23 +729,21 @@ template <typename INPUT, typename TREATED, size_t Nk, size_t Mk, size_t Ns, siz
 
   std::array<std::array<std::complex<TREATEDdft>, cols>, rows> cn2D, cn2Dtmp;
   std::array<std::complex<TREATEDdft>, rows> cn_j_dft;
-  std::complex<TREATEDdft> sum = {}; // ゼロで正しく初期化する
-
-  std::array<std::array<std::complex<TREATEDdft>, cols>, rows> sample2D;
   template <typename TYPE, size_t ROWS, size_t COLS> std::array<std::array<std::complex<TREATEDdft>, cols>, rows> dft_fill(const std::array<std::array<TYPE, COLS>, ROWS> &sample2DIN, bool reverse0 = false, bool reverse1 = false) {
     static_assert(ROWS <= rows && COLS <= cols, "Input size exceeds the defined size of Fourier2DConvolution.");
     std::array<std::complex<TREATEDdft>, ROWS> cn_j;
-
-    for (int i = 0; i < ROWS; ++i)
-      for (int j = 0; j < COLS; ++j)
-        sample2D[i][j] = static_cast<std::complex<TREATEDdft>>(sample2DIN[i][j]);
-
-    if (reverse0) {
-      for (int i = 0; i < ROWS; ++i)
-        cn2D[i] = dft1d_cols(sample2D[ROWS - 1 - i /*due to reverse0*/]); //! 長さM
-    } else {
-      for (int i = 0; i < ROWS; ++i)
-        cn2D[i] = dft1d_cols(sample2D[i /*due to reverse0*/]); //! 長さM
+    // Note: sample2DIN is smaller than the padded DFT length `cols`.
+    // Avoid passing a length-`cols` array filled with trailing zeros to dft1d_cols(),
+    // because safe_inner_product() would iterate over `cols` and waste work.
+    // By keeping the sample length at `COLS`, safe_inner_product() only loops over the true non-zero region.
+    std::array<std::complex<TREATEDdft>, COLS> row_sample{};
+    for (int i = 0; i < ROWS; ++i) {
+      const int src_i = reverse0 ? (ROWS - 1 - i) : i;
+      for (int j = 0; j < COLS; ++j) {
+        const int src_j = reverse1 ? (COLS - 1 - j) : j;
+        row_sample[j] = static_cast<std::complex<TREATEDdft>>(sample2DIN[src_i][src_j]);
+      }
+      cn2D[i] = dft1d_cols(row_sample); //! 長さM
     }
     // ! y方向のフーリエ変換 cn2D[;;][j]
     for (int j = 0; j < cols; ++j) {
@@ -727,7 +761,7 @@ template <typename INPUT, typename TREATED, size_t Nk, size_t Mk, size_t Ns, siz
 
 template <typename T> std::vector<std::vector<std::complex<double>>> InverseDFT(const Fourier2D<T> &convolver2Dkernel) { return InverseDFT(convolver2Dkernel.MatrixDFT); }
 
-std::vector<std::vector<double>> Re(const std::vector<std::vector<std::complex<double>>> &matrix2d) {
+inline std::vector<std::vector<double>> Re(const std::vector<std::vector<std::complex<double>>> &matrix2d) {
   std::vector<std::vector<double>> Re_matrix2d(matrix2d.size(), std::vector<double>(matrix2d[0].size(), 0));
   for (std::size_t i = 0; i < matrix2d.size(); ++i)
     for (std::size_t j = 0; j < matrix2d[0].size(); ++j)

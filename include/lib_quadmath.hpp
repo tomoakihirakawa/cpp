@@ -1,13 +1,22 @@
 #pragma once
 
-#include <quadmath.h>
-
 #include <array>
 #include <cmath>
 #include <complex>
 #include <iostream>
 #include <numbers>
+#include <type_traits>
+
+#if __has_include(<quadmath.h>) && !defined(_LIBCPP_VERSION)
+#include <quadmath.h>
+#define BEM_HAS_QUADMATH 1
+#else
+#define BEM_HAS_QUADMATH 0
+#endif
+
+#if __has_include(<stdfloat>)
 #include <stdfloat>
+#endif
 
 #include "basic_arithmetic_array_operations.hpp"
 
@@ -37,10 +46,92 @@ static inline __attribute__((always_inline)) std::array<double, 2> sum_and_aroun
   return {s, (a - (s - z)) + (b - z)};
 }
 
-constexpr std::array<double, 2> two_prod(const double a, const double b) {
+inline constexpr std::array<double, 2> two_prod(const double a, const double b) {
   const double p = a * b;
   return {p, std::fma(a, b, -p)};
 }
+
+#if !BEM_HAS_QUADMATH
+
+// Fallback implementation for platforms without libquadmath (e.g. Apple clang/libc++).
+// This is sufficient for building and for code paths that don't require true __float128 support.
+struct DoubleDouble {
+  double a = 0.0;
+  double b = 0.0;
+
+  constexpr DoubleDouble() = default;
+  constexpr DoubleDouble(double v) : a(v), b(0.0) {}
+  constexpr DoubleDouble(double h, double l) : a(h), b(l) {}
+
+  explicit constexpr operator double() const { return a + b; }
+  constexpr operator long double() const { return static_cast<long double>(a) + static_cast<long double>(b); }
+
+  constexpr DoubleDouble operator+(const DoubleDouble &rhs) const {
+    auto [s1, e1] = sum_and_arounding_error(this->a, rhs.a);
+    auto [sum, err] = sum_and_arounding_error(s1, this->b + rhs.b + e1);
+    return DoubleDouble(sum, err);
+  }
+  constexpr DoubleDouble operator-(const DoubleDouble &rhs) const { return *this + DoubleDouble(-rhs.a, -rhs.b); }
+  constexpr DoubleDouble operator-() const { return DoubleDouble(-a, -b); }
+
+  constexpr DoubleDouble operator*(const DoubleDouble &rhs) const {
+    auto [p1, e1] = two_prod(this->a, rhs.a);
+    auto [s, e2] = sum_and_arounding_error(e1, this->a * rhs.b + this->b * rhs.a);
+    auto [hi, lo] = sum_and_arounding_error(p1, s);
+    return DoubleDouble(hi, lo + e2);
+  }
+
+  constexpr DoubleDouble operator/(const DoubleDouble &rhs) const {
+    const double denom = rhs.a + rhs.b;
+    const double numer = this->a + this->b;
+    double q = numer / denom;
+    DoubleDouble qq(q);
+    // One refinement: qq = qq + (this - rhs*qq)/rhs
+    DoubleDouble r = (*this) - rhs * qq;
+    q += static_cast<double>(r) / denom;
+    return DoubleDouble(q);
+  }
+
+  constexpr DoubleDouble &operator+=(const DoubleDouble &rhs) { return (*this = *this + rhs); }
+  constexpr DoubleDouble &operator-=(const DoubleDouble &rhs) { return (*this = *this - rhs); }
+  constexpr DoubleDouble &operator*=(const DoubleDouble &rhs) { return (*this = *this * rhs); }
+  constexpr DoubleDouble &operator/=(const DoubleDouble &rhs) { return (*this = *this / rhs); }
+
+  constexpr auto operator<=>(const DoubleDouble &rhs) const {
+    if (auto cmp = this->a <=> rhs.a; cmp != 0)
+      return cmp;
+    return this->b <=> rhs.b;
+  }
+  constexpr bool operator==(const DoubleDouble &other) const { return a == other.a && b == other.b; }
+};
+
+inline DoubleDouble sqrt(const DoubleDouble &x) {
+  const double v = static_cast<double>(x);
+  if (v < 0.0)
+    return DoubleDouble(NAN, NAN);
+  return DoubleDouble(std::sqrt(v));
+}
+
+inline DoubleDouble Dot(const std::array<DoubleDouble, 3> &A, const std::array<DoubleDouble, 3> &B) { return A[0] * B[0] + A[1] * B[1] + A[2] * B[2]; }
+
+inline std::array<DoubleDouble, 3> Cross(const std::array<DoubleDouble, 3> &A, const std::array<DoubleDouble, 3> &B) {
+  return {A[1] * B[2] - A[2] * B[1], A[2] * B[0] - A[0] * B[2], A[0] * B[1] - A[1] * B[0]};
+}
+
+inline std::array<DoubleDouble, 3> Normalize(const std::array<DoubleDouble, 3> &A) {
+  const DoubleDouble unity = 1.0;
+  const DoubleDouble inv_norm = unity / sqrt(A[0] * A[0] + A[1] * A[1] + A[2] * A[2]);
+  return {A[0] * inv_norm, A[1] * inv_norm, A[2] * inv_norm};
+}
+
+template <typename T>
+inline constexpr std::complex<T> Polar(const T &r, const T &theta) {
+  return std::polar(r, theta);
+}
+
+inline std::ostream &operator<<(std::ostream &os, const DoubleDouble &q) { return os << static_cast<double>(q); }
+
+#else
 
 struct DoubleDouble {
   double a = 0.0;
@@ -159,9 +250,9 @@ inline DoubleDouble sqrt(const DoubleDouble &a) {
   return DoubleDouble(sqrtq(static_cast<__float128>(a)));
 }
 
-DoubleDouble Dot(const std::array<DoubleDouble, 3> &A, const std::array<DoubleDouble, 3> &B) { return A[0] * B[0] + A[1] * B[1] + A[2] * B[2]; }
+inline DoubleDouble Dot(const std::array<DoubleDouble, 3> &A, const std::array<DoubleDouble, 3> &B) { return A[0] * B[0] + A[1] * B[1] + A[2] * B[2]; }
 
-std::array<DoubleDouble, 3> Cross(const std::array<DoubleDouble, 3> &A, const std::array<DoubleDouble, 3> &B) {
+inline std::array<DoubleDouble, 3> Cross(const std::array<DoubleDouble, 3> &A, const std::array<DoubleDouble, 3> &B) {
   DoubleDouble A1 = std::get<0>(A);
   DoubleDouble A2 = std::get<1>(A);
   DoubleDouble A3 = std::get<2>(A);
@@ -171,7 +262,7 @@ std::array<DoubleDouble, 3> Cross(const std::array<DoubleDouble, 3> &A, const st
   return {A2 * B3 - A3 * B2, A3 * B1 - A1 * B3, A1 * B2 - A2 * B1};
 }
 
-std::array<DoubleDouble, 3> Normalize(const std::array<DoubleDouble, 3> &A) {
+inline std::array<DoubleDouble, 3> Normalize(const std::array<DoubleDouble, 3> &A) {
   DoubleDouble A1 = std::get<0>(A);
   DoubleDouble A2 = std::get<1>(A);
   DoubleDouble A3 = std::get<2>(A);
@@ -180,7 +271,7 @@ std::array<DoubleDouble, 3> Normalize(const std::array<DoubleDouble, 3> &A) {
   return {A1 * _norm, A2 * _norm, A3 * _norm};
 }
 
-std::tuple<DoubleDouble, std::array<DoubleDouble, 3>> Nearest_(const std::array<DoubleDouble, 3> &X, const std::array<std::array<DoubleDouble, 3>, 2> &ab) {
+inline std::tuple<DoubleDouble, std::array<DoubleDouble, 3>> Nearest_(const std::array<DoubleDouble, 3> &X, const std::array<std::array<DoubleDouble, 3>, 2> &ab) {
   /*
   a * t + b * (1-t)
   ---------------------------
@@ -202,7 +293,7 @@ std::tuple<DoubleDouble, std::array<DoubleDouble, 3>> Nearest_(const std::array<
   return {t, a * t + b * (static_cast<DoubleDouble>(1.0) - t)};
 };
 
-std::tuple<DoubleDouble, DoubleDouble, std::array<DoubleDouble, 3>, std::array<DoubleDouble, 3>> Nearest_(const std::array<DoubleDouble, 3> &X_IN, const std::array<std::array<DoubleDouble, 3>, 3> &abc) {
+inline std::tuple<DoubleDouble, DoubleDouble, std::array<DoubleDouble, 3>, std::array<DoubleDouble, 3>> Nearest_(const std::array<DoubleDouble, 3> &X_IN, const std::array<std::array<DoubleDouble, 3>, 3> &abc) {
   const auto [a_, b_, c_] = abc;
   const std::array<DoubleDouble, 3> a = a_;
   const std::array<DoubleDouble, 3> b = b_;
@@ -260,7 +351,7 @@ std::tuple<DoubleDouble, DoubleDouble, std::array<DoubleDouble, 3>, std::array<D
   */
 };
 
-std::tuple<DoubleDouble, DoubleDouble, std::array<DoubleDouble, 3>, std::array<DoubleDouble, 3>> DoubleDoubleNearest_(const std::array<double, 3> &X, const std::array<std::array<double, 3>, 3> &ab) {
+inline std::tuple<DoubleDouble, DoubleDouble, std::array<DoubleDouble, 3>, std::array<DoubleDouble, 3>> DoubleDoubleNearest_(const std::array<double, 3> &X, const std::array<std::array<double, 3>, 3> &ab) {
   std::array<DoubleDouble, 3> X_dd = {DoubleDouble(X[0]), DoubleDouble(X[1]), DoubleDouble(X[2])};
   std::array<std::array<DoubleDouble, 3>, 3> ab_dd = {{
       {DoubleDouble(ab[0][0]), DoubleDouble(ab[0][1]), DoubleDouble(ab[0][2])},
@@ -270,56 +361,56 @@ std::tuple<DoubleDouble, DoubleDouble, std::array<DoubleDouble, 3>, std::array<D
   return Nearest_(X_dd, ab_dd);
 }
 
-constexpr std::float128_t operator*(const std::float128_t &lhs, const DoubleDouble &rhs) { return lhs * static_cast<std::float128_t>(rhs); }
+inline constexpr std::float128_t operator*(const std::float128_t &lhs, const DoubleDouble &rhs) { return lhs * static_cast<std::float128_t>(rhs); }
 
-constexpr std::float128_t operator*(const DoubleDouble &lhs, const std::float128_t &rhs) { return static_cast<std::float128_t>(lhs) * rhs; }
+inline constexpr std::float128_t operator*(const DoubleDouble &lhs, const std::float128_t &rhs) { return static_cast<std::float128_t>(lhs) * rhs; }
 
-constexpr std::complex<std::float128_t> operator*(const std::complex<std::float128_t> &lhs, const std::complex<DoubleDouble> &rhs) {
+inline constexpr std::complex<std::float128_t> operator*(const std::complex<std::float128_t> &lhs, const std::complex<DoubleDouble> &rhs) {
   auto rhs_real = static_cast<std::float128_t>(rhs.real());
   auto rhs_imag = static_cast<std::float128_t>(rhs.imag()); // complex * complex の計算
   return std::complex<std::float128_t>(lhs.real() * rhs_real - lhs.imag() * rhs_imag, lhs.real() * rhs_imag + lhs.imag() * rhs_real);
 }
 
-constexpr std::complex<std::float128_t> operator*(const std::complex<DoubleDouble> &lhs, const std::complex<std::float128_t> &rhs) { return rhs * lhs; }
+inline constexpr std::complex<std::float128_t> operator*(const std::complex<DoubleDouble> &lhs, const std::complex<std::float128_t> &rhs) { return rhs * lhs; }
 
-constexpr std::complex<std::float128_t> operator*(const std::complex<std::float128_t> &lhs, const DoubleDouble &rhs_scalar) {
+inline constexpr std::complex<std::float128_t> operator*(const std::complex<std::float128_t> &lhs, const DoubleDouble &rhs_scalar) {
   auto scalar_val = static_cast<std::float128_t>(rhs_scalar);
   return std::complex<std::float128_t>(lhs.real() * scalar_val, lhs.imag() * scalar_val);
 }
 
-constexpr std::complex<std::float128_t> operator*(const DoubleDouble &lhs_scalar, const std::complex<std::float128_t> &rhs) { return rhs * lhs_scalar; }
+inline constexpr std::complex<std::float128_t> operator*(const DoubleDouble &lhs_scalar, const std::complex<std::float128_t> &rhs) { return rhs * lhs_scalar; }
 
-constexpr std::complex<std::float128_t> &operator+=(std::complex<std::float128_t> &lhs, const std::complex<DoubleDouble> &rhs) {
+inline constexpr std::complex<std::float128_t> &operator+=(std::complex<std::float128_t> &lhs, const std::complex<DoubleDouble> &rhs) {
   lhs.real(lhs.real() + static_cast<std::float128_t>(rhs.real()));
   lhs.imag(lhs.imag() + static_cast<std::float128_t>(rhs.imag()));
   return lhs;
 }
 
-constexpr std::complex<DoubleDouble> &operator+=(std::complex<DoubleDouble> &lhs, const std::complex<std::float128_t> &rhs) {
+inline constexpr std::complex<DoubleDouble> &operator+=(std::complex<DoubleDouble> &lhs, const std::complex<std::float128_t> &rhs) {
   lhs.real(lhs.real() + static_cast<DoubleDouble>(rhs.real()));
   lhs.imag(lhs.imag() + static_cast<DoubleDouble>(rhs.imag()));
   return lhs;
 }
 
-constexpr DoubleDouble operator*(double lhs, const DoubleDouble &rhs) {
+inline constexpr DoubleDouble operator*(double lhs, const DoubleDouble &rhs) {
   DoubleDouble tmp;
   tmp.a = lhs;
   return tmp * rhs;
 }
-constexpr DoubleDouble operator*(const DoubleDouble &lhs, double rhs) {
+inline constexpr DoubleDouble operator*(const DoubleDouble &lhs, double rhs) {
   DoubleDouble tmp;
   tmp.a = rhs;
   return lhs * tmp;
 }
 
-std::ostream &operator<<(std::ostream &os, const DoubleDouble &q) {
+inline std::ostream &operator<<(std::ostream &os, const DoubleDouble &q) {
   os << (q.a + q.b); // 簡単な出力：合計として表示
   return os;
 }
 
-constexpr std::float128_t &operator*=(std::float128_t &lhs, const DoubleDouble &rhs) { return (lhs *= static_cast<std::float128_t>(rhs)); }
+inline constexpr std::float128_t &operator*=(std::float128_t &lhs, const DoubleDouble &rhs) { return (lhs *= static_cast<std::float128_t>(rhs)); }
 
-constexpr std::complex<std::float128_t> &operator*=(std::complex<std::float128_t> &lhs, const DoubleDouble &rhs_scalar) {
+inline constexpr std::complex<std::float128_t> &operator*=(std::complex<std::float128_t> &lhs, const DoubleDouble &rhs_scalar) {
   auto scalar_val = static_cast<std::float128_t>(rhs_scalar);
   lhs.real(lhs.real() * scalar_val);
   lhs.imag(lhs.imag() * scalar_val);
@@ -336,14 +427,14 @@ template <size_t N, size_t M> constexpr void quadruple_Hadamard_product_add(cons
 /* -------------------------------------------------------------------------- */
 
 // long double版のヘルパー関数
-constexpr std::array<long double, 2> sum_and_arounding_error_ld(const long double x, const long double y) {
+inline constexpr std::array<long double, 2> sum_and_arounding_error_ld(const long double x, const long double y) {
   long double z = x + y;
   long double v = z - x;
   long double e = (x - (z - v)) + (y - v);
   return {z, e};
 }
 
-constexpr std::array<long double, 2> two_prod_ld(const long double a, const long double b) {
+inline constexpr std::array<long double, 2> two_prod_ld(const long double a, const long double b) {
   long double p = a * b;
   // std::fma は long double のオーバーロードを持つ
   long double err = std::fma(a, b, -p);
@@ -461,42 +552,42 @@ struct LongDoubleLongDouble {
 // スカラーとの乗算
 template <typename T>
   requires std::is_arithmetic_v<T>
-constexpr LongDoubleLongDouble operator*(const T &lhs, const LongDoubleLongDouble &rhs) {
+inline constexpr LongDoubleLongDouble operator*(const T &lhs, const LongDoubleLongDouble &rhs) {
   return LongDoubleLongDouble(lhs) * rhs;
 }
 
 template <typename T>
   requires std::is_arithmetic_v<T>
-constexpr LongDoubleLongDouble operator*(const LongDoubleLongDouble &lhs, const T &rhs) {
+inline constexpr LongDoubleLongDouble operator*(const LongDoubleLongDouble &lhs, const T &rhs) {
   return lhs * LongDoubleLongDouble(rhs);
 }
 
-constexpr LongDoubleLongDouble operator*(const LongDoubleLongDouble &lhs, const std::float128_t &rhs) { return lhs * LongDoubleLongDouble(rhs); }
+inline constexpr LongDoubleLongDouble operator*(const LongDoubleLongDouble &lhs, const std::float128_t &rhs) { return lhs * LongDoubleLongDouble(rhs); }
 
 // std::complexとの演算
-constexpr std::complex<LongDoubleLongDouble> operator*(const std::complex<LongDoubleLongDouble> &lhs, const std::complex<LongDoubleLongDouble> &rhs) { return std::complex<LongDoubleLongDouble>(lhs.real() * rhs.real() - lhs.imag() * rhs.imag(), lhs.real() * rhs.imag() + lhs.imag() * rhs.real()); }
+inline constexpr std::complex<LongDoubleLongDouble> operator*(const std::complex<LongDoubleLongDouble> &lhs, const std::complex<LongDoubleLongDouble> &rhs) { return std::complex<LongDoubleLongDouble>(lhs.real() * rhs.real() - lhs.imag() * rhs.imag(), lhs.real() * rhs.imag() + lhs.imag() * rhs.real()); }
 
 template <typename T>
   requires std::is_arithmetic_v<T>
-constexpr std::complex<LongDoubleLongDouble> operator*(const T &lhs, const std::complex<LongDoubleLongDouble> &rhs) {
+inline constexpr std::complex<LongDoubleLongDouble> operator*(const T &lhs, const std::complex<LongDoubleLongDouble> &rhs) {
   return LongDoubleLongDouble(lhs) * rhs;
 }
 
 template <typename T>
   requires std::is_arithmetic_v<T>
-constexpr std::complex<LongDoubleLongDouble> operator*(const std::complex<LongDoubleLongDouble> &lhs, const T &rhs) {
+inline constexpr std::complex<LongDoubleLongDouble> operator*(const std::complex<LongDoubleLongDouble> &lhs, const T &rhs) {
   return lhs * LongDoubleLongDouble(rhs);
 }
 
 // std::complexの複合代入
-constexpr std::complex<LongDoubleLongDouble> &operator+=(std::complex<LongDoubleLongDouble> &lhs, const std::complex<LongDoubleLongDouble> &rhs) {
+inline constexpr std::complex<LongDoubleLongDouble> &operator+=(std::complex<LongDoubleLongDouble> &lhs, const std::complex<LongDoubleLongDouble> &rhs) {
   lhs.real(lhs.real() + rhs.real());
   lhs.imag(lhs.imag() + rhs.imag());
   return lhs;
 }
 
 // ストリーム出力
-std::ostream &operator<<(std::ostream &os, const LongDoubleLongDouble &q) {
+inline std::ostream &operator<<(std::ostream &os, const LongDoubleLongDouble &q) {
   os << (q.a + q.b);
   return os;
 }
@@ -534,7 +625,7 @@ template <typename T> constexpr std::complex<T> Polar(const double r, const T &t
     return std::polar(static_cast<T>(r), theta);
   }
 }
-constexpr std::complex<DoubleDouble> Polar(const DoubleDouble &r, const DoubleDouble &theta) {
+inline constexpr std::complex<DoubleDouble> Polar(const DoubleDouble &r, const DoubleDouble &theta) {
   auto c = Polar(static_cast<std::float128_t>(r), static_cast<std::float128_t>(theta));
   return std::complex<DoubleDouble>(DoubleDouble(c.real()), DoubleDouble(c.imag())); // std::complex<DoubleDouble>に変換して返す
 }
@@ -662,3 +753,5 @@ template <typename STREAM, std::size_t N, std::size_t M> STREAM &operator<<(STRE
   stream << "}";
   return stream;
 }
+
+#endif // !BEM_HAS_QUADMATH

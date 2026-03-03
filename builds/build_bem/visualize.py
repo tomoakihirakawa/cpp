@@ -39,12 +39,16 @@ else:
     input_dir = os.path.join("./input_files", simulation_id_or_path)
 print(f"入力ディレクトリ '{input_dir}' のシーンを構築します...")
 
-# --- setting.json を読み込む ---
+# --- settings.json を読み込む ---
 try:
-    with open(os.path.join(input_dir, "setting.json")) as f:
+    settings_path = os.path.join(input_dir, "settings.json")
+    if not os.path.exists(settings_path):
+        # Backward compatibility
+        settings_path = os.path.join(input_dir, "setting.json")
+    with open(settings_path) as f:
         settings = json.load(f)
 except FileNotFoundError:
-    print(f"エラー: {input_dir} に setting.json が見つかりません。")
+    print(f"エラー: {input_dir} に settings.json が見つかりません。")
     raise
 
 # --- ParaViewのシーンを構築 ---

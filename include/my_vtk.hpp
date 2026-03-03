@@ -13,7 +13,7 @@ DataArray_detail */
 /*DataArray_code*/
 using V_str = std::vector<std::string>;
 
-void mk_pvd(const std::string &filename, const std::map<std::string, double> &map_s_d) {
+inline void mk_pvd(const std::string &filename, const std::map<std::string, double> &map_s_d) {
   Print("Creating " + filename + " ..." + colorReset);
   FILE *fp;
   fp = fopen(filename.c_str(), "wb");
@@ -126,7 +126,7 @@ public:
   };
 };
 
-std::string NumtoString(const auto &x) {
+inline std::string NumtoString(const auto &x) {
   std::stringstream ss;
   ss << std::setprecision(8) << (float)(Between(x, {-1E-13, 1E-13}) ? 0. : x);
   return ss.str();
@@ -275,7 +275,7 @@ template <class T> void DataArray(FILE *fp, const std::vector<T> &Points, const 
 };
 //-----------------------------------------
 #define debug_mk_vtu
-void mk_vtu2(const std::string &filename, const VV_d &VV_points) {
+inline void mk_vtu2(const std::string &filename, const VV_d &VV_points) {
 #if defined(debug_mk_vtu)
   std::cout << Magenta << filename << colorReset;
   std::cout << "  VV_points.size() : " << std::to_string(VV_points.size()) << colorReset << " ";
@@ -375,7 +375,7 @@ void mk_vtu2(const std::string &filename, const VV_d &VV_points) {
   fclose(fp);
 }
 /* ------------------------------------------------------ */
-void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points) {
+inline void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points) {
   const int N = 4;
   try {
 #if defined(debug_mk_vtu)
@@ -457,7 +457,7 @@ void mk_vtu(const std::string &filename, const std::vector<T4Tddd> &VV_points) {
   };
 };
 /* ------------------------------------------------------ */
-void mk_vtu(const std::string &filename, const VV_netPp &VV_points, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const VV_netPp &VV_points, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   try {
 #if defined(debug_mk_vtu)
     std::cout << Magenta << filename << colorReset;
@@ -568,7 +568,7 @@ void mk_vtu(const std::string &filename, const VV_netPp &VV_points, const VV_Var
   };
 }
 /* ------------------------------------------------------ */
-void mk_vtu(const std::string &filename, const std::vector<std::unordered_set<networkPoint *>> &V_points, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const std::vector<std::unordered_set<networkPoint *>> &V_points, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   VV_netPp ps;
   for (const auto &uo_ps : V_points) {
     ps.push_back({});
@@ -578,13 +578,13 @@ void mk_vtu(const std::string &filename, const std::vector<std::unordered_set<ne
   mk_vtu(filename, ps, VV_name_comp_mapPVd);
 }
 /* ------------------------------------------------------ */
-void mk_vtu(const std::string &filename, const V_netFp &Faces, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const V_netFp &Faces, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   VV_netPp fs;
   for (const auto &f : Faces)
     fs.emplace_back(ToVector(f->getPoints()));
   mk_vtu(filename, fs, VV_name_comp_mapPVd);
 }
-void mk_vtu(const std::string &filename, const std::unordered_set<networkFace *> &Faces, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const std::unordered_set<networkFace *> &Faces, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   VV_netPp VVps(Faces.size());
   int i = 0;
   for (const auto &f : Faces)
@@ -592,7 +592,7 @@ void mk_vtu(const std::string &filename, const std::unordered_set<networkFace *>
   mk_vtu(filename, VVps, VV_name_comp_mapPVd);
 }
 /* ------------------------------------------------------ */
-void mk_vtu(const std::string &filename, const V_netLp &Lines, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const V_netLp &Lines, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   VV_netPp vvp;
   for (const auto &l : Lines)
     vvp.emplace_back(ToVector(l->getPoints()));
@@ -600,7 +600,7 @@ void mk_vtu(const std::string &filename, const V_netLp &Lines, const VV_VarForOu
 }
 /*DataArray_code*/
 
-void mk_vtu(const std::string &filename, const VVV_d &vvv_IN, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const VVV_d &vvv_IN, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   Network net;
 
   VV_netPp vvp({});
@@ -618,7 +618,7 @@ void mk_vtu(const std::string &filename, const VVV_d &vvv_IN, const VV_VarForOut
     for (const auto &v : vv)
       delete v;
 };
-void mk_vtu(const std::string &filename, const std::vector<std::vector<Tddd>> &vvv_IN, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const std::vector<std::vector<Tddd>> &vvv_IN, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   Network net;
 
   VV_netPp vvp({});
@@ -637,7 +637,7 @@ void mk_vtu(const std::string &filename, const std::vector<std::vector<Tddd>> &v
       delete v;
 };
 
-void mk_vtu(const std::string &filename, const std::vector<Tddd> &vv, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
+inline void mk_vtu(const std::string &filename, const std::vector<Tddd> &vv, const VV_VarForOutput &VV_name_comp_mapPVd = {}) {
   Network net;
 
   VV_netPp vvp({});
